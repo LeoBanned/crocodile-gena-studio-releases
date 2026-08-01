@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Telegram автора
+    url: https://t.me/crocodilehub2
+    about: Короткие вопросы и связь с автором
+  - name: Скачать последнюю версию
+    url: https://github.com/LeoBanned/crocodile-gena-studio-releases/releases/latest
+    about: Официальная страница релизов Crocodile Gena Studio
