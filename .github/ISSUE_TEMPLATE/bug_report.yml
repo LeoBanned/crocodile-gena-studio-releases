@@ -1,0 +1,75 @@
+name: Сообщить об ошибке
+description: Воспроизводимая проблема в Crocodile Gena Studio
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за сообщение. Не прикладывайте API-ключи, токены и персональные данные.
+  - type: input
+    id: app-version
+    attributes:
+      label: Версия Crocodile Gena Studio
+      placeholder: "Например: 4.0.3"
+    validations:
+      required: true
+  - type: input
+    id: windows-version
+    attributes:
+      label: Версия Windows
+      placeholder: "Например: Windows 11 24H2, x64"
+    validations:
+      required: true
+  - type: dropdown
+    id: module
+    attributes:
+      label: Модуль
+      options:
+        - Главная / запуск приложения
+        - Online Fix
+        - Менеджер сохранений
+        - DLC Unlocker
+        - CrocLua
+        - Настройки / обновление
+        - Другое
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги воспроизведения
+      description: Опишите действия по порядку.
+      placeholder: |
+        1. Открыл...
+        2. Нажал...
+        3. Появилась ошибка...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ожидаемый результат
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Фактический результат и текст ошибки
+    validations:
+      required: true
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Скриншоты или дополнительные сведения
+      description: Перед отправкой скройте ключи, токены, имя пользователя и личные пути.
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Подтверждение
+      options:
+        - label: Я использую последнюю опубликованную версию.
+          required: true
+        - label: Я проверил материалы и удалил из них секретные и персональные данные.
+          required: true
