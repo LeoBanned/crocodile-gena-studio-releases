@@ -20,7 +20,7 @@ const PROXY_BASE: &str = "";
 /// Встроенный ключ доступа к API генератора. Компилируется в бинарник и не попадает во фронтенд.
 /// ВНИМАНИЕ: в exe его технически можно извлечь реверс-инжинирингом — полностью скрыть можно
 /// только через промежуточный прокси-сервер.
-const AUTH_KEY: &str = "";
+const AUTH_KEY: &str = "AUTH_KEY HERE";
 
 const CATALOG_URL: &str = "https://generator.ryuu.lol/api/games";
 const DOWNLOAD_BASE: &str = "https://generator.ryuu.lol/api/download/";
