@@ -1,0 +1,12 @@
+# Build outputs
+target/
+src-tauri/target/
+node_modules/
+dist/
+build/
+*.log
+*.tmp
+
+# Preserve essential hidden asset directories for Tauri compilation
+!src-tauri/src/assets/crocodile-manifest/.millennium/
+!src-tauri/src/assets/crocodile-manifest/.millennium/**
