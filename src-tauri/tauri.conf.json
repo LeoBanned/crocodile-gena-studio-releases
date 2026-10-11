@@ -36,8 +36,8 @@
     "icon": ["icon.ico"],
     "resources": {
       "../backend/core_engine/": "backend/core_engine/",
-      "../DLCUnlocker/steam_api.dll": "DLCUnlocker/steam_api.dll",
-      "../DLCUnlocker/steam_api64.dll": "DLCUnlocker/steam_api64.dll"
+      "../CreamAPI/steam_api.dll": "CreamAPI/steam_api.dll",
+      "../CreamAPI/steam_api64.dll": "CreamAPI/steam_api64.dll"
     },
     "windows": {
       "webviewInstallMode": {

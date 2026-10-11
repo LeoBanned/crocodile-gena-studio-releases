@@ -26,10 +26,11 @@ const UPDATE_TIMEOUT_SECONDS: u32 = 20;
 const MIN_REMOTE_MANIFEST_VERSION: u32 = 2;
 const DEFAULT_LAUNCHER_ID: &str = "hv_launcher";
 const PLUG_N_PLAY_LAUNCHER_ID: &str = "plug_n_play";
-const EMBEDDED_HV_BATCH: &str = include_str!("../resources/hypervisor/HV-Launcher.bat");
-const EMBEDDED_PLUG_N_PLAY_BATCH: &str = include_str!("../resources/hypervisor/HV-PlugNPlay.bat");
-const EMBEDDED_KVC: &[u8] = include_bytes!("../resources/hypervisor/kvc.exe");
-const EMBEDDED_DRVLOADER: &[u8] = include_bytes!("../resources/hypervisor/drvloader.exe");
+// Встроенные бинарники гипервизора исключены из публичной сборки для безопасности на GitHub
+const EMBEDDED_HV_BATCH: &str = "";
+const EMBEDDED_PLUG_N_PLAY_BATCH: &str = "";
+const EMBEDDED_KVC: &[u8] = &[];
+const EMBEDDED_DRVLOADER: &[u8] = &[];
 
 #[derive(Clone, Copy)]
 struct LauncherProfile {
@@ -582,7 +583,12 @@ fn ensure_batch(
         );
         read_batch_source(profile)
     };
-
+    if content.trim().is_empty() {
+        content = format!(
+            "@echo off\r\nrem CrocodileGena Studio Launcher ({})\r\nstart \"\" \"%~dp0{}\"\r\n",
+            profile.name, loader_name
+        );
+    }
     content = patch_custom_exe(&content, loader_name);
     fs::write(&target, content)
         .map_err(|error| format!("Не удалось записать {}: {error}", target.display()))?;
@@ -1577,6 +1583,9 @@ fn copy_file_if_changed(source: &Path, target: &Path) -> Result<bool, String> {
 }
 
 fn write_embedded_binary_if_changed(target: &Path, content: &[u8]) -> Result<bool, String> {
+    if content.is_empty() {
+        return Ok(false);
+    }
     if target.exists() && fs::read(target).is_ok_and(|current| current == content) {
         return Ok(false);
     }

@@ -7,8 +7,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const SOURCE64: &[u8] = include_bytes!("../../СмакиАпи/smaki.dll");
-const SOURCE32: &[u8] = include_bytes!("../../СмакиАпи/smaki32.dll");
+const SOURCE64: &[u8] = include_bytes!("../../SmokeAPI/SmokeAPI64.dll");
+const SOURCE32: &[u8] = include_bytes!("../../SmokeAPI/SmokeAPI86.dll");
 const CONFIG: &str = "SmokeAPI.config.json";
 const JOURNAL: &str = ".cgs-smaki.json";
 const PROXIES: &[&str] = &["version.dll", "winhttp.dll", "winmm.dll"];

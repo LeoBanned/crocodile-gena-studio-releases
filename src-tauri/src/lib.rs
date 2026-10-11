@@ -62,14 +62,14 @@ const EMBEDDED_DLC_COMPONENTS: &[(&str, &[u8])] = &[
         "steam_api.dll",
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../DLCUnlocker/steam_api.dll"
+            "/../CreamAPI/steam_api.dll"
         )),
     ),
     (
         "steam_api64.dll",
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../DLCUnlocker/steam_api64.dll"
+            "/../CreamAPI/steam_api64.dll"
         )),
     ),
 ];
@@ -293,12 +293,15 @@ pub(crate) fn dlc_unlocker_path(app: &AppHandle) -> std::path::PathBuf {
     let mut candidates = Vec::new();
     if let Ok(resource_dir) = app.path().resource_dir() {
         candidates.extend([
+            resource_dir.join("CreamAPI"),
             resource_dir.join("DLCUnlocker"),
+            resource_dir.join("_up_").join("CreamAPI"),
             resource_dir.join("_up_").join("DLCUnlocker"),
         ]);
     }
     if let Ok(executable) = std::env::current_exe() {
         if let Some(directory) = executable.parent() {
+            candidates.push(directory.join("CreamAPI"));
             candidates.push(directory.join("DLCUnlocker"));
         }
     }
@@ -308,7 +311,7 @@ pub(crate) fn dlc_unlocker_path(app: &AppHandle) -> std::path::PathBuf {
         }
     }
 
-    if let Some(directory) = extract_embedded(app, "DLCUnlocker", EMBEDDED_DLC_COMPONENTS) {
+    if let Some(directory) = extract_embedded(app, "CreamAPI", EMBEDDED_DLC_COMPONENTS) {
         return directory;
     }
 
@@ -316,12 +319,12 @@ pub(crate) fn dlc_unlocker_path(app: &AppHandle) -> std::path::PathBuf {
     {
         return std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("..")
-            .join("DLCUnlocker");
+            .join("CreamAPI");
     }
 
     #[cfg(not(debug_assertions))]
     app.path()
         .app_local_data_dir()
         .unwrap_or_else(|_| std::env::temp_dir())
-        .join("DLCUnlocker")
+        .join("CreamAPI")
 }
