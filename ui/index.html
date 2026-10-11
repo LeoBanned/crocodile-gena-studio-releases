@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07090f" />
+  <title>Crocodile Gena Studio</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <div class="app-shell">
+    <header class="titlebar" data-tauri-drag-region>
+      <div class="titlebar-brand" data-tauri-drag-region>
+        <div class="mini-mark" data-tauri-drag-region><img src="./app-icon.png" alt="" data-tauri-drag-region /></div>
+        <span data-tauri-drag-region>Crocodile Gena Studio</span>
+        <span class="titlebar-version" data-tauri-drag-region>5.1.0</span>
+      </div>
+      <div class="window-actions">
+        <button class="window-button" id="window-minimize" aria-label="Свернуть">
+          <svg viewBox="0 0 16 16"><path d="M3 8.5h10"/></svg>
+        </button>
+        <button class="window-button" id="window-maximize" aria-label="Развернуть">
+          <svg viewBox="0 0 16 16"><rect x="3.5" y="3.5" width="9" height="9" rx="1"/></svg>
+        </button>
+        <button class="window-button window-close" id="window-close" aria-label="Закрыть">
+          <svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-mark"><img src="./app-icon.png" alt="" /></div>
+        <div>
+          <div class="brand-name">Crocodile Gena</div>
+          <div class="brand-caption">by Пиратская Станция <span aria-hidden="true">⚓</span></div>
+        </div>
+      </div>
+
+      <nav class="navigation" aria-label="Разделы приложения">
+        <div class="nav-label">Рабочая область</div>
+        <button class="nav-item active" data-view="home">
+          <svg viewBox="0 0 24 24"><path d="M4 11.5L12 4l8 7.5V20h-5v-5H9v5H4z"/></svg>
+          <span>Главная</span>
+        </button>
+        <button class="nav-item" data-view="fix">
+          <svg viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 01-5 5L4 17l3 3 5.5-5.5a4 4 0 005-5l-2.4 2.4-3-3z"/></svg>
+          <span>Online Fix</span>
+        </button>
+        <button class="nav-item" data-view="saves">
+          <svg viewBox="0 0 24 24"><path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 15h8v5H8z"/></svg>
+          <span>Сохранения</span>
+        </button>
+        <button class="nav-item" data-view="dlc">
+          <svg viewBox="0 0 24 24"><path d="M5 10h14v10H5zM8 10V7a4 4 0 018 0M12 14v3"/></svg>
+          <span>DLC Unlocker</span>
+        </button>
+        <button class="nav-item" data-view="lua">
+          <svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V7z"/><path d="M9.5 12.5l1.8 1.8 3.5-3.6"/></svg>
+          <span>CrocLua</span>
+        </button>
+        <button class="nav-item" data-view="hypervisor">
+          <svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4.8-3.1 8.1-8 9.5C7.1 20.1 4 16.8 4 12V7z"/><path d="M8 12h8M12 8v8"/></svg>
+          <span>Гипервизор</span>
+          <span class="nav-live">NEW</span>
+        </button>
+        <button class="nav-item" data-view="files">
+          <svg viewBox="0 0 24 24"><path d="M4 7h6l2 2h8v10H4z"/><path d="M4 7V5h6l2 2"/></svg>
+          <span>Кряки</span>
+        </button>
+        <button class="nav-item" data-view="utilities">
+          <svg viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 1-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.4 2.4-3-3z"/><path d="m15.5 15.5 4.5 4.5"/></svg>
+          <span>Утилиты</span>
+          <span class="nav-live">NEW</span>
+        </button>
+        <button class="nav-item" data-view="settings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 13.5l1.2 1-.2 2.1-1.5.7-.8 1.4.2 1.7-2 1-1.3-1-1.6.3-1 1.3H9.8l-.7-1.5-1.5-.8-1.7.2-1-2 1-1.3-.3-1.6-1.3-1V9.8l1.5-.7.8-1.5-.2-1.7 2-1 1.3 1 1.6-.3 1-1.3h2.2l.7 1.5 1.5.8 1.7-.2 1 2-1 1.3.3 1.6 1.3 1v1.2z"/></svg>
+          <span>Настройки</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="social-links">
+          <button class="channel-card" id="open-personal-channel">
+            <span class="channel-icon">
+              <svg viewBox="0 0 24 24"><path d="M20.4 4.2L3.8 10.6c-1.1.4-1.1 1.1-.2 1.4l4.3 1.3 1.6 4.8c.2.6.1.8.7.8.5 0 .7-.2 1-.5l2.1-2 4.4 3.2c.8.4 1.4.2 1.6-.8l2.8-13.2c.3-1.2-.5-1.8-1.7-1.4z"/></svg>
+            </span>
+            <span><strong>Мой Telegram</strong><small>@crocodilehub2</small></span>
+            <svg class="channel-arrow" viewBox="0 0 20 20"><path d="M7 4l6 6-6 6"/></svg>
+          </button>
+          <button class="channel-card community-channel" id="open-community-channel">
+            <span class="channel-icon">
+              <svg viewBox="0 0 24 24"><path d="M20.4 4.2L3.8 10.6c-1.1.4-1.1 1.1-.2 1.4l4.3 1.3 1.6 4.8c.2.6.1.8.7.8.5 0 .7-.2 1-.5l2.1-2 4.4 3.2c.8.4 1.4.2 1.6-.8l2.8-13.2c.3-1.2-.5-1.8-1.7-1.4z"/></svg>
+            </span>
+            <span><strong>Наш Telegram</strong><small>@piratestationn</small></span>
+            <svg class="channel-arrow" viewBox="0 0 20 20"><path d="M7 4l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <div class="system-line"><span class="pulse-dot"></span><span>Система</span><b>ГОТОВО</b></div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <div class="page-topbar">
+        <div>
+          <div class="eyebrow" id="page-eyebrow">ОБЗОР</div>
+          <h1 id="page-title">Главная</h1>
+        </div>
+      </div>
+
+      <section class="view active" id="view-home" data-view-panel="home">
+        <div class="home-hero premium-panel">
+          <div class="home-glow"></div>
+          <div class="hero-copy">
+            <span class="hero-kicker">CROCODILE GENA STUDIO 5.1.0</span>
+            <h2>Ваша игровая<br/><span>лаборатория.</span></h2>
+            <p>Единое пространство для настройки игр, управления сетевыми компонентами и будущих инструментов.</p>
+          </div>
+          <div class="hero-artwork"><img src="./hero-crocodile.png" alt="Фирменная иллюстрация Crocodile Gena" /></div>
+        </div>
+        <div class="home-grid">
+          <article class="metric-card"><span class="metric-icon mint"><svg viewBox="0 0 24 24"><path d="M6 18L18 6M8 6h10v10"/></svg></span><div><small>Активный модуль</small><strong>Online Fix</strong><p>Готов к установке и восстановлению</p></div></article>
+          <article class="metric-card module-card" data-open-view="saves"><span class="metric-icon blue"><svg viewBox="0 0 24 24"><path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 15h8v5H8z"/></svg></span><div><small>Модуль 02</small><strong>Менеджер сохранений</strong><p>Поиск и резервное копирование прогресса</p></div></article>
+          <article class="metric-card module-card" data-open-view="dlc"><span class="metric-icon violet"><svg viewBox="0 0 24 24"><path d="M5 10h14v10H5zM8 10V7a4 4 0 018 0M12 14v3"/></svg></span><div><small>Модуль 03</small><strong>DLC Unlocker</strong><p>Выборочная разблокировка дополнений</p></div></article>
+          <article class="metric-card module-card" data-open-view="lua"><span class="metric-icon mint"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V7z"/><path d="M9.5 12.5l1.8 1.8 3.5-3.6"/></svg></span><div><small>Модуль 04</small><strong>CrocLua</strong><p>Игры в библиотеку Steam через манифесты</p></div></article>
+          <article class="metric-card module-card" data-open-view="hypervisor"><span class="metric-icon violet"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4.8-3.1 8.1-8 9.5C7.1 20.1 4 16.8 4 12V7z"/><path d="M8 12h8M12 8v8"/></svg></span><div><small>Модуль 05</small><strong>Гипервизор</strong><p>Библиотека и запуск игр через профили KVC или DRV</p></div></article>
+          <article class="metric-card module-card" data-open-view="files"><span class="metric-icon blue"><svg viewBox="0 0 24 24"><path d="M4 7h6l2 2h8v10H4z"/><path d="M4 7V5h6l2 2"/></svg></span><div><small>Модуль 06</small><strong>Кряки</strong><p>Актуальные кряки с билдом, паролем и загрузкой</p></div></article>
+          <article class="metric-card module-card" data-open-view="utilities"><span class="metric-icon mint"><svg viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 1-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.4 2.4-3-3z"/><path d="m15.5 15.5 4.5 4.5"/></svg></span><div><small>Модуль 07</small><strong>Утилиты</strong><p>Полезные программы и сетевые инструменты</p></div></article>
+        </div>
+      </section>
+
+      <section class="view" id="view-fix" data-view-panel="fix">
+        <div class="workspace-grid">
+          <div class="workspace-main">
+            <section class="intro-strip">
+              <div><span class="intro-badge">MODULE 01</span><h2>Universal Online Fix</h2><p>Сканирование, настройка Steam и поддержка Epic Online Services в одном потоке.</p></div>
+              <div class="intro-art"><span></span><span></span><div>01</div></div>
+            </section>
+
+            <section class="premium-panel path-panel">
+              <div class="section-heading">
+                <span class="step-index">01</span>
+                <div><h3>Выберите директорию игры</h3><p>Укажите корневую папку — движок сам найдёт нужные компоненты.</p></div>
+                <span class="required-chip">ОБЯЗАТЕЛЬНО</span>
+              </div>
+              <div class="drop-zone" id="drop-zone">
+                <span class="folder-illustration"><svg viewBox="0 0 48 48"><path d="M6 13a4 4 0 014-4h10l4 5h14a4 4 0 014 4v18a4 4 0 01-4 4H10a4 4 0 01-4-4z"/><path d="M8 20h32"/></svg></span>
+                <div class="path-copy"><strong>Перетащите папку сюда</strong><span>или выберите её через системный проводник</span></div>
+                <button class="secondary-button" id="browse-button"><svg viewBox="0 0 20 20"><path d="M3 6h5l2 2h7v8H3z"/></svg>Выбрать</button>
+              </div>
+              <div class="path-entry">
+                <svg viewBox="0 0 20 20"><path d="M3 6h5l2 2h7v8H3z"/></svg>
+                <input id="game-path" type="text" autocomplete="off" spellcheck="false" placeholder="C:\Games\Название игры" />
+                <button class="scan-button" id="scan-button"><span>Сканировать</span><svg viewBox="0 0 20 20"><circle cx="9" cy="9" r="5"/><path d="M13 13l4 4"/></svg></button>
+              </div>
+            </section>
+
+            <section class="scan-progress premium-panel hidden" id="scan-progress">
+              <div class="scanner-orb"><span></span></div><div><strong>Анализируем структуру игры</strong><p id="scan-progress-text">Ищем исполняемые файлы и сетевые библиотеки…</p></div><div class="progress-track"><span></span></div>
+            </section>
+
+            <div id="game-workspace" class="hidden">
+              <section class="premium-panel game-panel">
+                <div class="game-cover"><img id="game-banner" alt="Обложка игры"/><div class="cover-fallback" id="cover-fallback">CG</div><span class="game-state" id="game-status">CLEAN</span></div>
+                <div class="game-summary">
+                  <div class="game-title-row"><div><span>ОБНАРУЖЕННАЯ ИГРА</span><h2 id="game-title">Название игры</h2></div><button class="icon-button" id="rescan-button" title="Повторить сканирование"><svg viewBox="0 0 20 20"><path d="M16 7a7 7 0 10.4 5M16 3v4h-4"/></svg></button></div>
+                  <div class="metadata-grid">
+                    <div><small>APP ID</small><strong id="game-appid">—</strong></div><div><small>ДВИЖОК</small><strong id="game-engine">—</strong></div><div><small>EXECUTABLE</small><strong id="game-exe">—</strong></div><div><small>STEAM API</small><strong id="game-steam">—</strong></div>
+                  </div>
+                  <div class="manual-search"><svg viewBox="0 0 20 20"><circle cx="8" cy="8" r="5"/><path d="M12 12l5 5"/></svg><input id="manual-query" placeholder="Игра определилась неверно? Введите название…"/><button id="manual-search-button">Найти в Steam</button></div>
+                </div>
+              </section>
+
+              <section class="premium-panel configuration-panel">
+                <div class="section-heading"><span class="step-index">02</span><div><h3>Конфигурация</h3><p>Параметры сетевого окружения и контента.</p></div></div>
+                <div class="setting-grid">
+                  <label class="setting-card"><span class="setting-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8 12h8M12 8v8"/></svg></span><span class="setting-copy"><b>Сетевое приложение</b><small>Fake AppID для общего лобби</small></span><select id="fake-appid"><option value="480">480 · Spacewar</option><option value="1484020">1484020 · Cube Racer</option><option value="250820">250820 · SteamVR</option><option value="3989960">3989960 · Custom</option></select></label>
+                  <label class="setting-card"><span class="setting-icon"><svg viewBox="0 0 24 24"><path d="M5 9h14v10H5zM8 9V7a4 4 0 018 0v2"/></svg></span><span class="setting-copy"><b>Разблокировать DLC</b><small>Добавить найденные DLC в конфиг</small></span><span class="switch"><input type="checkbox" id="unlock-dlc" checked/><i></i></span></label>
+                </div>
+                <div class="dlc-heading"><div><h4>Официальные DLC</h4><span id="dlc-count">0 пакетов</span></div><input id="dlc-filter" placeholder="Фильтр DLC"/></div>
+                <div class="dlc-list" id="dlc-list"><div class="empty-inline">DLC пока не загружены</div></div>
+              </section>
+
+              <aside class="premium-panel troubleshooting-notice" aria-label="Подсказка по устранению проблем">
+                <span class="troubleshooting-icon">!</span>
+                <div>
+                  <strong>Игра не запускается или не создаётся лобби?</strong>
+                  <p>Если проблема появилась сразу после установки Online Fix, следуйте пошаговым инструкциям в блоке Epic Online Services ниже.</p>
+                </div>
+              </aside>
+
+              <section class="premium-panel eos-panel" id="eos-panel">
+                <div class="eos-icon"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><path d="M4 16h24M16 4c4 4 6 8 6 12s-2 8-6 12c-4-4-6-8-6-12s2-8 6-12z"/></svg></div>
+                <div class="eos-copy"><div><h3>Epic Online Services</h3><span class="eos-status" id="eos-status">Проверка…</span></div><p>Пошаговое исправление запуска и создания лобби: сначала EpicFix, затем при необходимости восстановление оригинального EOS.</p></div>
+                <div class="eos-actions"><button class="ghost-button" id="epicfix-button">Установить EpicFix</button><button class="ghost-button danger-ghost" id="restore-eos-button">Восстановить EOS</button></div>
+              </section>
+
+              <section class="action-dock premium-panel">
+                <div><span class="action-ready"><i></i>ГОТОВО К УСТАНОВКЕ</span><p>Перед изменением существующие файлы будут сохранены в <code>.backup_orig</code>.</p></div>
+                <div class="action-buttons"><button class="uninstall-button hidden" id="uninstall-button">Удалить / восстановить</button><button class="install-button" id="install-button"><span>Установить Online Fix</span><svg viewBox="0 0 20 20"><path d="M4 10h12M11 5l5 5-5 5"/></svg></button></div>
+              </section>
+            </div>
+          </div>
+
+          <aside class="activity-panel premium-panel">
+            <div class="activity-header"><div><span class="activity-led"></span><div><strong>Журнал операций</strong><small>LIVE OUTPUT</small></div></div><button id="clear-log" title="Очистить"><svg viewBox="0 0 20 20"><path d="M5 6h10l-1 11H6zM8 6V3h4v3M3 6h14"/></svg></button></div>
+            <div class="activity-body" id="activity-log"></div>
+            <div class="activity-footer"><span>СОСТОЯНИЕ</span><b>ГОТОВО К РАБОТЕ</b><i></i></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="view-dlc" data-view-panel="dlc">
+        <div class="saves-layout">
+          <section class="premium-panel saves-hero">
+            <div>
+              <span class="hero-kicker">MODULE 03</span>
+              <h2>DLC Unlocker</h2>
+              <p>Найдите установленные игры Steam, выберите игру и настройте её дополнения.</p>
+            </div>
+            <button class="dlc-button dlc-scan-control" id="dlc-library-scan"><svg viewBox="0 0 20 20"><circle cx="8.5" cy="8.5" r="5"/><path d="M12.5 12.5L17 17"/></svg><span>Сканировать</span></button>
+          </section>
+
+          <section class="premium-panel dlc-library-panel" id="dlc-library-panel">
+            <div class="dlc-panel-heading"><div><span class="coming-label">БИБЛИОТЕКА STEAM</span><h3>Установленные игры</h3><p id="dlc-library-status">Нажмите «Сканировать», чтобы найти игры во всех библиотеках Steam.</p></div><span class="dlc-config-chip" id="dlc-library-count">0</span></div>
+            <div class="dlc-library-tools"><input id="dlc-library-search" placeholder="Поиск установленной игры…" type="search"/><button class="dlc-button" id="dlc-library-folder"><svg viewBox="0 0 20 20"><path d="M3 6h5l2 2h7v8H3z"/></svg><span>Добавить библиотеку</span></button></div>
+            <div class="dlc-library-empty" id="dlc-library-empty"><span>🎮</span><h3>Ваша библиотека игр</h3></div>
+            <div class="dlc-game-list hidden" id="dlc-game-list"></div>
+          </section>
+
+          <details class="dlc-manual-panel" id="dlc-manual-panel"><summary>Выбрать папку игры вручную</summary><section class="premium-panel path-panel">
+            <div class="section-heading">
+              <span class="step-index">01</span>
+              <div><h3>Выберите директорию игры</h3><p>Укажите корневую папку — приложение само найдёт библиотеку Steam и определит игру.</p></div>
+              <span class="dlc-config-chip" id="dlc-config-chip">НЕ ПРОВЕРЕНО</span>
+            </div>
+            <div class="drop-zone" id="dlc-drop-zone">
+              <span class="folder-illustration"><svg viewBox="0 0 48 48"><path d="M6 13a4 4 0 014-4h10l4 5h14a4 4 0 014 4v18a4 4 0 01-4 4H10a4 4 0 01-4-4z"/><path d="M8 20h32"/></svg></span>
+              <div class="path-copy"><strong>Перетащите папку сюда</strong><span>или выберите её через системный проводник</span></div>
+              <button class="secondary-button" id="dlc-browse-button"><svg viewBox="0 0 20 20"><path d="M3 6h5l2 2h7v8H3z"/></svg>Выбрать</button>
+            </div>
+            <div class="path-entry">
+              <svg viewBox="0 0 20 20"><path d="M3 6h5l2 2h7v8H3z"/></svg>
+              <input id="dlc-path" type="text" autocomplete="off" spellcheck="false" placeholder="C:\Games\Название игры" />
+              <button class="scan-button" id="dlc-scan-button"><span>Определить</span><svg viewBox="0 0 20 20"><circle cx="9" cy="9" r="5"/><path d="M13 13l4 4"/></svg></button>
+            </div>
+          </section></details>
+
+          <div id="dlc-workspace" class="hidden">
+            <div class="dlc-detail-toolbar"><button class="dlc-button" id="dlc-back">← <span>К списку игр</span></button><span id="dlc-detail-path"></span></div>
+            <section class="premium-panel game-panel">
+              <div class="game-cover"><img id="dlc-banner" alt="Обложка игры"/><div class="cover-fallback" id="dlc-cover-fallback">CG</div><span class="game-state" id="dlc-state">CLEAN</span></div>
+              <div class="game-summary">
+                <div class="game-title-row"><div><span>ОБНАРУЖЕННАЯ ИГРА</span><h2 id="dlc-title">Название игры</h2></div><button class="icon-button" id="dlc-rescan-button" title="Повторить определение"><svg viewBox="0 0 20 20"><path d="M16 7a7 7 0 10.4 5M16 3v4h-4"/></svg></button></div>
+                <div class="metadata-grid">
+                  <div><small>APP ID</small><strong id="dlc-appid-value">—</strong></div>
+                  <div><small>БИБЛИОТЕКА</small><strong id="dlc-api-value">—</strong></div>
+                  <div><small>ДОПОЛНЕНИЙ</small><strong id="dlc-count-value">—</strong></div>
+                  <div><small>ИСТОЧНИК</small><strong id="dlc-source-value">—</strong></div>
+                </div>
+                <div class="manual-search"><svg viewBox="0 0 20 20"><circle cx="8" cy="8" r="5"/><path d="M12 12l5 5"/></svg><input id="dlc-manual-query" placeholder="Игра определилась неверно? Введите название…"/><button id="dlc-manual-button">Найти в Steam</button></div>
+              </div>
+            </section>
+
+            <section class="premium-panel dlc-method-panel">
+              <div class="dlc-panel-heading"><div><span class="coming-label">СПОСОБ УСТАНОВКИ</span><h3>Выберите анлокер</h3></div></div>
+              <div class="dlc-method-switch" role="group" aria-label="Способ установки">
+                <button class="dlc-method active" data-dlc-method="cream" aria-pressed="true"><span>🔑</span><div><strong>CreamAPI</strong><small>Сохранение оригинала Steam API и восстановление при удалении.</small></div></button>
+                <button class="dlc-method" data-dlc-method="smaki" aria-pressed="false"><span>🧩</span><div><strong>SmokeAPI</strong><small>Прокси рядом с EXE. Библиотеки Steam не изменяются.</small></div></button>
+              </div>
+              <div class="dlc-smaki-options hidden" id="dlc-smaki-options">
+                <label class="dlc-exe-field"><strong>Исполняемый файл игры</strong><select id="dlc-exe-select" aria-label="Исполняемый файл игры"></select><small>Выберите EXE, который запускает саму игру, а не установщик или лаунчер.</small></label>
+                <div><strong>Прокси-DLL</strong><div class="dlc-proxy-switch" role="group" aria-label="Прокси-DLL"><button class="dlc-button active" data-dlc-proxy="version.dll" aria-pressed="true">version.dll</button><button class="dlc-button" data-dlc-proxy="winhttp.dll" aria-pressed="false">winhttp.dll</button><button class="dlc-button" data-dlc-proxy="winmm.dll" aria-pressed="false">winmm.dll</button></div></div>
+                <div class="dlc-destination"><span>📁</span><div><strong>Файл будет установлен рядом с EXE</strong><code id="dlc-proxy-destination">—</code></div></div>
+                <p class="dlc-method-note" id="dlc-smaki-note"></p>
+              </div>
+              <p class="dlc-method-note">Для смены способа сначала удалите установленный анлокер.</p>
+              <p class="dlc-method-note dlc-conflict hidden" id="dlc-method-conflict" role="status"></p>
+            </section>
+
+            <div class="save-stats">
+              <article class="premium-panel save-stat"><small>ДОПОЛНЕНИЙ НАЙДЕНО</small><strong id="dlc-total-count">0</strong><span>Steam Store и локальный кэш</span></article>
+              <article class="premium-panel save-stat"><small>БУДЕТ ВКЛЮЧЕНО</small><strong id="dlc-selected-count">0</strong><span>попадёт в разблокировку</span></article>
+              <article class="premium-panel save-stat"><small>БИБЛИОТЕК</small><strong id="dlc-target-count">0</strong><span>steam_api для подмены</span></article>
+            </div>
+
+            <section class="premium-panel save-browser">
+              <div class="save-browser-header">
+                <div><span class="coming-label">КАТАЛОГ ДОПОЛНЕНИЙ</span><h3>Список DLC</h3><p>Оставьте включённым «Разблокировать все» либо снимите отметки с ненужных дополнений.</p></div>
+                <div class="save-selection-actions">
+                  <input id="dlc-search" placeholder="Поиск по названию или ID" />
+                  <button class="ghost-button" id="dlc-toggle-selection">Снять выделение</button>
+                </div>
+              </div>
+              <label class="dlc-unlock-all">
+                <span class="setting-icon"><svg viewBox="0 0 24 24"><path d="M5 10h14v10H5zM8 10V7a4 4 0 018 0"/></svg></span>
+                <span class="setting-copy"><b>Разблокировать все</b><small>Включить все найденные дополнения. Выключите, чтобы выбрать DLC вручную.</small></span>
+                <span class="switch"><input type="checkbox" id="dlc-unlock-all" checked /><i></i></span>
+              </label>
+              <div class="dlc-catalog-status"><span id="dlc-catalog-status" role="status"></span><button class="dlc-button" id="dlc-catalog-retry">↻ <span>Повторить сканирование DLC</span></button></div>
+              <div class="save-empty" id="dlc-empty">
+                <span><svg viewBox="0 0 32 32"><path d="M7 13h18v14H7zM11 13V9a5 5 0 0110 0M16 19v3"/></svg></span>
+                <h3>Каталог ещё не загружен</h3>
+                <p>Определите игру, чтобы загрузить список её дополнений.</p>
+              </div>
+              <div class="dlc-catalog hidden" id="dlc-catalog"></div>
+            </section>
+
+            <section class="premium-panel configuration-panel" id="dlc-cream-options">
+              <div class="section-heading"><span class="step-index">02</span><div><h3>Дополнительно</h3><p>Совместимость с играми, проверяющими подпись библиотеки.</p></div></div>
+              <div class="setting-grid">
+                <label class="setting-card"><span class="setting-icon"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 5-3 8-7 9-4-1-7-4-7-9V7z"/></svg></span><span class="setting-copy"><b>Extra Protection</b><small>Обход проверки целостности steam_api</small></span><span class="switch"><input type="checkbox" id="dlc-extra-protection"/><i></i></span></label>
+              </div>
+            </section>
+
+            <section class="action-dock premium-panel">
+              <div><span class="action-ready"><i></i>УСТАНОВКА</span><p id="dlc-install-note">Оригинальная библиотека Steam сохраняется и восстанавливается при удалении.</p></div>
+              <div class="action-buttons"><button class="dlc-button hidden" id="dlc-uninstall-button">Удалить анлокер</button><button class="dlc-button dlc-install-action" id="dlc-install-button" disabled><span>Установить DLC Unlocker</span><svg viewBox="0 0 20 20"><path d="M4 10h12M11 5l5 5-5 5"/></svg></button></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-saves" data-view-panel="saves">
+        <div class="saves-layout">
+          <section class="premium-panel saves-hero">
+            <div>
+              <span class="hero-kicker">MODULE 02</span>
+              <h2>Менеджер сохранений</h2>
+              <p>Поиск игрового прогресса в стандартных папках Windows, игровых движков, Steam и распространённых эмуляторов.</p>
+            </div>
+            <button class="install-button" id="scan-saves-button"><span>Найти сохранения</span><svg viewBox="0 0 20 20"><circle cx="9" cy="9" r="5"/><path d="M13 13l4 4"/></svg></button>
+          </section>
+
+          <div class="save-stats">
+            <article class="premium-panel save-stat"><small>НАЙДЕНО ПАПОК</small><strong id="save-location-count">0</strong><span>источников прогресса</span></article>
+            <article class="premium-panel save-stat"><small>ВСЕГО ФАЙЛОВ</small><strong id="save-file-count">0</strong><span>готово к резервированию</span></article>
+            <article class="premium-panel save-stat"><small>ОБЩИЙ РАЗМЕР</small><strong id="save-total-size">0 Б</strong><span>до сжатия архива</span></article>
+          </div>
+
+          <section class="premium-panel save-browser">
+            <div class="save-browser-header">
+              <div><span class="coming-label">НАЙДЕННЫЕ ДАННЫЕ</span><h3>Папки сохранений</h3><p>Снимите отметку с папок, которые не нужно добавлять в архив.</p></div>
+              <div class="save-selection-actions"><button class="ghost-button" id="save-toggle-selection">Выделить все</button></div>
+            </div>
+            <div class="save-empty" id="save-empty">
+              <span><svg viewBox="0 0 32 32"><path d="M5 9h9l3 3h10v14H5z"/><path d="M8 6h12v6"/></svg></span>
+              <h3>Сканирование ещё не запускалось</h3>
+              <p>Нажмите «Найти сохранения», чтобы проверить популярные расположения.</p>
+            </div>
+            <div class="save-list hidden" id="save-list"></div>
+          </section>
+
+          <section class="premium-panel save-archive-dock">
+            <div class="save-archive-copy"><span class="action-ready"><i></i>РЕЗЕРВНОЕ КОПИРОВАНИЕ</span><p>Создайте архив или восстановите его — сохранения автоматически попадут в исходные папки.</p></div>
+            <label class="archive-format"><span>Формат</span><select id="save-format"><option value="zip">ZIP · рекомендуется</option><option value="rar">RAR · требуется WinRAR</option></select></label>
+            <div class="save-archive-actions">
+              <button class="ghost-button" id="restore-save-archive"><span>Восстановить архив</span></button>
+              <button class="install-button" id="create-save-archive" disabled><span>Создать архив</span><svg viewBox="0 0 20 20"><path d="M4 4h12v12H4zM7 4v5h6V4M7 13h6"/></svg></button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="view-lua" data-view-panel="lua">
+        <div class="saves-layout">
+          <section class="premium-panel saves-hero">
+            <div>
+              <span class="hero-kicker">MODULE 04</span>
+              <h2>CrocLua</h2>
+              <p>Добавляйте игры прямо в библиотеку Steam. Перетащите файлы <code>.lua</code>, <code>.manifest</code> или <code>.zip</code> — программа сама разложит их по нужным папкам Steam. Затем перезапустите Steam, и игра появится в клиенте.</p>
+            </div>
+            <button class="install-button" id="lua-restart-button"><span>Перезапустить Steam</span><svg viewBox="0 0 20 20"><path d="M16 6a7 7 0 10.5 5M16 3v3.5h-3.5"/></svg></button>
+          </section>
+
+          <div class="lua-status-grid">
+            <article class="premium-panel save-stat"><small>LUA НА БОРТУ</small><strong id="lua-count">0</strong><span>добавлено через программу</span></article>
+            <article class="premium-panel lua-steam-card">
+              <small>РАСПОЛОЖЕНИЕ STEAM</small>
+              <div class="lua-steam-row">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8l6 2-4 5-4-1z"/></svg>
+                <input id="lua-steam-path" type="text" spellcheck="false" placeholder="Steam не найден" />
+                <button class="ghost-button" id="lua-steam-browse">Изменить</button>
+              </div>
+              <span id="lua-steam-hint">Определяется автоматически из реестра</span>
+            </article>
+          </div>
+
+          <section class="premium-panel millennium-panel">
+            <div class="millennium-plugin-icon" aria-hidden="true">🐊</div>
+            <div class="millennium-plugin-copy">
+              <div class="millennium-plugin-heading">
+                <span class="coming-label">ПЛАГИН MILLENNIUM</span>
+                <span class="millennium-plugin-badge checking" id="millennium-plugin-badge">Проверка…</span>
+              </div>
+              <h3>Crocodile Manifest</h3>
+              <p>Добавляет кнопку «Получить манифест» на страницы игр в магазине Steam и автоматически размещает полученные файлы в нужных папках.</p>
+            </div>
+            <div class="millennium-plugin-actions">
+              <button class="secondary-button hidden" id="millennium-site-button">Установить Millennium</button>
+              <button class="install-button hidden" id="millennium-install-button" disabled><span>Проверка…</span></button>
+              <button class="uninstall-button hidden" id="millennium-remove-button">Удалить</button>
+            </div>
+          </section>
+
+          <section class="premium-panel path-panel lua-find-panel">
+            <div class="section-heading">
+              <span class="step-index">01</span>
+              <div><h3>Найдите и получите игру</h3><p>Введите название или AppID — выберите игру, и манифесты автоматически попадут в нужные папки Steam.</p></div>
+              <div class="lua-heading-tools">
+                <span class="hubcap-limit-badge hidden" id="hubcap-limit-badge">HubCap: 0/25 · осталось 25</span>
+                <label class="lua-autoupdate"><span class="switch"><input type="checkbox" id="lua-auto-update" checked /><i></i></span><small>Автообновление игр</small></label>
+              </div>
+            </div>
+            <div class="lua-search-wrap">
+              <div class="path-entry lua-search-entry">
+                <svg viewBox="0 0 20 20"><circle cx="9" cy="9" r="5"/><path d="M13 13l4 4"/></svg>
+                <input id="lua-search-input" type="text" autocomplete="off" spellcheck="false" placeholder="Введите название игры или AppID…" />
+                <span class="lua-search-spin hidden" id="lua-search-spin"></span>
+              </div>
+              <div class="lua-search-dropdown hidden" id="lua-search-dropdown"></div>
+            </div>
+          </section>
+
+          <section class="premium-panel path-panel">
+            <div class="section-heading">
+              <span class="step-index">02</span>
+              <div><h3>Или добавьте файлы вручную</h3><p>Файлы автоматически помещаются в нужные папки Steam (<code>stplug-in</code>, <code>depotcache</code>).</p></div>
+            </div>
+            <div class="drop-zone" id="lua-drop-zone">
+              <span class="folder-illustration"><svg viewBox="0 0 48 48"><path d="M24 8v22M15 22l9 9 9-9"/><path d="M8 34v4a2 2 0 002 2h28a2 2 0 002-2v-4"/></svg></span>
+              <div class="path-copy"><strong>Перетащите сюда .lua, .manifest или .zip</strong><span>они автоматически попадут в нужные папки Steam</span></div>
+              <button class="secondary-button" id="lua-browse-button"><svg viewBox="0 0 20 20"><path d="M3 6h5l2 2h7v8H3z"/></svg>Обзор файлов</button>
+            </div>
+          </section>
+
+          <section class="premium-panel save-browser">
+            <div class="save-browser-header">
+              <div><span class="coming-label">БИБЛИОТЕКА ЗАГРУЗЧИКА</span><h3>Добавленные игры</h3><p>Отключайте, удаляйте или обновляйте список. После изменений перезапустите Steam.</p></div>
+              <div class="save-selection-actions"><button class="ghost-button" id="lua-refresh-button">Обновить</button></div>
+            </div>
+            <div class="save-empty" id="lua-empty">
+              <span><svg viewBox="0 0 32 32"><path d="M16 5l9 4v7c0 6-4 9.5-9 11-5-1.5-9-5-9-11V9z"/><path d="M12 16l3 3 5-5"/></svg></span>
+              <h3>Пока ничего не добавлено</h3>
+              <p>Перетащите файлы игры выше, чтобы добавить её в Steam.</p>
+            </div>
+            <div class="lua-games hidden" id="lua-games"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="view-hypervisor" data-view-panel="hypervisor">
+        <div class="hv-module-tabs" role="tablist" aria-label="Разделы модуля 05">
+          <button class="active" data-hv-tab="hypervisor" role="tab" aria-selected="true"><span>🛡️</span>Гипервизор</button>
+          <button data-hv-tab="anticheat" role="tab" aria-selected="false"><span>🔎</span>Античиты</button>
+          <button data-hv-tab="vbs" role="tab" aria-selected="false"><span>🛡️</span>VBS</button>
+        </div>
+        <div class="hv-tab-panel active" data-hv-tab-panel="hypervisor">
+          <div class="hv-layout">
+          <section class="premium-panel hv-hero">
+            <div class="hv-hero-copy">
+              <span class="hero-kicker">MODULE 05</span>
+              <h2>Гипервизор</h2>
+              <p>Добавляйте EXE игр, выбирайте профиль KVC или DRV и запускайте подготовленную конфигурацию из одного окна.</p>
+              <div class="hv-warning"><span>!</span><p>Профили работают с системными компонентами Windows. Перед запуском сохраните важные данные: несовместимый драйвер может привести к перезагрузке или BSOD.</p></div>
+            </div>
+            <div class="hv-hero-actions">
+              <button class="hv-control-button" id="hv-help-button"><span class="hv-help-icon">?</span><span>Подсказки</span></button>
+              <button class="hv-add-button" id="hv-add-game"><span class="hv-add-icon">＋</span><span>Добавить игру</span></button>
+            </div>
+          </section>
+
+          <div class="hv-stats">
+            <article class="premium-panel hv-stat"><small>ИГР В БИБЛИОТЕКЕ</small><strong id="hv-games-count">0</strong><span>добавлено в модуль</span></article>
+            <article class="premium-panel hv-stat"><small>ГОТОВНОСТЬ</small><strong id="hv-ready-status">Нет игры</strong><span>файлы выбранного профиля</span></article>
+            <article class="premium-panel hv-stat"><small>ПРАВА ЗАПУСКА</small><strong id="hv-admin-status">Проверка</strong><span>UAC будет запрошен при необходимости</span></article>
+          </div>
+
+          <section class="premium-panel hv-selected-panel">
+            <div class="hv-selected-icon" aria-label="Гипервизор">🛡️</div>
+            <div class="hv-selected-copy">
+              <span class="coming-label">ВЫБРАННАЯ ИГРА</span>
+              <h3 id="hv-selected-title">Игра не выбрана</h3>
+              <p id="hv-selected-path">Добавьте исполняемый файл игры.</p>
+              <div class="hv-selected-meta"><span id="hv-selected-profile">Профиль: —</span><b id="hv-selected-state">Нет игры</b></div>
+            </div>
+            <div class="hv-selected-actions">
+              <div class="hv-selected-profiles" id="hv-selected-profiles"></div>
+              <button class="hv-check-button" id="hv-selected-verify" disabled><svg viewBox="0 0 20 20"><path d="M15.5 6.5A6.5 6.5 0 105 15M15.5 3v3.8h-3.8"/></svg><span>Проверить</span></button>
+              <button class="hv-launch-button" id="hv-launch-button" disabled><span class="hv-play">▶</span><span>Запустить</span></button>
+            </div>
+          </section>
+
+          <div class="hv-workspace">
+            <section class="premium-panel hv-library-panel">
+              <div class="save-browser-header hv-panel-header">
+                <div><span class="coming-label">БИБЛИОТЕКА</span><h3>Добавленные игры</h3><p>Выберите игру и назначьте ей профиль запуска.</p></div>
+                <span class="required-chip" id="hv-library-count">0 игр</span>
+              </div>
+              <div class="hv-empty" id="hv-empty"><span>＋</span><h3>Библиотека пустая</h3><p>Нажмите «Добавить EXE» и выберите исполняемый файл игры.</p></div>
+              <div class="hv-game-list hidden" id="hv-game-list"></div>
+            </section>
+
+            <div class="hv-side-stack">
+              <section class="premium-panel hv-log-panel">
+                <div class="hv-panel-title"><div><span class="coming-label">LIVE LOG</span><h3>Журнал операций</h3></div><div><button class="ghost-button" id="hv-copy-log">Копировать</button><button class="ghost-button" id="hv-clear-log">Очистить</button></div></div>
+                <div class="hv-log" id="hv-log" role="log" aria-live="polite"></div>
+              </section>
+              <section class="premium-panel hv-steps-panel">
+                <div class="hv-panel-title"><div><span class="coming-label">СЦЕНАРИЙ</span><h3>Что делает запуск</h3></div><b id="hv-run-state">Ожидание</b></div>
+                <div class="hv-steps" id="hv-steps"></div>
+              </section>
+            </div>
+          </div>
+          </div>
+        </div>
+
+        <div class="hv-tab-panel" data-hv-tab-panel="anticheat">
+          <div class="ac-layout">
+            <section class="premium-panel ac-hero">
+              <div class="ac-hero-icon">🔎</div>
+              <div class="ac-hero-copy">
+                <span class="hero-kicker">SYSTEM SCANNER</span>
+                <h2>Античиты</h2>
+                <p>Поиск установленных служб, драйверов, папок и записей популярных античитов. Перед очисткой создаётся локальная резервная копия.</p>
+              </div>
+              <div class="ac-hero-actions">
+                <button class="ac-scan-button" id="ac-scan-button"><span>⌕</span>Сканировать</button>
+                <button class="ac-remove-all hidden" id="ac-remove-all"><span>🗑</span>Удалить найденные <b id="ac-remove-count">0</b></button>
+              </div>
+            </section>
+
+            <div class="ac-stats">
+              <article class="premium-panel"><small>ПРОВЕРЯЕТСЯ</small><strong id="ac-supported-count">12</strong><span>популярных систем защиты</span></article>
+              <article class="premium-panel"><small>ОБНАРУЖЕНО</small><strong id="ac-detected-count">—</strong><span>компонентов в системе</span></article>
+              <article class="premium-panel"><small>СОСТОЯНИЕ</small><strong id="ac-status">Готово</strong><span id="ac-status-detail">нажмите «Сканировать»</span></article>
+            </div>
+
+            <section class="premium-panel ac-results-panel">
+              <div class="ac-results-header">
+                <div><span class="coming-label">РЕЗУЛЬТАТЫ</span><h3>Системные компоненты</h3><p>Удаляются только заранее известные записи и пути выбранного античита.</p></div>
+                <span class="ac-scan-time" id="ac-scan-time">Сканирование ещё не выполнялось</span>
+              </div>
+              <div class="ac-loading hidden" id="ac-loading"><span></span><strong>Проверяем систему</strong><p>Читаем службы, реестр и известные директории.</p></div>
+              <div class="ac-list" id="ac-list"></div>
+            </section>
+
+            <section class="premium-panel ac-log-panel hidden" id="ac-log-panel">
+              <div><span class="coming-label">ОТЧЁТ</span><h3>Результат очистки</h3></div>
+              <pre id="ac-log"></pre>
+            </section>
+          </div>
+        </div>
+
+        <div class="hv-tab-panel" data-hv-tab-panel="vbs">
+          <div class="vbs-layout">
+            <section class="premium-panel vbs-hero">
+              <div class="vbs-hero-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 3 5.5 5.7v5.5c0 4.4 2.7 7.8 6.5 9.8 3.8-2 6.5-5.4 6.5-9.8V5.7L12 3Z"/><path d="m9.2 12 1.8 1.8 3.9-4.1"/></svg>
+              </div>
+              <div class="vbs-hero-copy">
+                <span class="hero-kicker">WINDOWS SECURITY</span>
+                <h2>VBS</h2>
+              </div>
+              <div class="vbs-hero-actions">
+                <button class="vbs-scan-button" id="vbs-scan-button"><span>⌕</span>Сканировать</button>
+                <button class="vbs-enable-button hidden" id="vbs-enable-button">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 5.5 5.7v5.5c0 4.4 2.7 7.8 6.5 9.8 3.8-2 6.5-5.4 6.5-9.8V5.7L12 3Z"/><path d="M8.7 12h6.6M12 8.7v6.6"/></svg>
+                  Включить визор
+                </button>
+                <button class="vbs-disable-button hidden" id="vbs-disable-button">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 5.5 5.7v5.5c0 4.4 2.7 7.8 6.5 9.8 3.8-2 6.5-5.4 6.5-9.8V5.7L12 3Z"/><path d="M8.7 12h6.6"/></svg>
+                  <span id="vbs-disable-label">Выключить визор</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="premium-panel vbs-test-notice">
+              <span aria-hidden="true">🧪</span>
+              <div>
+                <h3>Тестовый режим</h3>
+                <p>Для запуска игры в тестовом режиме отключите Secure Boot в BIOS/UEFI. После включения или выключения режима требуется обычная перезагрузка Windows.</p>
+                <p id="vbs-test-status">Состояние определится после сканирования.</p>
+              </div>
+              <button class="vbs-test-button" id="vbs-test-button" disabled>
+                <span aria-hidden="true">🧪</span>
+                <span id="vbs-test-label">Включить тестовый</span>
+              </button>
+            </section>
+
+            <section class="premium-panel vbs-dse-card" id="vbs-dse-card">
+              <div>
+                <span class="coming-label">DRIVER SIGNATURE ENFORCEMENT (DSE)</span>
+                <h3 id="vbs-dse-label">Проверка состояния</h3>
+                <p id="vbs-dse-detail">Нажмите «Сканировать», чтобы проверить Code Integrity.</p>
+              </div>
+              <span class="vbs-dse-badge" id="vbs-dse-badge">DSE TEST</span>
+            </section>
+
+            <section class="premium-panel vbs-components-panel">
+              <div class="vbs-components-header">
+                <div><span class="coming-label">КОМПОНЕНТЫ VBS</span><h3>Системная защита</h3><p>Отключаются только активные параметры. Исходное состояние сохраняется для отката.</p></div>
+                <span class="vbs-scan-time" id="vbs-scan-time">Сканирование ещё не выполнялось</span>
+              </div>
+              <div class="vbs-loading hidden" id="vbs-loading"><span></span><strong>Проверяем Windows</strong><p>Читаем Device Guard, Code Integrity, Secure Boot и параметры загрузки.</p></div>
+              <div class="vbs-components" id="vbs-components"></div>
+            </section>
+
+            <section class="premium-panel vbs-warning-panel hidden" id="vbs-warning-panel">
+              <div class="vbs-warning-icon">!</div>
+              <div><span class="coming-label">ВАЖНО</span><h3>Перед изменением параметров</h3><div id="vbs-warnings"></div></div>
+            </section>
+
+            <section class="premium-panel vbs-log-panel hidden" id="vbs-log-panel">
+              <div><span class="coming-label">ОТЧЁТ</span><h3>Результат операции</h3></div>
+              <pre id="vbs-log"></pre>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-files" data-view-panel="files">
+        <div class="files-layout">
+          <section class="premium-panel files-hero">
+            <div class="files-hero-icon">📦</div>
+            <div class="files-hero-copy">
+              <span class="hero-kicker">MODULE 06</span>
+              <h2>Кряки</h2>
+              <p>Актуальные кряки из каталога Пиратской Станции с загрузкой прямо внутри приложения.</p>
+            </div>
+            <div class="files-hero-stats">
+              <div><small>ВСЕГО ФАЙЛОВ</small><strong id="files-total">—</strong></div>
+            </div>
+          </section>
+
+          <section class="premium-panel files-catalog">
+            <div class="files-toolbar">
+              <div>
+                <span class="coming-label">КАТАЛОГ</span>
+                <h3>Доступные файлы</h3>
+                <p id="files-status">Загрузка списка из Gist…</p>
+              </div>
+              <div class="files-toolbar-actions">
+                <label class="files-search"><svg viewBox="0 0 20 20"><circle cx="8" cy="8" r="5"/><path d="M12 12l5 5"/></svg><input id="files-search" type="text" placeholder="Найти файл…" autocomplete="off" spellcheck="false"/></label>
+                <button class="files-refresh" id="files-refresh"><svg viewBox="0 0 20 20"><path d="M15.5 6.5A6.5 6.5 0 105 15M15.5 3v3.8h-3.8"/></svg><span>Обновить список</span></button>
+              </div>
+            </div>
+
+            <div class="files-loading" id="files-loading"><span></span><strong>Получаем каталог</strong><p>Подключаемся к Gist и проверяем список файлов.</p></div>
+            <div class="files-featured hidden" id="files-featured">
+              <div class="files-featured-heading"><span>ЗАКРЕПЛЕНО</span><strong>Основные загрузки</strong></div>
+              <div class="files-grid files-featured-grid" id="files-featured-grid"></div>
+            </div>
+            <div class="files-regular-divider hidden" id="files-regular-divider"><span>Остальной каталог</span></div>
+            <div class="files-empty hidden" id="files-empty"><span>📂</span><strong>Кряки не найдены</strong><p>Измените поисковый запрос или обновите каталог.</p></div>
+            <div class="files-grid hidden" id="files-grid"></div>
+
+            <div class="files-pagination hidden" id="files-pagination">
+              <button id="files-prev" aria-label="Предыдущая страница"><span>←</span> Назад</button>
+              <div id="files-pages"></div>
+              <span id="files-page-state">Страница 1 из 1</span>
+              <button id="files-next" aria-label="Следующая страница">Вперёд <span>→</span></button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="view-utilities" data-view-panel="utilities">
+        <div class="utilities-layout">
+          <section class="premium-panel utilities-hero">
+            <div class="utilities-hero-icon">🧰</div>
+            <div class="utilities-hero-copy">
+              <span class="hero-kicker">MODULE 07</span>
+              <h2>Утилиты</h2>
+            </div>
+          </section>
+
+          <section class="utilities-grid" aria-label="Доступные утилиты">
+            <button class="premium-panel utility-card" data-utility-url="https://disk.yandex.ru/d/Zaooz-_MpUyVBQ" data-utility-name="CirnoDownloader">
+              <span class="utility-card-icon">❄️</span>
+              <span class="utility-card-copy"><small>ЗАГРУЗЧИК</small><strong>CirnoDownloader</strong><span>Открыть страницу программы в браузере</span></span>
+              <span class="utility-card-open">Открыть <b>↗</b></span>
+            </button>
+            <button class="premium-panel utility-card" data-utility-url="https://disk.yandex.ru/d/yCCGiKJ67GomHQ" data-utility-name="Sigma">
+              <span class="utility-card-icon">Σ</span>
+              <span class="utility-card-copy"><small>ЗАГРУЗЧИК</small><strong>Sigma</strong><span>Открыть страницу программы в браузере</span></span>
+              <span class="utility-card-open">Открыть <b>↗</b></span>
+            </button>
+            <button class="premium-panel utility-card" data-utility-url="https://disk.yandex.ru/d/vXtjTTzwlGP7xw" data-utility-name="Zapret2">
+              <span class="utility-card-icon">🌐</span>
+              <span class="utility-card-copy"><small>СЕТЕВАЯ УТИЛИТА</small><strong>Zapret2</strong><span>Открыть страницу программы в браузере</span></span>
+              <span class="utility-card-open">Открыть <b>↗</b></span>
+            </button>
+          </section>
+
+          <section class="premium-panel utilities-guide">
+            <h3>КАК ЗАПУСТИТЬ CIRNODOWNLOADER И SIGMAGUI С ZAPRET2</h3>
+            <div class="utilities-guide-step">
+              <strong>① Скачайте Zapret2</strong>
+              <p>→ Скачайте файл и установите программу.</p>
+            </div>
+            <div class="utilities-guide-step">
+              <strong>② Запустите Zapret2</strong>
+              <p>→ После установки откройте Zapret2 (НЕ запускайте ZapretHUB!).<br>Так программа будет работать правильно.</p>
+            </div>
+            <div class="utilities-guide-step">
+              <strong>③ Настройка пресетов</strong>
+              <p>→ В интерфейсе перейдите во вкладку «Мои пресеты».<br>→ Внизу выберите пресет, желательно тот, где есть ALT<br>(это повысит шансы).</p>
+            </div>
+            <div class="utilities-guide-step">
+              <strong>④ Попробуйте войти в CirnoDownloader / SigmaGUI</strong>
+              <p>→ После выбора пресета попробуйте запустить загрузчик.<br>→ Если ничего не загрузилось:<br>&nbsp;&nbsp;&nbsp;&nbsp;1) Вернитесь в «Мои пресеты»<br>&nbsp;&nbsp;&nbsp;&nbsp;2) Выберите другой пресет<br>&nbsp;&nbsp;&nbsp;&nbsp;3) Попробуйте снова</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="view-settings" data-view-panel="settings">
+        <div class="settings-layout">
+          <section class="premium-panel settings-card appearance-card"><span class="coming-label">ИНТЕРФЕЙС</span><h2>Внешний вид</h2><p>Выберите цвет светового акцента. Настройка сохраняется локально.</p><div class="accent-picker"><button class="accent active" data-accent="mint" style="--swatch:#63f5c2"></button><button class="accent" data-accent="violet" style="--swatch:#a987ff"></button><button class="accent" data-accent="blue" style="--swatch:#5ca8ff"></button><button class="accent" data-accent="rose" style="--swatch:#ff739d"></button></div><div class="language-setting"><div><strong>Язык интерфейса</strong><small>Меняется моментально без перезапуска</small></div><div class="language-picker" role="group" aria-label="Язык интерфейса"><button class="active" data-language="ru">Русский</button><button data-language="en">English</button></div></div></section>
+
+          <section class="premium-panel settings-card svc-card">
+            <span class="coming-label">CROCLUA</span><h2>Сервис манифестов</h2>
+            <p>Откуда искать и получать манифесты для вкладки CrocLua.</p>
+            <div class="svc-options">
+              <button class="svc-option active" data-service="ryuu">
+                <strong>Ryuu</strong><small>Ключ уже встроен — ничего вводить не нужно</small>
+              </button>
+              <button class="svc-option" data-service="hubcap">
+                <strong>HubCap</strong><small>Нужен свой API-ключ с их сайта</small>
+              </button>
+            </div>
+            <div class="svc-key hidden" id="svc-key-block">
+              <label>API-ключ HubCap</label>
+              <input id="hubcap-key" type="password" autocomplete="off" spellcheck="false" placeholder="smm_…" />
+              <div class="svc-key-row">
+                <button class="ghost-button" id="hubcap-key-get">Получить ключ</button>
+                <span id="hubcap-key-status"></span>
+              </div>
+              <div class="hubcap-usage" id="hubcap-usage">
+                <div><span>Использовано сегодня</span><b id="hubcap-usage-used">0/25</b></div>
+                <div><span>Осталось скачиваний</span><b id="hubcap-usage-remaining">25</b></div>
+                <small id="hubcap-usage-status">Добавьте ключ для синхронизации</small>
+          </div>
+        </div>
+
+      </section>
+
+          <section class="premium-panel settings-card update-card">
+            <span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>Обновления</h2>
+            <p>Проверка новых версий через официальный репозиторий Crocodile Gena Studio.</p>
+            <div class="about-row"><span>Текущая версия</span><b id="update-current-version">5.1.0</b></div>
+            <div class="update-actions">
+              <button class="ghost-button" id="check-update-button">Проверить обновления</button>
+              <span id="update-status">Проверка ещё не выполнялась</span>
+            </div>
+            <div class="update-download-actions hidden" id="update-download-actions">
+              <button class="ghost-button hidden" id="download-portable-button">Скачать EXE</button>
+              <button class="ghost-button hidden" id="download-installer-button">Скачать Setup</button>
+            </div>
+          </section>
+
+          <section class="premium-panel settings-card"><span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>О программе</h2><div class="about-row"><span>Версия</span><b>5.1.0</b></div><div class="about-row"><span>Назначение</span><b>Игровые инструменты</b></div><div class="about-row"><span>Активные модули</span><b>Online Fix · Сохранения · DLC · CrocLua · Гипервизор · Кряки · Утилиты</b></div></section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="modal-backdrop">
+    <div class="modal premium-panel"><div class="modal-symbol" id="modal-symbol">!</div><h3 id="modal-title">Подтверждение</h3><p id="modal-message"></p><div class="modal-actions"><button class="secondary-button" id="modal-cancel">Отмена</button><button class="install-button" id="modal-confirm">Продолжить</button></div></div>
+  </div>
+  <div class="modal-backdrop hidden" id="lua-detail-backdrop">
+    <div class="lua-detail premium-panel">
+      <button class="lua-detail-close" id="lua-detail-close" aria-label="Закрыть"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+      <div class="lua-detail-cover"><img id="lua-detail-banner" alt=""/><span class="lua-cover-fallback" id="lua-detail-fallback"></span></div>
+      <div class="lua-detail-body">
+        <h2 id="lua-detail-name">Игра</h2>
+        <div class="lua-detail-meta">
+          <span>App ID · <b id="lua-detail-appid">—</b></span>
+          <span id="lua-detail-added"></span>
+          <span id="lua-detail-released"></span>
+        </div>
+        <div class="lua-detail-section">
+          <div class="lua-detail-heading"><span class="lua-dot on"></span><h3>Разблокированные DLC <b id="lua-detail-in-count">(0)</b></h3></div>
+          <div class="lua-depot-list" id="lua-detail-in"></div>
+        </div>
+        <div class="lua-detail-section">
+          <div class="lua-detail-heading"><span class="lua-dot off"></span><h3>Отсутствующие DLC <b id="lua-detail-missing-count">(0)</b></h3></div>
+          <p class="lua-detail-note">Есть в Steam, но не разблокированы вашим lua (часто цензурированные или недоступные DLC).</p>
+          <div class="lua-depot-list" id="lua-detail-missing"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="toast-stack" id="toast-stack"></div>
+  <script src="./i18n.js"></script>
+  <script src="./app.js"></script>
+  <script src="./hypervisor.js"></script>
+  <script src="./anticheat.js"></script>
+  <script src="./vbs.js"></script>
+  <script src="./files.js"></script>
+  <script src="./utilities.js"></script>
+</body>
+</html>
