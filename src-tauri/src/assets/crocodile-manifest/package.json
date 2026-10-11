@@ -1,0 +1,21 @@
+{
+  "name": "crocodile-manifest",
+  "version": "0.4.9",
+  "private": true,
+  "type": "module",
+  "main": "./frontend/index.tsx",
+  "scripts": {
+    "dev": "millennium-ttc --build dev --watch",
+    "build": "millennium-ttc --build prod",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@steambrew/api": "^5.8.4",
+    "@steambrew/client": "^5.8.4",
+    "@steambrew/ttc": "^3.2.6",
+    "@steambrew/webkit": "^5.8.4",
+    "@types/react": "19.1.1",
+    "@types/react-dom": "19.1.1",
+    "typescript": "^5.8.3"
+  }
+}
