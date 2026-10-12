@@ -349,6 +349,7 @@ npm run build -- --bundles nsis
 <div align="center">
 
 **CrocodileGena Studio** • *Разработано с заботой о пользователях* • 2026
+Copyright © 2026 Crocodile Gena Software
 
 [![Telegram Channel](https://img.shields.io/badge/Telegram-Пиратская_Станция-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/piratestationn)
 [![Telegram Support](https://img.shields.io/badge/Telegram-Поддержка_Разработчика-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/crocodilehub2)
