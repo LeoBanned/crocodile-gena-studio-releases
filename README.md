@@ -351,6 +351,6 @@ Copyright © 2026 Crocodile Gena Software
 
 **CrocodileGena Studio** • *Разработано с заботой о пользователях* • 2026
 
-[![Telegram Support](https://img.shields.io/badge/Telegram-Телеграмм_Разработчика-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/crocodilehub2)
+[![Telegram Support](https://img.shields.io/badge/Telegram-Разработчика-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/crocodilehub2)
 
 </div>
