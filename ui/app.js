@@ -96,6 +96,53 @@
     settings: ["ПРИЛОЖЕНИЕ", "Настройки"],
   };
 
+  const moduleNames = ["fix", "saves", "dlc", "lua", "hypervisor", "files", "utilities"];
+  let hiddenModules = new Set();
+  const platformHiddenModules = new Set();
+  try {
+    const stored = JSON.parse(localStorage.getItem("cgs-hidden-modules") || "[]");
+    if (Array.isArray(stored)) hiddenModules = new Set(stored.filter((name) => moduleNames.includes(name)));
+  } catch (_) { /* Ignore an invalid saved preference. */ }
+
+  function applyModuleVisibility() {
+    $$(".nav-item[data-view], [data-open-view]").forEach((item) => {
+      const name = item.dataset.view || item.dataset.openView;
+      item.classList.toggle("module-hidden", hiddenModules.has(name) || platformHiddenModules.has(name));
+    });
+    $$("[data-module-toggle]").forEach((input) => {
+      const unavailable = platformHiddenModules.has(input.dataset.moduleToggle);
+      input.checked = !hiddenModules.has(input.dataset.moduleToggle) && !unavailable;
+      input.disabled = unavailable;
+      input.closest("label")?.classList.toggle("platform-unavailable", unavailable);
+    });
+    const active = $("[data-view-panel].active")?.dataset.viewPanel;
+    if (hiddenModules.has(active) || platformHiddenModules.has(active)) switchView("home");
+  }
+
+  function setModuleVisible(name, visible) {
+    if (!moduleNames.includes(name) || platformHiddenModules.has(name)) return;
+    if (visible) hiddenModules.delete(name);
+    else hiddenModules.add(name);
+    localStorage.setItem("cgs-hidden-modules", JSON.stringify([...hiddenModules]));
+    applyModuleVisibility();
+  }
+
+  async function loadPlatformInfo() {
+    if (!invoke) return;
+    try {
+      const info = await invoke("platform_info");
+      if (!info?.os) return;
+      document.body.dataset.platform = info.os;
+      (info.windowsOnlyModules || []).forEach((name) => platformHiddenModules.add(name));
+      if (!info.windows) {
+        $$(".windows-only").forEach((element) => element.classList.add("hidden"));
+        $("#save-format option[value='rar']")?.remove();
+      }
+    } catch (error) {
+      log(`Платформа: ${errorText(error)}`, "error");
+    }
+  }
+
   function now() {
     return new Date().toLocaleTimeString(window.cgsI18n?.locale?.() || "ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   }
@@ -111,6 +158,7 @@
     entry.append(time, text);
     container.appendChild(entry);
     container.scrollTop = container.scrollHeight;
+    window.dispatchEvent(new CustomEvent("cgs:activity", { detail: { type } }));
   }
 
   function toast(message, type = "success") {
@@ -118,6 +166,7 @@
     item.className = `toast ${type}`;
     item.textContent = message;
     $("#toast-stack").appendChild(item);
+    window.dispatchEvent(new CustomEvent("cgs:activity", { detail: { type } }));
     setTimeout(() => {
       item.style.opacity = "0";
       item.style.transform = "translateX(15px)";
@@ -135,6 +184,26 @@
     return invoke(command, args);
   }
 
+  window.cgsInvokePrivileged = async (command, args = {}, view = "hypervisor") => {
+    if (!invoke) throw new Error("Системный модуль недоступен. Перезапустите приложение.");
+    if (await invoke("process_is_elevated")) return invoke(command, args);
+    const confirmed = await showModal(
+      "Нужны права администратора",
+      "Для этой операции программа перезапустится с повышенными правами. Подтвердите запрос Windows и повторите действие.",
+      { confirm: true, confirmText: "Перезапустить", symbol: "🛡" },
+    );
+    if (!confirmed) throw new Error("Операция отменена");
+    localStorage.setItem("cgs-admin-reopen-view", view);
+    try {
+      await invoke("relaunch_as_admin");
+    } catch (error) {
+      localStorage.removeItem("cgs-admin-reopen-view");
+      throw error;
+    }
+    setTimeout(() => invoke("close_window").catch(() => window.close()), 80);
+    return new Promise(() => {});
+  };
+
   function setBusy(button, busy, label) {
     if (!button) return;
     if (busy) {
@@ -148,17 +217,19 @@
       if (button.dataset.original) button.innerHTML = button.dataset.original;
       delete button.dataset.original;
     }
+    window.dispatchEvent(new CustomEvent("cgs:busy-changed", { detail: { id: button.id, busy } }));
   }
 
   function switchView(name) {
     if (!viewMeta[name]) return;
+    if (hiddenModules.has(name) || platformHiddenModules.has(name)) name = "home";
     $$("[data-view-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.viewPanel === name));
     $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
     $("#page-eyebrow").textContent = viewMeta[name][0];
     $("#page-title").textContent = viewMeta[name][1];
     if (name === "lua") luaRefresh();
     window.dispatchEvent(new CustomEvent("cgs:view-changed", { detail: name }));
-    $(".main-area").scrollTo({ top: 0, behavior: "smooth" });
+    $(".main-area").scrollTo({ top: 0, behavior: window.cgsPersonalization?.motionEnabled() === false ? "auto" : "smooth" });
   }
 
   function showModal(title, message, options = {}) {
@@ -1180,9 +1251,13 @@
     }
   }
 
+  let luaInstalling = false;
+
   async function luaInstall(paths) {
     const files = (paths || []).filter(Boolean);
-    if (!files.length) return;
+    if (!files.length || luaInstalling) return;
+    luaInstalling = true;
+    $("#lua-drop-zone").classList.add("busy");
     log(`CrocLua: добавление файлов — ${files.length}`, "system");
     try {
       const result = await call("luatools_install", {
@@ -1197,6 +1272,9 @@
     } catch (error) {
       log(`Ошибка добавления: ${errorText(error)}`, "error");
       toast(errorText(error), "error");
+    } finally {
+      luaInstalling = false;
+      $("#lua-drop-zone").classList.remove("busy");
     }
   }
 
@@ -1919,6 +1997,14 @@
 
     $$(".nav-item").forEach((item) => item.addEventListener("click", () => switchView(item.dataset.view)));
     $$('[data-open-view]').forEach((item) => item.addEventListener("click", () => switchView(item.dataset.openView)));
+    $$("[data-module-toggle]").forEach((input) => input.addEventListener("change", () => {
+      setModuleVisible(input.dataset.moduleToggle, input.checked);
+    }));
+    $("#show-all-modules").addEventListener("click", () => {
+      hiddenModules.clear();
+      localStorage.setItem("cgs-hidden-modules", "[]");
+      applyModuleVisibility();
+    });
     $("#browse-button").addEventListener("click", chooseDirectory);
     $("#drop-zone").addEventListener("dblclick", chooseDirectory);
     $("#scan-button").addEventListener("click", () => scanDirectory($("#game-path").value));
@@ -2024,7 +2110,7 @@
     ["dragleave", "drop"].forEach((name) => luaDrop.addEventListener(name, (event) => { event.preventDefault(); luaDrop.classList.remove("dragover"); }));
     luaDrop.addEventListener("drop", (event) => {
       const files = [...(event.dataTransfer?.files || [])].map((file) => file.path).filter(Boolean);
-      if (files.length) luaInstall(files);
+      handleFileDrop(files);
     });
     const luaDetail = $("#lua-detail-backdrop");
     $("#lua-detail-close").addEventListener("click", () => luaDetail.classList.add("hidden"));
@@ -2046,8 +2132,7 @@
     ["dragenter", "dragover"].forEach((name) => dlcDrop.addEventListener(name, (event) => { event.preventDefault(); dlcDrop.classList.add("dragover"); }));
     ["dragleave", "drop"].forEach((name) => dlcDrop.addEventListener(name, (event) => { event.preventDefault(); dlcDrop.classList.remove("dragover"); }));
     dlcDrop.addEventListener("drop", (event) => {
-      const path = event.dataTransfer?.files?.[0]?.path;
-      if (path) scanDlcDirectory(path);
+      handleFileDrop([event.dataTransfer?.files?.[0]?.path]);
     });
 
     $("#clear-log").addEventListener("click", () => { $("#activity-log").replaceChildren(); log("Журнал очищен", "system"); });
@@ -2087,34 +2172,68 @@
     ["dragenter", "dragover"].forEach((name) => dropZone.addEventListener(name, (event) => { event.preventDefault(); dropZone.classList.add("dragover"); }));
     ["dragleave", "drop"].forEach((name) => dropZone.addEventListener(name, (event) => { event.preventDefault(); dropZone.classList.remove("dragover"); }));
     dropZone.addEventListener("drop", (event) => {
-      const path = event.dataTransfer?.files?.[0]?.path;
-      if (path) scanDirectory(path);
+      handleFileDrop([event.dataTransfer?.files?.[0]?.path]);
     });
 
     if (tauri?.event?.listen) {
-      tauri.event.listen("tauri://drag-drop", (event) => {
-        const paths = event.payload?.paths || [];
-        const path = paths[0];
-        if (!path) return;
-        if ($("#view-lua").classList.contains("active")) {
-          luaInstall(paths);
-        } else if ($("#view-dlc").classList.contains("active")) {
-          scanDlcDirectory(path);
-        } else {
-          switchView("fix");
-          scanDirectory(path);
-        }
+      tauri.event.listen("tauri://drag-drop", (event) => handleFileDrop(event.payload?.paths))
+        .catch((error) => log(`Перетаскивание: ${errorText(error)}`, "error"));
+      tauri.event.listen("tauri://drag-enter", () => {
+        const zone = activeDropZone();
+        if (zone) zone.classList.add("dragover");
       }).catch(() => {});
-      tauri.event.listen("tauri://drag-enter", () => dropZone.classList.add("dragover")).catch(() => {});
-      tauri.event.listen("tauri://drag-leave", () => dropZone.classList.remove("dragover")).catch(() => {});
+      tauri.event.listen("tauri://drag-leave", clearDropHighlights).catch(() => {});
     }
   }
 
-  function boot() {
+  function activeDropZone() {
+    if ($("#view-lua").classList.contains("active")) return $("#lua-drop-zone");
+    if ($("#view-dlc").classList.contains("active")) return $("#dlc-drop-zone");
+    if ($("#view-fix").classList.contains("active")) return $("#drop-zone");
+    return null;
+  }
+
+  function clearDropHighlights() {
+    ["#drop-zone", "#lua-drop-zone", "#dlc-drop-zone"].forEach((selector) => $(selector).classList.remove("dragover"));
+  }
+
+  let lastDropKey = "";
+  let lastDropAt = 0;
+
+  async function handleFileDrop(input) {
+    clearDropHighlights();
+    const paths = [...new Set((input || []).filter((path) => typeof path === "string" && path.trim()))];
+    if (!paths.length) return;
+    const active = $("[data-view-panel].active")?.dataset.viewPanel;
+    const key = `${active}:${paths.map((path) => path.toLowerCase()).sort().join("\n")}`;
+    const stamp = Date.now();
+    if (key === lastDropKey && stamp - lastDropAt < 1000) return;
+    lastDropKey = key;
+    lastDropAt = stamp;
+    if (active === "lua") {
+      await luaInstall(paths);
+    } else if (active === "dlc") {
+      await scanDlcDirectory(paths[0]);
+    } else if ((active === "fix" || active === "home") && !hiddenModules.has("fix")) {
+      switchView("fix");
+      await scanDirectory(paths[0]);
+    }
+  }
+
+  async function boot() {
     bindEvents();
+    await loadPlatformInfo();
+    applyModuleVisibility();
     applyAccent(localStorage.getItem("accent") || "mint");
     const requestedView = new URLSearchParams(window.location.search).get("view");
-    switchView(requestedView && viewMeta[requestedView] ? requestedView : "home");
+    const adminReopenView = localStorage.getItem("cgs-admin-reopen-view");
+    localStorage.removeItem("cgs-admin-reopen-view");
+    const initialView = requestedView && viewMeta[requestedView]
+      ? requestedView
+      : adminReopenView && viewMeta[adminReopenView]
+        ? adminReopenView
+        : "home";
+    switchView(initialView);
     const lastPath = localStorage.getItem("lastGamePath");
     if (lastPath) $("#game-path").value = lastPath;
     state.lua.steamPath = localStorage.getItem("luaSteamPath") || "";
@@ -2132,7 +2251,7 @@
       if ($("#view-lua")?.classList.contains("active")) refreshMillenniumStatus();
       call("luatools_restore_manifests", { steamPath: state.lua.steamPath || null }).catch(() => {});
     }, 3_000);
-    log("Crocodile Gena Studio 5.1.0 инициализирован", "system");
+    log("Crocodile Gena Studio 5.5.5 инициализирован", "system");
     log(invoke ? "Все компоненты готовы к работе" : "Запустите установленное приложение", invoke ? "success" : "error");
     if (invoke) setTimeout(() => checkForUpdates(false), 1800);
   }

@@ -87,6 +87,7 @@
             : progress
               ? `<button class="file-cancel" data-files-action="cancel" data-files-url="${url}" ${progress.cancelling ? "disabled" : ""}><span>×</span> ${progress.cancelling ? "Отменяем…" : `Отменить ${progress.percent == null ? "" : `${progress.percent}%`}`}</button>`
               : `<button class="file-download" data-files-action="download" data-files-url="${url}"><span>↓</span> Скачать</button>`}
+          ${downloaded && /\.(zip|rar)$/i.test(downloaded.fileName || downloaded.path || "") ? `<button class="file-extract" data-files-action="extract" data-files-url="${url}"><span>📂</span> Распаковать в игру</button>` : ""}
         </div>
       </article>`;
   }
@@ -164,7 +165,7 @@
   async function copyPassword(item, button) {
     if (!item?.password) return;
     try {
-      await navigator.clipboard.writeText(item.password);
+      await writePassword(item.password);
       const original = button.innerHTML;
       button.innerHTML = "<span>✓</span> Скопировано";
       window.setTimeout(() => { button.innerHTML = original; }, 1400);
@@ -173,10 +174,27 @@
     }
   }
 
+  async function writePassword(password) {
+    if (invoke) {
+      try { await invoke("files_copy_password", { password }); return true; } catch (_) {}
+    }
+    await navigator.clipboard.writeText(password);
+    return true;
+  }
+
   async function download(item) {
-    if (!item?.url || !invoke) return;
+    if (!item?.url || !invoke || state.progress.has(item.url)) return;
     state.progress.set(item.url, { percent: 0 });
     render();
+    // Copy on the download gesture; extraction still uses the password even if clipboard is busy.
+    const passwordCopied = item.password ? await writePassword(item.password).catch(() => false) : false;
+    if (state.progress.get(item.url)?.cancelling) {
+      state.progress.delete(item.url);
+      render();
+      $("#files-status").textContent = "Скачивание отменено — временный файл удалён";
+      return;
+    }
+    window.dispatchEvent(new CustomEvent("cgs:busy-changed", { detail: { id: `download:${item.url}`, busy: true } }));
     try {
       const result = await invoke("files_download", {
         url: item.url,
@@ -186,6 +204,10 @@
       state.progress.delete(item.url);
       render();
       $("#files-status").textContent = `Файл «${result.fileName}» сохранён в папку «Загрузки»`;
+      window.dispatchEvent(new CustomEvent("cgs:activity", { detail: { type: "success" } }));
+      if (/\.(zip|rar)$/i.test(result.fileName || result.path || "")) {
+        window.cgsOpenArchive?.({ ...result, password: item.password || "", passwordCopied });
+      }
     } catch (error) {
       state.progress.delete(item.url);
       render();
@@ -193,6 +215,9 @@
       $("#files-status").textContent = message.includes("Загрузка отменена")
         ? "Скачивание отменено — временный файл удалён"
         : `Не удалось скачать файл: ${message}`;
+      if (!message.includes("Загрузка отменена")) window.dispatchEvent(new CustomEvent("cgs:activity", { detail: { type: "error" } }));
+    } finally {
+      window.dispatchEvent(new CustomEvent("cgs:busy-changed", { detail: { id: `download:${item.url}`, busy: false } }));
     }
   }
 
@@ -256,6 +281,10 @@
       if (button.dataset.filesAction === "download") download(item);
       if (button.dataset.filesAction === "cancel") cancelDownload(item);
       if (button.dataset.filesAction === "reveal") reveal(item);
+      if (button.dataset.filesAction === "extract") {
+        const downloaded = state.downloads.get(item?.url);
+        if (downloaded) window.cgsOpenArchive?.({ ...downloaded, password: item.password || "" });
+      }
     });
     window.addEventListener("cgs:view-changed", (event) => {
       if (event.detail === "files") loadCatalog(true);

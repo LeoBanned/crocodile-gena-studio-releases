@@ -1,0 +1,59 @@
+/* Light theme is scoped: existing dark skins and accent choices remain untouched. */
+:root[data-ui-theme="white"] {
+  color-scheme: light;
+  --bg: #f3f5f9; --bg-elevated: #fff; --panel: #fff; --panel-solid: #fff;
+  --panel-soft: #edf1f7; --text: #202938; --muted: #566477; --muted-2: #657286;
+  --line: #dce2eb; --line-strong: #c3ccda;
+  --danger: #b5254d; --warning: #92600a;
+  --skin-canvas: linear-gradient(145deg, #f7f8fc, #edf1f7);
+  --skin-panel: #fff; --skin-sidebar: #f8f9fc; --skin-topbar: #f7f9fc;
+  --shadow: 0 18px 55px rgba(47, 65, 96, .12);
+  --light-accent: color-mix(in srgb, var(--accent) 45%, #142a40);
+}
+.sample-white { background: #f0f3f9; border-color: #d7dfeb; }
+.sample-white::before { background: #fff; border-color: #d7dfeb; }
+.sample-white i { background: #fff; border-right: 1px solid #d7dfeb; }
+.sample-white b, .sample-white em { background: #fff; border: 1px solid #d7dfeb; }
+:root[data-ui-theme="white"] :is(.ambient, .home-glow, .premium-panel::after) { display: none; }
+:root[data-ui-theme="white"] .premium-panel { background: #fff !important; border-color: var(--line) !important; box-shadow: 0 6px 24px rgba(47,65,96,.045) !important; }
+:root[data-ui-theme="white"] .titlebar { background: #edf1f7; border-color: var(--line); }
+:root[data-ui-theme="white"] :is(.titlebar-brand,.titlebar-version,.window-controls button,.module-visibility-list > label) { color: var(--muted) !important; }
+:root[data-ui-theme="white"] :is(.files-hero-stats,.hv-module-tabs,.hv-selected-profile,.hv-log-panel,.hv-library-panel,.hv-selected-panel,.intro-strip,.hv-steps-panel,.vbs-test-mode,.vbs-components-panel) { background: #f7f9fc !important; border-color: var(--line) !important; }
+:root[data-ui-theme="white"] :is(.scan-button,.step-index,.folder-illustration,.saves-empty-icon,.saves-kicker,.file-title > div > span,.nav-label,.mascot-status,.mascot-name,.required-chip,.hv-game-profile,.hv-stat-value,.hv-selected-meta,.lua-status-badge,.lua-section-label) { color: var(--light-accent) !important; }
+:root[data-ui-theme="white"] :is(.vbs-scan-button,.vbs-enable-button,.vbs-disable-button,.vbs-test-button,.ac-remove-all,.hv-profile-button,.hv-game-action) { background: #edf1f7 !important; border-color: #cbd4e1 !important; color: var(--text) !important; }
+:root[data-ui-theme="white"] .vbs-component > span { color: #146b49; }
+:root[data-ui-theme="white"] .vbs-component.enabled > span { color: #b5254d; }
+:root[data-ui-theme="white"] .vbs-component.locked > span { color: #805516; }
+:root[data-ui-theme="white"] :is(.titlebar,.app-shell) svg { color: var(--light-accent); }
+:root[data-ui-theme="white"] .activity-body :is(.log-text,.log-line) { color: #41536a; }
+:root[data-ui-theme="white"] :is(h1,h2,h3,h4,strong,b,.brand-name,.nav-item.active) { color: var(--text) !important; }
+:root[data-ui-theme="white"] :is(p,small,.brand-caption,.nav-item,.eyebrow,.personalization-row,.personalization-details > summary,.personalization-text-button,.appearance-accent-row > span,.language-setting small,.about-row > span,.module-visibility-row,.file-no-password,.file-details small,.file-title > div,.files-pagination,.files-regular-divider,.dlc-library-copy small,.ac-item-evidence,.hv-game-path,.hv-log-line,.log-line,.lua-game-meta,#mascot-message,.module-sort-handle,.module-order-controls button,.scale-control > span,.typography-preview > span) { color: var(--muted) !important; }
+:root[data-ui-theme="white"] :is(.hero-kicker,.coming-label,.step-number,.dlc-library-arrow,.hero-copy h2 span,.utility-card-open,.files-featured-heading > span,.theme-choice.active strong,.extra-theme-selected.selected,.file-password,.nav-item.active svg) { color: var(--light-accent) !important; }
+:root[data-ui-theme="white"] .hero-copy h2 span { background: none; -webkit-text-fill-color: var(--light-accent); }
+:root[data-ui-theme="white"] :is(.module-card,.file-card,.dlc-library-game,.save-location,.utility-card,.hv-game-card,.ac-item,.hv-stats,.summary-strip,.stat-strip,.modal,.hv-help-modal,.path-entry,.drop-zone,.manual-search,.dlc-method,.dlc-exe-field select,.dlc-row,.dlc-destination,.dlc-unlock-all,.file-details,.lua-game-card,.lua-game,.lua-library-toolbar,.activity-panel,.configuration-panel,.game-summary,.game-state,.status-card,.channel-card,.typography-preview,.personalization-segment,.language-picker,.hv-profile-switch,.saves-search,.files-search,.files-pagination button,.workspace-card,.guide-step,.vbs-component,.vbs-dse-panel,.vbs-stats,.vbs-test-panel) {
+  background: #f7f9fc !important; border-color: var(--line) !important; box-shadow: none;
+}
+:root[data-ui-theme="white"] :is(input:not([type="checkbox"]):not([type="range"]),select,textarea) { color: var(--text) !important; background-color: #f7f9fc; }
+:root[data-ui-theme="white"] :is(input,textarea)::placeholder { color: #657286; opacity: 1; }
+:root[data-ui-theme="white"] :is(.ghost-button,.secondary-button,.dlc-button,.files-refresh,.file-copy,.file-download,.file-cancel,.uninstall-button,.hv-control-button,.hv-profile-button,.hv-add-button,.hv-check-button,.hv-game-action,.hv-launch-button,.ac-scan-button,.ac-remove-button,.utility-card,.dlc-proxy-switch button,.dlc-method-switch button,.hv-module-tabs button,.personalization-segment button,.language-picker button,.archive-format button,.module-order-controls button) {
+  color: var(--text) !important; background: #edf1f7 !important; border-color: #cbd4e1 !important;
+}
+:root[data-ui-theme="white"] :is(.nav-item:hover,.nav-item.active,.theme-choice.active,.personalization-segment button.active,.language-picker button.active,.dlc-method.active,.dlc-proxy-switch button.active,.hv-module-tabs button.active,.hv-profile-button.active,.file-download:hover,.ghost-button:hover,.secondary-button:hover,.module-card:hover) {
+  background: color-mix(in srgb, var(--accent) 13%, #fff) !important;
+  border-color: color-mix(in srgb, var(--accent) 40%, #adbccc) !important;
+}
+:root[data-ui-theme="white"] :is(.primary-button,.install-button) { color: #13252e !important; box-shadow: none; }
+:root[data-ui-theme="white"] :is(.primary-button,.install-button) :is(span,strong,b) { color: inherit !important; }
+:root[data-ui-theme="white"] :is(.file-icon,.files-hero-icon,.utilities-hero-icon,.hero-core,.hv-selected-icon,.step-icon,.brand-mark,.ac-hero-icon,.vbs-hero-icon,.dlc-library-cover,.mascot-stage,.channel-icon) { background: #e7edf5 !important; }
+:root[data-ui-theme="white"] :is(.log-output,.hv-log,.ac-log,.lua-log,.activity-body,.code-block,pre) { background: #f0f3f9 !important; color: #35475c !important; }
+:root[data-ui-theme="white"] :is(.hv-warning,.warning-note,.vbs-warning) { background: #fff7e7 !important; color: #805516 !important; border-color: #eed8af !important; }
+:root[data-ui-theme="white"] :is(.error,.danger,.danger-ghost,.log-line.error,.hv-log-line.error,.ac-item.detected .ac-state,.vbs-state.on) { color: #b5254d !important; }
+:root[data-ui-theme="white"] :is(.success,.log-line.success,.hv-log-line.success,.ac-state,.vbs-state.off,.dlc-chip.clean) { color: #146b49 !important; }
+:root[data-ui-theme="white"] .modal-backdrop { background: rgba(45,60,84,.3); }
+:root[data-ui-theme="white"] :is(.orbit,.float-badge,.hero-visual .hero-core) { border-color: #c4cfdd; }
+:root[data-ui-theme="white"] .hero-artwork { opacity: .17; }
+:root[data-ui-theme="white"] .hero-artwork::after { background: linear-gradient(90deg,#fff,transparent); }
+:root[data-ui-theme="white"][data-ui-contrast="high"] {
+  --text: #0f1929; --muted: #394a60; --muted-2: #43566b; --line: #bbc7d7; --line-strong: #9babbe;
+}
+:root[data-ui-theme="white"] :is(button,input,select,textarea):focus-visible { outline: 2px solid var(--light-accent); outline-offset: 3px; }

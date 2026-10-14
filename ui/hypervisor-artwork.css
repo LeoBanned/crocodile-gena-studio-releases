@@ -1,0 +1,37 @@
+/* Game artwork dissolves into the existing panel on its right edge. No background blur/loops. */
+.hv-selected-panel { display: grid; grid-template-columns: 240px minmax(0, 1fr) auto; column-gap: 22px; row-gap: 0; align-items: stretch; padding: 0 27px 0 0; overflow: hidden; }
+.hv-selected-icon.hv-selected-cover { width: 240px; height: auto; min-height: 156px; align-self: stretch; border-radius: 0; }
+.hv-selected-copy { align-self: center; padding: 24px 0; }
+.hv-game-card { grid-template-columns: 180px minmax(0, 1fr); align-items: stretch; padding: 0 19px 0 0; overflow: hidden; }
+.hv-game-symbol.hv-game-cover { width: 180px; height: auto; min-height: 130px; align-self: stretch; border-radius: 0; }
+.hv-game-main { align-self: center; padding: 18px 0; }
+.hv-cover { position: relative; display: block; overflow: hidden; padding: 0; border: 0; }
+.hv-cover.has-artwork { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+.hv-cover-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: 0; pointer-events: none; transition: opacity .18s ease; -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 58%, rgba(0,0,0,.9) 72%, transparent 100%); mask-image: linear-gradient(90deg, #000 0%, #000 58%, rgba(0,0,0,.9) 72%, transparent 100%); }
+.hv-cover.has-artwork .hv-cover-image { opacity: 1; }
+.hv-cover-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--muted); background: linear-gradient(125deg, rgba(var(--accent-rgb),.08), transparent); transition: opacity .18s ease; pointer-events: none; }
+.hv-cover-fallback svg { width: 29px; height: 29px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.hv-cover-fallback > span { font-size: 15px; font-weight: 700; letter-spacing: .04em; }
+.hv-cover.has-artwork .hv-cover-fallback { opacity: 0; }
+.hv-game-cover:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.hv-selected-actions { align-self: center; margin: 24px 0; padding-left: 0; width: auto; }
+@media(max-width:1380px) {
+  .hv-selected-panel { grid-template-columns: 220px minmax(0, 1fr); row-gap: 14px; }
+  .hv-selected-icon.hv-selected-cover { width: 220px; grid-row: 1 / 3; }
+  .hv-selected-copy { padding: 22px 0 0; }
+  .hv-selected-actions { grid-column: 2; justify-self: end; margin: 0 0 22px; min-width: 0; max-width: 100%; width: auto; padding-left: 0; flex-wrap: wrap; }
+}
+@media(max-width:1180px) {
+  .hv-selected-panel { grid-template-columns: 160px minmax(0, 1fr); padding-right: 20px; }
+  .hv-selected-icon.hv-selected-cover { width: 160px; }
+  .hv-game-card { grid-template-columns: 160px minmax(0, 1fr); gap: 14px; }
+  .hv-game-symbol.hv-game-cover { width: 160px; }
+  .hv-selected-actions .hv-launch-button { flex: 0 0 auto; }
+  .hv-game-heading, .hv-game-bottom, .hv-game-actions { flex-wrap: wrap; }
+  .hv-game-actions { min-width: 0; max-width: 100%; }
+}
+@media(max-width:900px) {
+  .hv-selected-panel { grid-template-columns: 170px minmax(0, 1fr); column-gap: 16px; padding-right: 20px; }
+  .hv-selected-icon.hv-selected-cover { width: 170px; }
+  .hv-selected-actions { justify-self: stretch; justify-content: flex-end; flex-wrap: wrap; }
+}

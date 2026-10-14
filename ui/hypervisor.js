@@ -31,6 +31,9 @@
 
   const call = (command, args = {}) => {
     if (!invoke) return Promise.reject(new Error("Системный модуль недоступен"));
+    if (command === "launch_selected_game" && window.cgsInvokePrivileged) {
+      return window.cgsInvokePrivileged(command, args, "hypervisor");
+    }
     return invoke(command, args);
   };
 
@@ -42,6 +45,100 @@
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
   }
+
+  // Artwork is an independent, read-only visual layer. Launch/profile operations below are unchanged.
+  const artworkRequests = new Map();
+  const artworkAssets = new Map();
+  const artworkUrls = new Set();
+  const artworkQueue = [];
+  let artworkActive = 0;
+  function artworkJob(task) {
+    return new Promise(resolve => { artworkQueue.push({ task, resolve }); pumpArtwork(); });
+  }
+  function pumpArtwork() {
+    while (artworkActive < 4 && artworkQueue.length) {
+      const { task, resolve } = artworkQueue.shift(); artworkActive++;
+      Promise.resolve().then(task).catch(() => null).then(resolve).finally(() => { artworkActive--; pumpArtwork(); });
+    }
+  }
+  function artworkKey(game) { return String(game?.exe_path || "").toLowerCase(); }
+  function coverMarkup(game) {
+    const initials = String(game?.name || "").trim().split(/\s+/).map(word => [...word][0] || "").slice(0, 2).join("").toLocaleUpperCase();
+    return `<span class="hv-cover-fallback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10c3 0 5 10 3 11-2 1-4-3-5-3H9c-1 0-3 4-5 3C2 18 4 8 7 8zM7 10v5m-2.5-2.5h5M16 11h.01M18 14h.01"/></svg><span>${escapeHtml(initials || "—")}</span></span><img class="hv-cover-image" alt="" draggable="false" decoding="async" referrerpolicy="no-referrer" />`;
+  }
+  function allowedArtworkUrl(value) {
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" && (url.hostname === "steamstatic.com" || url.hostname.endsWith(".steamstatic.com") || url.hostname === "steamcdn-a.akamaihd.net") ? url.href : null;
+    } catch (_) { return null; }
+  }
+  function probeArtwork(url) {
+    return new Promise(resolve => {
+      const img = new Image(); let timer;
+      const finish = success => { clearTimeout(timer); img.onload = img.onerror = null; if (!success) img.removeAttribute("src"); resolve(success ? url : null); };
+      img.onload = () => finish(img.naturalWidth > 0); img.onerror = () => finish(false);
+      img.referrerPolicy = "no-referrer";
+      timer = setTimeout(() => finish(false), 8000);
+      img.src = url;
+    });
+  }
+  async function loadArtwork(meta) {
+    if (meta?.local?.bytes?.length) {
+      const url = URL.createObjectURL(new Blob([new Uint8Array(meta.local.bytes)], { type: meta.local.mime || "image/jpeg" }));
+      if (await probeArtwork(url)) { artworkUrls.add(url); return url; }
+      URL.revokeObjectURL(url);
+    }
+    for (const candidate of meta?.urls || []) {
+      const url = allowedArtworkUrl(candidate);
+      if (url && await probeArtwork(url)) return url;
+    }
+    if (meta?.appid) {
+      const url = allowedArtworkUrl(await call("game_artwork_store_url", { appid: Number(meta.appid) }).catch(() => null));
+      if (url) return probeArtwork(url);
+    }
+    return null;
+  }
+  function artworkFor(game) {
+    const key = artworkKey(game);
+    if (!artworkRequests.has(key)) artworkRequests.set(key, artworkJob(async () => {
+      const meta = await call("game_artwork", { exePath: game.exe_path }).catch(() => null);
+      if (!meta?.appid) return null;
+      const assetKey = String(meta.appid);
+      if (!artworkAssets.has(assetKey)) artworkAssets.set(assetKey, loadArtwork(meta).catch(() => null));
+      return artworkAssets.get(assetKey);
+    }));
+    return artworkRequests.get(key);
+  }
+  function hydrateArtwork() {
+    if (!$("#view-hypervisor")?.classList.contains("active") || !$('[data-hv-tab-panel="hypervisor"]')?.classList.contains("active")) return;
+    document.querySelectorAll(".hv-cover[data-artwork-key]").forEach(cover => {
+      const key = cover.dataset.artworkKey;
+      if (!key || cover.dataset.artworkRequested === key) return;
+      const game = state.games.find(game => artworkKey(game) === key);
+      if (!game) return;
+      cover.dataset.artworkRequested = key;
+      const img = cover.querySelector("img");
+      artworkFor(game).then(url => {
+        if (!url || !cover.isConnected || cover.dataset.artworkKey !== key || !img?.isConnected) return;
+        img.onload = () => { if (cover.dataset.artworkKey === key) cover.classList.add("has-artwork"); };
+        img.onerror = () => { img.removeAttribute("src"); cover.classList.remove("has-artwork"); };
+        img.src = url;
+        if (img.complete && img.naturalWidth > 0) cover.classList.add("has-artwork");
+      });
+    });
+  }
+  function selectedArtwork(game) {
+    const cover = $("#hv-selected-cover");
+    if (!cover) return;
+    const key = artworkKey(game);
+    if (cover.dataset.artworkKey !== key || !cover.firstChild) {
+      cover.dataset.artworkKey = key; delete cover.dataset.artworkRequested;
+      cover.classList.remove("has-artwork"); cover.innerHTML = coverMarkup(game);
+    }
+    hydrateArtwork();
+  }
+  document.addEventListener("cgs:hv-tab-changed", event => { if (event.detail === "hypervisor") hydrateArtwork(); });
+  window.addEventListener("pagehide", () => { artworkUrls.forEach(url => URL.revokeObjectURL(url)); artworkUrls.clear(); });
 
   function timeNow() {
     return new Date().toLocaleTimeString(window.cgsI18n?.locale?.() || "ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -191,7 +288,7 @@
       const confirm = state.confirmingRemove === game.id;
       return `
         <article class="hv-game-card ${selected ? "selected" : ""}" data-game-id="${escapeHtml(game.id)}">
-          <button class="hv-game-symbol" data-hv-action="select" data-game-id="${escapeHtml(game.id)}" title="Выбрать игру" ${state.running ? "disabled" : ""}>${selected ? "✓" : "🎮"}</button>
+          <button class="hv-game-symbol hv-cover hv-game-cover" data-artwork-key="${escapeHtml(artworkKey(game))}" data-hv-action="select" data-game-id="${escapeHtml(game.id)}" title="Выбрать игру" aria-label="${escapeHtml(game.name)}" aria-pressed="${selected}" ${state.running ? "disabled" : ""}>${coverMarkup(game)}</button>
           <div class="hv-game-main">
             <div class="hv-game-heading"><strong>${escapeHtml(game.name)}</strong><b class="${game.ready ? "ready" : ""}"><i></i>${game.ready ? "Готова к запуску" : "Нужна проверка"}</b></div>
             <div class="hv-game-path" title="${escapeHtml(game.exe_path)}">${escapeHtml(game.exe_path)}</div>
@@ -206,10 +303,12 @@
           </div>
         </article>`;
     }).join("");
+    hydrateArtwork();
   }
 
   function renderStatus(status) {
     const game = status?.selected_game || selectedGame();
+    selectedArtwork(game);
     $("#hv-admin-status").textContent = status?.admin ? "Admin" : "Через UAC";
     $("#hv-games-count").textContent = String(status?.games_count ?? state.games.length);
     if (!game) {

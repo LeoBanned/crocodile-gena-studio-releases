@@ -16,6 +16,9 @@
 
   function call(command, args = {}) {
     if (!invoke) return Promise.reject(new Error("Системный модуль VBS недоступен"));
+    if (["vbs_disable", "vbs_restore", "vbs_set_test_mode", "vbs_restart"].includes(command) && window.cgsInvokePrivileged) {
+      return window.cgsInvokePrivileged(command, args, "hypervisor");
+    }
     return invoke(command, args);
   }
 

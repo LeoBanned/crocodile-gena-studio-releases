@@ -17,6 +17,9 @@
 
   function call(command, args = {}) {
     if (!invoke) return Promise.reject(new Error("Системный модуль недоступен"));
+    if (["anticheat_remove", "anticheat_remove_all"].includes(command) && window.cgsInvokePrivileged) {
+      return window.cgsInvokePrivileged(command, args, "hypervisor");
+    }
     return invoke(command, args);
   }
 

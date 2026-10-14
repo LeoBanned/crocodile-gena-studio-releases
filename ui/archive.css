@@ -1,0 +1,56 @@
+.archive-backdrop { position: fixed; inset: 0; z-index: 1100; display: grid; place-items: center; padding: 22px; background: rgba(0,0,0,.65); }
+.archive-dialog { width: min(680px, 100%); max-height: calc(100vh / var(--ui-scale) - 44px); overflow-y: auto; padding: 26px; }
+.archive-dialog h3 { margin: 9px 0; font-size: 23px; }
+.archive-dialog > p { color: var(--muted); line-height: 1.6; font-size: 12px; margin: 0 0 17px; overflow-wrap: anywhere; }
+.archive-field { display: grid; gap: 8px; margin: 16px 0; font-size: 12px; color: var(--text); }
+.archive-field select, .archive-field input { min-width: 0; width: 100%; height: 42px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: var(--ui-control-radius); background: var(--panel-solid); color: var(--text); }
+.archive-destination { display: flex; gap: 12px; align-items: center; }
+.archive-destination span { min-width: 0; overflow-wrap: anywhere; flex: 1; color: var(--muted); font-size: 11px; }
+.archive-destination button { flex-shrink: 0; }
+.archive-status { margin: 14px 0; min-height: 20px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; white-space: pre-line; }
+.archive-status.error { color: var(--danger); }
+.archive-preview { margin: 16px 0; border: 1px solid var(--line); border-radius: var(--ui-control-radius); overflow: hidden; }
+.archive-preview header { padding: 13px; font-size: 12px; border-bottom: 1px solid var(--line); }
+.archive-preview ul { list-style: none; margin: 0; padding: 0; max-height: 210px; overflow: auto; }
+.archive-preview li { display: flex; justify-content: space-between; gap: 14px; padding: 9px 13px; border-bottom: 1px solid var(--line); font-size: 11px; }
+.archive-preview li span { min-width: 0; overflow-wrap: anywhere; }
+.archive-preview li small { flex-shrink: 0; color: var(--muted); }
+.archive-preview li.replaces small { color: var(--warning); }
+.archive-item-name { display: flex; align-items: center; gap: 8px; }
+.archive-item-name svg { flex: 0 0 14px; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; color: var(--muted); }
+.archive-preview [data-archive-kind="folder"] .archive-item-name svg { color: var(--accent); }
+:root[data-ui-theme="white"] .archive-preview [data-archive-kind="folder"] .archive-item-name svg { color: var(--light-accent); }
+.archive-contents { margin: -3px 0 16px; }
+.archive-contents header { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; font-size: 11px; }
+.archive-contents header small { color: var(--muted); font-size: 10px; }
+.archive-contents ul { max-height: 132px; }
+.archive-contents li { padding: 7px 12px; font-size: 10px; }
+.archive-contents li:last-child { border-bottom: 0; }
+/* Accent-aware scrollbar, including the dialog's outer scroll area. */
+.archive-dialog, .archive-preview ul {
+  --archive-scroll-thumb: rgba(var(--accent-rgb), .65);
+  --archive-scroll-hover: var(--accent);
+  scrollbar-width: thin;
+  scrollbar-color: var(--archive-scroll-thumb) rgba(var(--accent-rgb), .055);
+}
+:root[data-ui-theme="white"] :is(.archive-dialog, .archive-preview ul) {
+  --archive-scroll-thumb: var(--light-accent);
+  --archive-scroll-hover: var(--light-accent);
+}
+@supports selector(::-webkit-scrollbar) {
+  /* Let WebView2 use the rounded custom scrollbar instead of the Windows native one. */
+  .archive-dialog, .archive-preview ul { scrollbar-width: auto; scrollbar-color: auto; }
+  :is(.archive-dialog, .archive-preview ul)::-webkit-scrollbar { width: 7px; height: 7px; background: transparent; }
+  :is(.archive-dialog, .archive-preview ul)::-webkit-scrollbar-track { border-radius: 10px; background: rgba(var(--accent-rgb), .055); }
+  :is(.archive-dialog, .archive-preview ul)::-webkit-scrollbar-thumb { border-radius: 10px; background: var(--archive-scroll-thumb); }
+  :is(.archive-dialog, .archive-preview ul)::-webkit-scrollbar-thumb:hover { background: var(--archive-scroll-hover); }
+  :is(.archive-dialog, .archive-preview ul)::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+  :is(.archive-dialog, .archive-preview ul)::-webkit-scrollbar-corner { background: transparent; }
+}
+.archive-backup-note { font-size: 11px !important; }
+.archive-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.file-actions { flex-wrap: wrap; }
+.file-extract { height: 36px; padding: 0 13px; border: 1px solid rgba(var(--accent-rgb),.25); color: var(--accent); background: rgba(var(--accent-rgb),.07); cursor: pointer; font-size: 10px; font-weight: 700; }
+:root[data-ui-theme="white"] .archive-backdrop { background: rgba(45,60,84,.3); }
+:root[data-ui-theme="white"] .file-extract { color: var(--light-accent); }
+:root[data-ui-theme="white"] .archive-preview li.replaces small { color: #805516 !important; }

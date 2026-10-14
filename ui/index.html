@@ -6,6 +6,11 @@
   <meta name="theme-color" content="#07090f" />
   <title>Crocodile Gena Studio</title>
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./personalization.css" />
+  <link rel="stylesheet" href="./light-theme.css" />
+  <link rel="stylesheet" href="./archive.css" />
+  <link rel="stylesheet" href="./hypervisor-artwork.css" />
+  <script src="./personalization.js"></script>
 </head>
 <body>
   <div class="ambient ambient-a"></div>
@@ -16,7 +21,7 @@
       <div class="titlebar-brand" data-tauri-drag-region>
         <div class="mini-mark" data-tauri-drag-region><img src="./app-icon.png" alt="" data-tauri-drag-region /></div>
         <span data-tauri-drag-region>Crocodile Gena Studio</span>
-        <span class="titlebar-version" data-tauri-drag-region>5.1.0</span>
+        <span class="titlebar-version" data-tauri-drag-region>5.5.5</span>
       </div>
       <div class="window-actions">
         <button class="window-button" id="window-minimize" aria-label="Свернуть">
@@ -65,7 +70,6 @@
         <button class="nav-item" data-view="hypervisor">
           <svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4.8-3.1 8.1-8 9.5C7.1 20.1 4 16.8 4 12V7z"/><path d="M8 12h8M12 8v8"/></svg>
           <span>Гипервизор</span>
-          <span class="nav-live">NEW</span>
         </button>
         <button class="nav-item" data-view="files">
           <svg viewBox="0 0 24 24"><path d="M4 7h6l2 2h8v10H4z"/><path d="M4 7V5h6l2 2"/></svg>
@@ -74,7 +78,6 @@
         <button class="nav-item" data-view="utilities">
           <svg viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 1-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.4 2.4-3-3z"/><path d="m15.5 15.5 4.5 4.5"/></svg>
           <span>Утилиты</span>
-          <span class="nav-live">NEW</span>
         </button>
         <button class="nav-item" data-view="settings">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 13.5l1.2 1-.2 2.1-1.5.7-.8 1.4.2 1.7-2 1-1.3-1-1.6.3-1 1.3H9.8l-.7-1.5-1.5-.8-1.7.2-1-2 1-1.3-.3-1.6-1.3-1V9.8l1.5-.7.8-1.5-.2-1.7 2-1 1.3 1 1.6-.3 1-1.3h2.2l.7 1.5 1.5.8 1.7-.2 1 2-1 1.3.3 1.6 1.3 1v1.2z"/></svg>
@@ -83,6 +86,10 @@
       </nav>
 
       <div class="sidebar-footer">
+        <div class="mascot-widget" id="mascot-widget" hidden>
+          <button class="mascot-avatar" id="mascot-pet" aria-label="Погладить Гену" title="Погладить Гену"></button>
+          <div class="mascot-speech"><span class="mascot-name">ГЕНА</span><span id="mascot-message" role="status" aria-live="polite">Рад тебя видеть!</span></div>
+        </div>
         <div class="social-links">
           <button class="channel-card" id="open-personal-channel">
             <span class="channel-icon">
@@ -115,14 +122,14 @@
         <div class="home-hero premium-panel">
           <div class="home-glow"></div>
           <div class="hero-copy">
-            <span class="hero-kicker">CROCODILE GENA STUDIO 5.1.0</span>
+            <span class="hero-kicker">CROCODILE GENA STUDIO 5.5.5</span>
             <h2>Ваша игровая<br/><span>лаборатория.</span></h2>
             <p>Единое пространство для настройки игр, управления сетевыми компонентами и будущих инструментов.</p>
           </div>
           <div class="hero-artwork"><img src="./hero-crocodile.png" alt="Фирменная иллюстрация Crocodile Gena" /></div>
         </div>
         <div class="home-grid">
-          <article class="metric-card"><span class="metric-icon mint"><svg viewBox="0 0 24 24"><path d="M6 18L18 6M8 6h10v10"/></svg></span><div><small>Активный модуль</small><strong>Online Fix</strong><p>Готов к установке и восстановлению</p></div></article>
+          <article class="metric-card module-card" data-open-view="fix"><span class="metric-icon mint"><svg viewBox="0 0 24 24"><path d="M6 18L18 6M8 6h10v10"/></svg></span><div><small>Активный модуль</small><strong>Online Fix</strong><p>Готов к установке и восстановлению</p></div></article>
           <article class="metric-card module-card" data-open-view="saves"><span class="metric-icon blue"><svg viewBox="0 0 24 24"><path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 15h8v5H8z"/></svg></span><div><small>Модуль 02</small><strong>Менеджер сохранений</strong><p>Поиск и резервное копирование прогресса</p></div></article>
           <article class="metric-card module-card" data-open-view="dlc"><span class="metric-icon violet"><svg viewBox="0 0 24 24"><path d="M5 10h14v10H5zM8 10V7a4 4 0 018 0M12 14v3"/></svg></span><div><small>Модуль 03</small><strong>DLC Unlocker</strong><p>Выборочная разблокировка дополнений</p></div></article>
           <article class="metric-card module-card" data-open-view="lua"><span class="metric-icon mint"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V7z"/><path d="M9.5 12.5l1.8 1.8 3.5-3.6"/></svg></span><div><small>Модуль 04</small><strong>CrocLua</strong><p>Игры в библиотеку Steam через манифесты</p></div></article>
@@ -389,7 +396,7 @@
             </article>
           </div>
 
-          <section class="premium-panel millennium-panel">
+          <section class="premium-panel millennium-panel windows-only">
             <div class="millennium-plugin-icon" aria-hidden="true">🐊</div>
             <div class="millennium-plugin-copy">
               <div class="millennium-plugin-heading">
@@ -480,7 +487,7 @@
           </div>
 
           <section class="premium-panel hv-selected-panel">
-            <div class="hv-selected-icon" aria-label="Гипервизор">🛡️</div>
+            <div class="hv-selected-icon hv-cover hv-selected-cover" id="hv-selected-cover" aria-hidden="true"></div>
             <div class="hv-selected-copy">
               <span class="coming-label">ВЫБРАННАЯ ИГРА</span>
               <h3 id="hv-selected-title">Игра не выбрана</h3>
@@ -720,14 +727,58 @@
 
       <section class="view" id="view-settings" data-view-panel="settings">
         <div class="settings-layout">
-          <section class="premium-panel settings-card appearance-card"><span class="coming-label">ИНТЕРФЕЙС</span><h2>Внешний вид</h2><p>Выберите цвет светового акцента. Настройка сохраняется локально.</p><div class="accent-picker"><button class="accent active" data-accent="mint" style="--swatch:#63f5c2"></button><button class="accent" data-accent="violet" style="--swatch:#a987ff"></button><button class="accent" data-accent="blue" style="--swatch:#5ca8ff"></button><button class="accent" data-accent="rose" style="--swatch:#ff739d"></button></div><div class="language-setting"><div><strong>Язык интерфейса</strong><small>Меняется моментально без перезапуска</small></div><div class="language-picker" role="group" aria-label="Язык интерфейса"><button class="active" data-language="ru">Русский</button><button data-language="en">English</button></div></div></section>
+          <div class="settings-column">
+          <section class="premium-panel settings-card appearance-card">
+            <div class="personalization-heading"><div><span class="coming-label">ИНТЕРФЕЙС</span><h2>Внешний вид</h2></div><button class="personalization-reset" id="reset-appearance" title="Сбросить оформление" aria-label="Сбросить оформление"><svg viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1.8 7M4 4v6h6"/></svg></button></div>
+            <div class="theme-picker" role="group" aria-label="Стиль интерфейса">
+              <button class="theme-choice" data-theme-choice="graphite" aria-pressed="true"><span class="theme-sample sample-graphite"><i></i><b></b><em></em></span><strong>Графит</strong></button>
+              <button class="theme-choice" data-theme-choice="glass" aria-pressed="false"><span class="theme-sample sample-glass"><i></i><b></b><em></em></span><strong>Стекло</strong></button>
+              <button class="theme-choice" data-theme-choice="minimal" aria-pressed="false"><span class="theme-sample sample-minimal"><i></i><b></b><em></em></span><strong>Минимализм</strong></button>
+              <button class="theme-choice" data-theme-choice="neon" aria-pressed="false"><span class="theme-sample sample-neon"><i></i><b></b><em></em></span><strong>Неон</strong></button>
+            </div>
+            <details class="personalization-details extra-styles-details" id="extra-styles-details">
+              <summary><span>Еще стили</span><span class="extra-theme-selected" id="extra-theme-selected">7</span><svg viewBox="0 0 20 20"><path d="m6 8 4 4 4-4"/></svg></summary>
+              <div class="theme-picker extra-theme-picker">
+                <button class="theme-choice" data-theme-choice="midnight" aria-pressed="false"><span class="theme-sample sample-midnight"><i></i><b></b><em></em></span><strong>Полночь</strong></button>
+                <button class="theme-choice" data-theme-choice="obsidian" aria-pressed="false"><span class="theme-sample sample-obsidian"><i></i><b></b><em></em></span><strong>Обсидиан</strong></button>
+                <button class="theme-choice" data-theme-choice="forest" aria-pressed="false"><span class="theme-sample sample-forest"><i></i><b></b><em></em></span><strong>Лес</strong></button>
+                <button class="theme-choice" data-theme-choice="plum" aria-pressed="false"><span class="theme-sample sample-plum"><i></i><b></b><em></em></span><strong>Слива</strong></button>
+                <button class="theme-choice" data-theme-choice="warm" aria-pressed="false"><span class="theme-sample sample-warm"><i></i><b></b><em></em></span><strong>Тёплый</strong></button>
+                <button class="theme-choice" data-theme-choice="arctic" aria-pressed="false"><span class="theme-sample sample-arctic"><i></i><b></b><em></em></span><strong>Север</strong></button>
+                <button class="theme-choice" data-theme-choice="white" aria-pressed="false"><span class="theme-sample sample-white"><i></i><b></b><em></em></span><strong>Белый</strong></button>
+              </div>
+            </details>
+            <div class="appearance-accent-row"><span>Акцент</span><div class="accent-picker"><button class="accent active" data-accent="mint" style="--swatch:#63f5c2" title="Мятный" aria-label="Мятный"></button><button class="accent" data-accent="violet" style="--swatch:#a987ff" title="Фиолетовый" aria-label="Фиолетовый"></button><button class="accent" data-accent="blue" style="--swatch:#5ca8ff" title="Синий" aria-label="Синий"></button><button class="accent" data-accent="rose" style="--swatch:#ff739d" title="Розовый" aria-label="Розовый"></button></div></div>
+            <details class="personalization-details" id="appearance-details">
+              <summary><span>Масштаб, шрифт и эффекты</span><svg viewBox="0 0 20 20"><path d="m6 8 4 4 4-4"/></svg></summary>
+              <div class="personalization-detail-body">
+                <label class="personalization-row" for="ui-scale"><span>Масштаб интерфейса</span><output id="ui-scale-value" for="ui-scale">100%</output></label>
+                <div class="scale-control"><span>90%</span><input id="ui-scale" type="range" min="90" max="125" step="5" value="100" /><span>125%</span></div>
+                <div class="personalization-row"><span>Скругление</span><div class="personalization-segment" role="group" aria-label="Скругление"><button data-shape-choice="sharp">Строгое</button><button data-shape-choice="soft">Мягкое</button><button data-shape-choice="round">Круглое</button></div></div>
+                <div class="typography-settings">
+                  <div class="personalization-row"><label for="ui-font">Шрифт интерфейса</label><select id="ui-font"><option value="system">Системный · Segoe UI</option><option value="bahnschrift">Bahnschrift</option><option value="verdana">Verdana</option><option value="tahoma">Tahoma</option><option value="consolas">Consolas</option></select></div>
+                  <div class="personalization-row"><span>Жирность текста</span><div class="personalization-segment" role="group" aria-label="Жирность текста"><button data-weight-choice="light">Легче</button><button data-weight-choice="regular">Стандартная</button><button data-weight-choice="bold">Плотнее</button></div></div>
+                  <label class="personalization-row"><span>Повышенная контрастность</span><span class="switch"><input id="ui-contrast" type="checkbox" /><i></i></span></label>
+                  <div class="typography-preview"><strong>Ваш интерфейс. Ваш стиль.</strong><span>Аа Бб Вв · Aa Bb Cc · 0123456789</span></div>
+                </div>
+                <label class="personalization-row"><span>Плавные анимации</span><span class="switch"><input id="ui-motion" type="checkbox" checked /><i></i></span></label>
+                <label class="personalization-row"><span>Акцентное свечение</span><span class="switch"><input id="ui-glow" type="checkbox" checked /><i></i></span></label>
+              </div>
+            </details>
+            <div class="language-setting"><div><strong>Язык интерфейса</strong><small>Меняется моментально без перезапуска</small></div><div class="language-picker" role="group" aria-label="Язык интерфейса"><button class="active" data-language="ru">Русский</button><button data-language="en">English</button></div></div>
+          </section>
+
+          <section class="premium-panel settings-card mascot-settings-card">
+            <div class="mascot-settings-heading"><div class="mascot-preview" id="mascot-preview" aria-hidden="true"></div><div><span class="coming-label">ТВОЙ СПУТНИК</span><h2>Живой талисман</h2><p>Гена рядом, пока ты играешь.</p></div><label class="switch"><input id="ui-mascot" type="checkbox" checked aria-label="Живой талисман" /><i></i></label></div>
+            <details class="personalization-details"><summary><span>Положение и реакции</span><svg viewBox="0 0 20 20"><path d="m6 8 4 4 4-4"/></svg></summary><div class="personalization-detail-body"><div class="personalization-row"><span>Положение</span><div class="personalization-segment" role="group" aria-label="Положение талисмана"><button data-mascot-place="sidebar">В меню</button><button data-mascot-place="floating">В углу окна</button></div></div><label class="personalization-row"><span>Реагировать на действия</span><span class="switch"><input id="ui-mascot-reactions" type="checkbox" checked /><i></i></span></label></div></details>
+          </section>
 
           <section class="premium-panel settings-card svc-card">
             <span class="coming-label">CROCLUA</span><h2>Сервис манифестов</h2>
             <p>Откуда искать и получать манифесты для вкладки CrocLua.</p>
             <div class="svc-options">
               <button class="svc-option active" data-service="ryuu">
-                <strong>Ryuu</strong><small>Ключ уже встроен — ничего вводить не нужно</small>
+                <strong>Ryuu</strong><small>Ключ задаётся при сборке — см. BUILD.md</small>
               </button>
               <button class="svc-option" data-service="hubcap">
                 <strong>HubCap</strong><small>Нужен свой API-ключ с их сайта</small>
@@ -749,10 +800,30 @@
 
       </section>
 
+          <section class="premium-panel settings-card"><span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>О программе</h2><div class="about-row"><span>Версия</span><b>5.5.5</b></div><div class="about-row"><span>Назначение</span><b>Игровые инструменты</b></div><div class="about-row"><span>Активные модули</span><b>Online Fix · Сохранения · DLC · CrocLua · Гипервизор · Кряки · Утилиты</b></div></section>
+          </div>
+          <div class="settings-column">
+          <section class="premium-panel settings-card module-visibility-card">
+            <span class="coming-label">РАБОЧАЯ ОБЛАСТЬ</span>
+            <h2>Боковая панель</h2>
+            <p>Порядок, вид и видимость модулей — под тебя.</p>
+            <div class="personalization-segment sidebar-mode-picker" role="group" aria-label="Вид боковой панели"><button data-sidebar-choice="full">Обычная</button><button data-sidebar-choice="compact">Компактная</button><button data-sidebar-choice="icons">Иконки</button></div>
+            <div class="module-visibility-list">
+              <label><span>01 · Online Fix</span><span class="switch"><input type="checkbox" data-module-toggle="fix" checked /><i></i></span></label>
+              <label><span>02 · Сохранения</span><span class="switch"><input type="checkbox" data-module-toggle="saves" checked /><i></i></span></label>
+              <label><span>03 · DLC Unlocker</span><span class="switch"><input type="checkbox" data-module-toggle="dlc" checked /><i></i></span></label>
+              <label><span>04 · CrocLua</span><span class="switch"><input type="checkbox" data-module-toggle="lua" checked /><i></i></span></label>
+              <label><span>05 · Гипервизор, Античиты и VBS</span><span class="switch"><input type="checkbox" data-module-toggle="hypervisor" checked /><i></i></span></label>
+              <label><span>06 · Кряки</span><span class="switch"><input type="checkbox" data-module-toggle="files" checked /><i></i></span></label>
+              <label><span>07 · Утилиты</span><span class="switch"><input type="checkbox" data-module-toggle="utilities" checked /><i></i></span></label>
+            </div>
+            <div class="sidebar-settings-actions"><button class="ghost-button" id="show-all-modules">Показать все модули</button><button class="personalization-text-button" id="reset-module-order">Сбросить порядок</button></div>
+          </section>
+
           <section class="premium-panel settings-card update-card">
             <span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>Обновления</h2>
             <p>Проверка новых версий через официальный репозиторий Crocodile Gena Studio.</p>
-            <div class="about-row"><span>Текущая версия</span><b id="update-current-version">5.1.0</b></div>
+            <div class="about-row"><span>Текущая версия</span><b id="update-current-version">5.5.5</b></div>
             <div class="update-actions">
               <button class="ghost-button" id="check-update-button">Проверить обновления</button>
               <span id="update-status">Проверка ещё не выполнялась</span>
@@ -763,7 +834,7 @@
             </div>
           </section>
 
-          <section class="premium-panel settings-card"><span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>О программе</h2><div class="about-row"><span>Версия</span><b>5.1.0</b></div><div class="about-row"><span>Назначение</span><b>Игровые инструменты</b></div><div class="about-row"><span>Активные модули</span><b>Online Fix · Сохранения · DLC · CrocLua · Гипервизор · Кряки · Утилиты</b></div></section>
+          </div>
         </div>
       </section>
     </main>
@@ -801,6 +872,7 @@
   <script src="./hypervisor.js"></script>
   <script src="./anticheat.js"></script>
   <script src="./vbs.js"></script>
+  <script src="./archive.js"></script>
   <script src="./files.js"></script>
   <script src="./utilities.js"></script>
 </body>
