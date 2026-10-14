@@ -176,7 +176,7 @@ local function latest_history(state, appid)
 end
 
 local function installed_lua_path(steam_path, appid)
-    local directory = fs.join(steam_path, "config", "stplug-in")
+    local directory = fs.join(steam_path, "config", "lua")
     local enabled = fs.join(directory, appid .. ".lua")
     if fs.is_file(enabled) then
         return enabled
@@ -654,7 +654,27 @@ local function install_package(appid, service, key)
             tostring(script_err or powershell_err or "ошибка PowerShell")
     end
 
-    local stplugin = fs.join(steam_path, "config", "stplug-in")
+    -- Ship the same loader as CrocLua; never report success if DLL/config update failed.
+    local backend = fs.join(steam_path, "millennium", "plugins", "crocodile-manifest", "backend")
+    local loader_marker = fs.join(work_dir, "loader.ok")
+    local loader_script = fs.join(work_dir, "loader.ps1")
+    local loader_command = "$ErrorActionPreference = 'Stop'\n& " ..
+        powershell_quote(fs.join(backend, "install-loader.ps1")) ..
+        " -SteamPath " .. powershell_quote(steam_path) ..
+        " -ResourcePath " .. powershell_quote(fs.join(backend, "loader")) .. "\n" ..
+        "Set-Content -LiteralPath " .. powershell_quote(loader_marker) .. " -Value 'ok' -NoNewline\n"
+    local loader_written, loader_write_error = write_binary(loader_script, loader_command)
+    local loader_ready, loader_error = false, nil
+    if loader_written then
+        loader_ready, loader_error = run_powershell(loader_script, loader_marker)
+    end
+    if not loader_ready then
+        fs.remove_all(work_dir)
+        return false, "Не удалось обновить загрузчик. Закройте Steam и обновите плагин через CrocLua: " ..
+            tostring(loader_write_error or loader_error)
+    end
+
+    local stplugin = fs.join(steam_path, "config", "lua")
     local depotcache = fs.join(steam_path, "depotcache")
     local manifest_cache = manifest_cache_directory(appid)
     local plugin_ok, plugin_err = fs.create_directories(stplugin)
@@ -1021,7 +1041,7 @@ function remove_manifest(appid)
     local installed_game = state.installedGames[clean]
     local game_name = installed_game and tostring(installed_game.name or "")
         or (latest and tostring(latest.name or "") or ("AppID " .. clean))
-    local stplugin = fs.join(steam_path, "config", "stplug-in")
+    local stplugin = fs.join(steam_path, "config", "lua")
     local depotcache = fs.join(steam_path, "depotcache")
     local lua_paths = {
         fs.join(stplugin, clean .. ".lua"),

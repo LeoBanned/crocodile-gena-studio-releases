@@ -1,2 +1,2 @@
 [lua]
-paths = ["config/stplug-in"]
+paths = ["config/lua"]

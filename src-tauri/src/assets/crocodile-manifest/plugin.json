@@ -3,7 +3,7 @@
   "name": "crocodile-manifest",
   "common_name": "Crocodile Manifest",
   "description": "Получает манифесты через Ryuu или HubCap прямо со страниц игр в магазине Steam.",
-  "version": "0.4.9",
+  "version": "0.5.0",
   "backendType": "lua",
   "useBackend": true,
   "webkitApiVersion": "2.0.0"

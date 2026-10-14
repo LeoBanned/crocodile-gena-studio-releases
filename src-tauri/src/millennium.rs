@@ -6,7 +6,7 @@ use std::{
 };
 
 const PLUGIN_FOLDER_NAME: &str = "crocodile-manifest";
-const BUNDLED_PLUGIN_VERSION: &str = "0.4.9";
+const BUNDLED_PLUGIN_VERSION: &str = "0.5.0";
 
 const EMBEDDED_MILLENNIUM_FILES: &[(&str, &[u8])] = &[
     ("wsock32.dll", include_bytes!("../../millenium/wsock32.dll")),
@@ -29,6 +29,14 @@ const EMBEDDED_MILLENNIUM_FILES: &[(&str, &[u8])] = &[
 ];
 
 const EMBEDDED_PLUGIN_FILES: &[(&str, &[u8])] = &[
+    (
+        "backend/install-loader.ps1",
+        include_bytes!("assets/crocodile-manifest/backend/install-loader.ps1"),
+    ),
+    ("backend/loader/OpenSteamTool.dll", include_bytes!("assets/OpenSteamTool.dll")),
+    ("backend/loader/dwmapi.dll", include_bytes!("assets/dwmapi.dll")),
+    ("backend/loader/xinput1_4.dll", include_bytes!("assets/xinput1_4.dll")),
+    ("backend/loader/opensteamtool.toml", include_bytes!("assets/opensteamtool.toml")),
     (
         "plugin.json",
         include_bytes!("assets/crocodile-manifest/plugin.json"),
@@ -180,6 +188,10 @@ pub fn millennium_install_plugin(steam_path: Option<String>) -> OperationResult 
             "Millennium не установлен. Сначала установите встроенный комплект Millennium",
             vec![],
         );
+    }
+
+    if let Err(message) = crate::luatools::ensure_opensteamtool_installed(&steam) {
+        return OperationResult::error(message, vec![]);
     }
 
     let target_root = plugin_dir(&steam);
@@ -346,6 +358,12 @@ mod tests {
             .join(PLUGIN_FOLDER_NAME);
         assert!(expected.join("plugin.json").is_file());
         assert!(expected.join("backend").join("main.lua").is_file());
+        assert_eq!(fs::read(expected.join("backend/loader/OpenSteamTool.dll")).unwrap(),
+            include_bytes!("assets/OpenSteamTool.dll"));
+        assert_eq!(fs::read(steam.join("OpenSteamTool.dll")).unwrap(),
+            include_bytes!("assets/OpenSteamTool.dll"));
+        assert!(fs::read_to_string(steam.join("opensteamtool.toml")).unwrap().contains("config/lua"));
+        assert!(expected.join("backend/install-loader.ps1").is_file());
         assert!(expected
             .join(".millennium")
             .join("Dist")
