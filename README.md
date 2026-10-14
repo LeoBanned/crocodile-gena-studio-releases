@@ -393,10 +393,9 @@ npm run build:setup
 ## Лицензия исходного кода
 
 Собственный код автора доступен по **GPL-3.0-only** — [LICENSE](LICENSE).
-Условия сторонних DLL, EXE и зависимостей описаны отдельно в [THIRD_PARTY.md](THIRD_PARTY.md).
 Для самостоятельной сборки начните с [BUILD.md](BUILD.md); есть помощник `BUILD-WINDOWS.cmd`.
 
-## ⚖️ Дисклеймер (Правовая оговорка)
+## ⚖️ Дисклеймер
 
 Данное программное обеспечение создано исключительно в образовательных, исследовательских и ознакомительных целях для изучения архитектуры приложений Windows, реверс-инжиниринга динамических библиотек и механизмов виртуализации. Разработчики не несут ответственности за неправомерное использование данного ПО или нарушение лицензионных соглашений сторонних сервисов.
 
@@ -406,7 +405,6 @@ npm run build:setup
 
 **CrocodileGena Studio** • *Разработано с заботой о пользователях* • 2026
 
-[![Telegram Channel](https://img.shields.io/badge/Telegram-Пиратская_Станция-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/piratestationn)
 [![Telegram Support](https://img.shields.io/badge/Telegram-Поддержка_Разработчика-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/crocodilehub2)
 
 </div>
