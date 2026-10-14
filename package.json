@@ -1,12 +1,18 @@
 {
   "name": "crocodile-gena-studio",
   "private": true,
-  "version": "5.1.0",
+  "version": "5.5.5",
+  "license": "GPL-3.0-only",
   "description": "CrocodileGena Studio — premium Tauri desktop client",
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",
-    "build": "tauri build"
+    "build": "tauri build",
+    "build:portable": "tauri build --no-bundle --ci",
+    "build:setup": "tauri build --bundles nsis --ci",
+    "doctor": "node tools/check-build.cjs",
+    "test": "node --test tests/dlc.test.cjs tests/vbs.test.cjs tests/workspace.test.cjs",
+    "test:native": "cargo test --manifest-path src-tauri/Cargo.toml --lib --locked"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.11.1"
