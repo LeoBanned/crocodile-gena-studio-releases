@@ -48,6 +48,8 @@ try {
         Copy-ExportFile 'СмакиАпи/smaki32.dll' 'SmokeAPI/SmokeAPI86.dll'
     }
     foreach ($taskFile in @('dlc.test.cjs','vbs.test.cjs','workspace.test.cjs')) { Copy-ExportFile "tests/$taskFile" }
+    Copy-ExportFile 'README.en.md'
+    Copy-ExportFile 'docs/images/home.png'
     Rewrite-ExportFile 'src-tauri/src/lib.rs' { param($t) $t.Replace('DLCUnlocker','CreamAPI') }
     Rewrite-ExportFile 'src-tauri/tauri.conf.json' { param($t) $t.Replace('DLCUnlocker','CreamAPI') }
     Rewrite-ExportFile 'src-tauri/src/smaki.rs' { param($t) $t.Replace('../../СмакиАпи/smaki.dll','../../SmokeAPI/SmokeAPI64.dll').Replace('../../СмакиАпи/smaki32.dll','../../SmokeAPI/SmokeAPI86.dll') }
@@ -85,6 +87,7 @@ const AUTH_KEY: &str = match option_env!("CGS_RYUU_API_KEY") {
     Rewrite-ExportFile 'ui/index.html' { param($t) $t.Replace('Ключ уже встроен — ничего вводить не нужно','Ключ задаётся при сборке — см. BUILD.md') }
     Rewrite-ExportFile 'ui/i18n.js' { param($t) $t.Replace('"Ключ уже встроен — ничего вводить не нужно": "The key is built in — no setup required"','"Ключ задаётся при сборке — см. BUILD.md": "Set the key at build time — see BUILD.md"') }
     Rewrite-ExportFile 'README.md' { param($t) $t.Replace('Ryuu со встроенным ключом','Ryuu с ключом, заданным при сборке') }
+    Rewrite-ExportFile 'README.en.md' { param($t) $t.Replace('Ryuu with a built-in key','Ryuu with a key supplied at build time') }
     # Assert the original credential is absent even from bundled plugin JS or documentation.
     $taskRyuuSource = [IO.File]::ReadAllText((Join-Path $taskRoot 'src-tauri/src/ryuu.rs'))
     $taskOriginalKey = [regex]::Match($taskRyuuSource, 'const AUTH_KEY: &str = "([^"\r\n]+)";').Groups[1].Value

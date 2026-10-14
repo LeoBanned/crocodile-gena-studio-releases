@@ -839,7 +839,7 @@
     ["Резервная копия:", "Backup:"],
     ["Удалено компонентов:", "Components removed:"],
     ["Системный модуль недоступен", "System module is unavailable"],
-    ["Crocodile Gena Studio 5.5.5 инициализирован", "Crocodile Gena Studio 5.5.5 initialized"],
+    ["Crocodile Gena Studio 5.5.6 инициализирован", "Crocodile Gena Studio 5.5.6 initialized"],
     ["Доступна версия", "Version available:"],
     ["Осталось", "Remaining"],
     ["локальная копия", "local copy"]
