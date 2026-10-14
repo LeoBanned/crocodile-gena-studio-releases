@@ -1,12 +1,30 @@
-# Build outputs
-target/
-src-tauri/target/
 node_modules/
-dist/
+src-tauri/target/
+src-tauri/gen/
 build/
+dist/
+__pycache__/
+*.pyc
 *.log
-*.tmp
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+design-previews/
+github_export/
+github_export.previous-*/
+github_export.staging-*/
+src-tauri/resources/hypervisor/
 
-# Preserve essential hidden asset directories for Tauri compilation
+# Required embedded plugin output must remain in the public repository.
 !src-tauri/src/assets/crocodile-manifest/.millennium/
-!src-tauri/src/assets/crocodile-manifest/.millennium/**
+!src-tauri/src/assets/crocodile-manifest/.millennium/Dist/
+!src-tauri/src/assets/crocodile-manifest/.millennium/Dist/index.js
+!src-tauri/src/assets/crocodile-manifest/.millennium/Dist/webkit.js
