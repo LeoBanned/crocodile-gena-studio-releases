@@ -416,7 +416,6 @@ The application creates a `.backup_orig` directory in the game folder. It stores
 ## Source Code License
 
 The author's own code is available under **GPL-3.0-only** — see [LICENSE](LICENSE).
-Third-party DLLs, executables, and dependencies have separate terms described in [THIRD_PARTY.md](THIRD_PARTY.md) *(Russian)*.
 For building from source, start with [BUILD.md](BUILD.md); the `BUILD-WINDOWS.cmd` helper is also available.
 
 ## ⚖️ Disclaimer
@@ -429,7 +428,6 @@ This software is created exclusively for educational, research, and evaluation p
 
 **CrocodileGena Studio** • *Built with care for its users* • 2026
 
-[![Telegram Channel](https://img.shields.io/badge/Telegram-Pirate_Station-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/piratestationn)
 [![Telegram Support](https://img.shields.io/badge/Telegram-Developer_Support-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/crocodilehub2)
 
 </div>
