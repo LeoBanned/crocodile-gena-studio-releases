@@ -6,7 +6,7 @@
 
 ### **Ультимативный центр управления библиотекой Steam, дополнениями, сетевыми фиксами и системной средой**
 
-[![Версия](https://img.shields.io/badge/Версия-5.5.5-63f5c2?style=for-the-badge&logo=tauri&logoColor=black)](https://github.com/)
+[![Версия](https://img.shields.io/badge/Версия-5.5.6-63f5c2?style=for-the-badge&logo=tauri&logoColor=black)](https://github.com/)
 [![Платформа](https://img.shields.io/badge/Платформа-Windows_10_|_11_(x64)-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com/windows)
 [![Архитектура](https://img.shields.io/badge/Стек-Rust_Tauri_v2_+_Modern_JS-black?style=for-the-badge&logo=rust&logoColor=orange)](https://tauri.app/)
 [![Безопасность](https://img.shields.io/badge/Защита-Побайтовый_Бэкап-2ea44f?style=for-the-badge&logo=shield)](#-система-безопасности-и-отката)
@@ -178,7 +178,7 @@
     * Поддержка пользовательского API-ключа.
     * Отслеживание суточных квот и оставшихся загрузок прямо в интерфейсе (счетчик 0/25).
 * **Автоматическая раскладка файлов**:
-  * Программа автоматически размещает `.lua` в каталог плагина `config/stplug-in/`, а `.manifest` файлы — в корневой `depotcache/`.
+  * Программа автоматически размещает `.lua` в `config/lua/`, а `.manifest` файлы — в корневой `depotcache/`.
 * **Ручной импорт**:
   * Поддержка перетаскивания (Drag & Drop) любых файлов `.lua`, `.manifest` или архивов `.zip`.
 * **Менеджер добавленных игр**:
@@ -186,7 +186,7 @@
   * Детальная карточка игры: дата релиза, обложка, сравнение списка разблокированных дополнений с отсутствующими в lua.
   * Опция **Автообновления манифестов**.
 * **Плагин Millennium («Crocodile Manifest»)**:
-  * Встроенный модуль для фреймворка Millennium (v0.4.9).
+  * Встроенный модуль для фреймворка Millennium (v0.5.0), использующий тот же комплект DLL и папку `config/lua/`, что и CrocLua.
   * Установка в один клик: добавляет стильную кнопку **«Получить манифест»** прямо на страницы игр внутри официального магазина Steam!
 
 ---
@@ -397,9 +397,10 @@ npm run build:setup
 ## Лицензия исходного кода
 
 Собственный код автора доступен по **GPL-3.0-only** — [LICENSE](LICENSE).
+Условия сторонних DLL, EXE и зависимостей описаны отдельно в [THIRD_PARTY.md](THIRD_PARTY.md).
 Для самостоятельной сборки начните с [BUILD.md](BUILD.md); есть помощник `BUILD-WINDOWS.cmd`.
 
-## ⚖️ Дисклеймер
+## ⚖️ Дисклеймер (Правовая оговорка)
 
 Данное программное обеспечение создано исключительно в образовательных, исследовательских и ознакомительных целях для изучения архитектуры приложений Windows, реверс-инжиниринга динамических библиотек и механизмов виртуализации. Разработчики не несут ответственности за неправомерное использование данного ПО или нарушение лицензионных соглашений сторонних сервисов.
 
@@ -409,6 +410,7 @@ npm run build:setup
 
 **CrocodileGena Studio** • *Разработано с заботой о пользователях* • 2026
 
+[![Telegram Channel](https://img.shields.io/badge/Telegram-Пиратская_Станция-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/piratestationn)
 [![Telegram Support](https://img.shields.io/badge/Telegram-Поддержка_Разработчика-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/crocodilehub2)
 
 </div>

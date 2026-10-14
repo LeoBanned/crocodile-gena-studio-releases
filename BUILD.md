@@ -1,6 +1,6 @@
 # Собрать Crocodile Gena Studio самостоятельно
 
-Инструкция для **Windows 10/11 x64**, версия проекта **5.5.5**.
+Инструкция для **Windows 10/11 x64**, версия проекта **5.5.6**.
 GitHub Actions, платный аккаунт GitHub, Python и установленный Steam для сборки не нужны.
 
 ## Коротко
@@ -99,10 +99,10 @@ src-tauri\target\release\crocodile-gena-studio.exe
 npm run build:setup
 ~~~
 
-Результат для версии 5.5.5:
+Результат для версии 5.5.6:
 
 ~~~text
-src-tauri\target\release\bundle\nsis\Crocodile Gena Studio_5.5.5_x64-setup.exe
+src-tauri\target\release\bundle\nsis\Crocodile Gena Studio_5.5.6_x64-setup.exe
 ~~~
 
 NSIS-установщик настроен на загрузку WebView2 при необходимости, поэтому
@@ -117,7 +117,7 @@ npm run build -- --ci
 Дополнительно появится:
 
 ~~~text
-src-tauri\target\release\bundle\msi\Crocodile Gena Studio_5.5.5_x64_en-US.msi
+src-tauri\target\release\bundle\msi\Crocodile Gena Studio_5.5.6_x64_en-US.msi
 ~~~
 
 Для MSI могут понадобиться включённые компоненты VBScript в Windows.
@@ -194,6 +194,7 @@ millenium/                  # это фактическое имя катало�
 tools/
 tests/
 LICENSE
+THIRD_PARTY.md
 ~~~
 
 `include_bytes!` и `include_str!` читают ресурсы при компиляции.
@@ -266,3 +267,4 @@ npm run test:native
 Собственный код автора опубликован под **GPL-3.0-only** — см. [LICENSE](LICENSE).
 Готовые сторонние DLL, EXE, UnRAR и прочие зависимости имеют отдельные условия;
 их включение не означает передачу прав на них по GPL.
+Перед распространением сборок ознакомьтесь с [THIRD_PARTY.md](THIRD_PARTY.md).

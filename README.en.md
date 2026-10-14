@@ -6,7 +6,7 @@
 
 ### **The all-in-one hub for your Steam library, DLC, online fixes, and Windows environment**
 
-[![Version](https://img.shields.io/badge/Version-5.5.5-63f5c2?style=for-the-badge&logo=tauri&logoColor=black)](https://github.com/)
+[![Version](https://img.shields.io/badge/Version-5.5.6-63f5c2?style=for-the-badge&logo=tauri&logoColor=black)](https://github.com/)
 [![Platform](https://img.shields.io/badge/Platform-Windows_10_|_11_(x64)-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com/windows)
 [![Stack](https://img.shields.io/badge/Stack-Rust_Tauri_v2_+_Modern_JS-black?style=for-the-badge&logo=rust&logoColor=orange)](https://tauri.app/)
 [![Safety](https://img.shields.io/badge/Safety-Byte--for--byte_Backups-2ea44f?style=for-the-badge&logo=shield)](#safety)
@@ -182,7 +182,7 @@ A tool for adding licensed games directly to the official Steam client through L
     * Use your own API key.
     * Track daily quotas and remaining downloads in the interface (0/25 counter).
 * **Automatic file placement**:
-  * Place `.lua` files in `config/stplug-in/` and `.manifest` files in the root `depotcache/` directory.
+  * Place `.lua` files in `config/lua/` and `.manifest` files in the root `depotcache/` directory.
 * **Manual import**:
   * Drag and drop `.lua`, `.manifest`, or `.zip` files.
 * **Added game management**:
@@ -190,7 +190,7 @@ A tool for adding licensed games directly to the official Steam client through L
   * Detailed game cards: release date, cover image, and a comparison of unlocked DLC against DLC missing from the Lua file.
   * **Automatic manifest updates** option.
 * **Millennium plugin (“Crocodile Manifest”)**:
-  * Bundled plugin for Millennium (v0.4.9).
+  * Bundled plugin for Millennium (v0.5.0), sharing CrocLua's DLL bundle and `config/lua/` folder.
   * One-click installation adds a **“Get manifest”** button directly to game pages in the official Steam Store!
 
 ---
@@ -260,6 +260,8 @@ After downloading an archive, click **“Extract into game”** — no manual fi
 * **Short contents list**: show each top-level folder once, without listing every nested path. JPG/JPEG files are hidden only from the list — they are still extracted.
 * **Backups of replaced files**: save originals to `.cgs-backups` inside the game folder. The downloaded archive stays in Downloads.
 * Archive contents are **not executed automatically**.
+
+More about the extractor: **[ARCHIVE-INSTALL.md](ARCHIVE-INSTALL.md)** *(Russian)*.
 
 ---
 
@@ -414,6 +416,7 @@ The application creates a `.backup_orig` directory in the game folder. It stores
 ## Source Code License
 
 The author's own code is available under **GPL-3.0-only** — see [LICENSE](LICENSE).
+Third-party DLLs, executables, and dependencies have separate terms described in [THIRD_PARTY.md](THIRD_PARTY.md) *(Russian)*.
 For building from source, start with [BUILD.md](BUILD.md); the `BUILD-WINDOWS.cmd` helper is also available.
 
 ## ⚖️ Disclaimer
@@ -426,6 +429,7 @@ This software is created exclusively for educational, research, and evaluation p
 
 **CrocodileGena Studio** • *Built with care for its users* • 2026
 
+[![Telegram Channel](https://img.shields.io/badge/Telegram-Pirate_Station-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/piratestationn)
 [![Telegram Support](https://img.shields.io/badge/Telegram-Developer_Support-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/crocodilehub2)
 
 </div>
