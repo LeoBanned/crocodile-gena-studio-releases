@@ -194,7 +194,6 @@ millenium/                  # это фактическое имя катало�
 tools/
 tests/
 LICENSE
-THIRD_PARTY.md
 ~~~
 
 `include_bytes!` и `include_str!` читают ресурсы при компиляции.
