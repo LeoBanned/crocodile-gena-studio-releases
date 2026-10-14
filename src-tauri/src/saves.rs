@@ -311,7 +311,85 @@ fn collect_candidates() -> BTreeMap<String, SaveCandidate> {
         );
     }
 
+    #[cfg(target_os = "linux")]
+    if let Some(home) = env_path("HOME") {
+        add_candidate(
+            &mut candidates,
+            home.join("Documents").join("My Games"),
+            "Documents / My Games",
+            "Linux",
+        );
+        add_candidate(
+            &mut candidates,
+            home.join(".local/share/godot/app_userdata"),
+            "Godot / app_userdata",
+            "Linux",
+        );
+        for steam in linux_steam_roots(&home) {
+            add_candidate(
+                &mut candidates,
+                steam.join("userdata"),
+                "Steam / userdata",
+                "Steam Linux",
+            );
+            let compatdata = steam.join("steamapps/compatdata");
+            let Ok(prefixes) = fs::read_dir(compatdata) else {
+                continue;
+            };
+            for prefix in prefixes.flatten().filter(|entry| entry.path().is_dir()) {
+                let appid = prefix.file_name().to_string_lossy().into_owned();
+                let user = prefix.path().join("pfx/drive_c/users/steamuser");
+                add_candidate(
+                    &mut candidates,
+                    user.join("Saved Games"),
+                    format!("Proton {appid} / Saved Games"),
+                    "Steam Proton",
+                );
+                add_candidate(
+                    &mut candidates,
+                    user.join("Documents/My Games"),
+                    format!("Proton {appid} / My Games"),
+                    "Steam Proton",
+                );
+                let roaming = user.join("AppData/Roaming");
+                add_named_roots(&mut candidates, &roaming, "Steam Proton");
+                let local = user.join("AppData/Local");
+                if let Ok(items) = fs::read_dir(&local) {
+                    for item in items.flatten().filter(|entry| entry.path().is_dir()) {
+                        for suffix in [["Saved", "SaveGames"], ["Saved", "Saves"]] {
+                            let path = item.path().join(suffix[0]).join(suffix[1]);
+                            if path.is_dir() {
+                                add_candidate(
+                                    &mut candidates,
+                                    path,
+                                    format!(
+                                        "Proton {appid} / {}",
+                                        item.file_name().to_string_lossy()
+                                    ),
+                                    "Steam Proton",
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     candidates
+}
+
+#[cfg(target_os = "linux")]
+fn linux_steam_roots(home: &Path) -> Vec<PathBuf> {
+    [
+        home.join(".steam/steam"),
+        home.join(".local/share/Steam"),
+        home.join(".var/app/com.valvesoftware.Steam/.local/share/Steam"),
+        home.join("snap/steam/common/.local/share/Steam"),
+    ]
+    .into_iter()
+    .filter(|path| path.join("steamapps").is_dir())
+    .collect()
 }
 
 fn directory_stats(path: &Path) -> (u64, u64, Option<u64>) {
@@ -396,22 +474,37 @@ fn pick_save_archive_blocking(format: String) -> Result<Option<String>, String> 
         .map(|value| value.as_secs())
         .unwrap_or(0);
     let default_name = format!("CrocodileGena-Saves-{stamp}.{format}");
-    let script = r#"Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.SaveFileDialog; $d.Title = 'Сохранить архив игровых сохранений'; $d.FileName = $env:CGS_ARCHIVE_NAME; if ($env:CGS_ARCHIVE_FORMAT -eq 'rar') { $d.Filter = 'RAR archive (*.rar)|*.rar' } else { $d.Filter = 'ZIP archive (*.zip)|*.zip' }; $d.DefaultExt = $env:CGS_ARCHIVE_FORMAT; $d.AddExtension = $true; $d.OverwritePrompt = $true; if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::OutputEncoding = [Text.Encoding]::UTF8; Write-Output $d.FileName }"#;
-    let mut command = Command::new("powershell.exe");
-    command
-        .args(["-NoProfile", "-STA", "-Command", script])
-        .env("CGS_ARCHIVE_NAME", default_name)
-        .env("CGS_ARCHIVE_FORMAT", format);
-    #[cfg(target_os = "windows")]
-    command.creation_flags(0x08000000);
-    let output = command
-        .output()
-        .map_err(|error| format!("Не удалось открыть выбор файла: {error}"))?;
-    if !output.status.success() {
-        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    #[cfg(target_os = "linux")]
+    {
+        return Ok(crate::native_dialog::save_file(
+            "Сохранить архив игровых сохранений",
+            &default_name,
+            format,
+        ));
     }
-    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    Ok((!path.is_empty()).then_some(path))
+    #[cfg(target_os = "windows")]
+    {
+        let script = r#"Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.SaveFileDialog; $d.Title = 'Сохранить архив игровых сохранений'; $d.FileName = $env:CGS_ARCHIVE_NAME; if ($env:CGS_ARCHIVE_FORMAT -eq 'rar') { $d.Filter = 'RAR archive (*.rar)|*.rar' } else { $d.Filter = 'ZIP archive (*.zip)|*.zip' }; $d.DefaultExt = $env:CGS_ARCHIVE_FORMAT; $d.AddExtension = $true; $d.OverwritePrompt = $true; if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::OutputEncoding = [Text.Encoding]::UTF8; Write-Output $d.FileName }"#;
+        let mut command = Command::new("powershell.exe");
+        command
+            .args(["-NoProfile", "-STA", "-Command", script])
+            .env("CGS_ARCHIVE_NAME", default_name)
+            .env("CGS_ARCHIVE_FORMAT", format);
+        #[cfg(target_os = "windows")]
+        command.creation_flags(0x08000000);
+        let output = command
+            .output()
+            .map_err(|error| format!("Не удалось открыть выбор файла: {error}"))?;
+        if !output.status.success() {
+            return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+        }
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        Ok((!path.is_empty()).then_some(path))
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        Ok(None)
+    }
 }
 
 #[tauri::command]
@@ -422,23 +515,38 @@ pub async fn pick_save_restore_archive() -> Result<Option<String>, String> {
 }
 
 fn pick_save_restore_archive_blocking() -> Result<Option<String>, String> {
-    let script = r#"Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.OpenFileDialog; $d.Title = 'Выберите архив сохранений Crocodile Gena Studio'; $d.Filter = 'Архивы сохранений (*.zip;*.rar)|*.zip;*.rar|ZIP archive (*.zip)|*.zip|RAR archive (*.rar)|*.rar'; $d.Multiselect = $false; $d.CheckFileExists = $true; if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::OutputEncoding = [Text.Encoding]::UTF8; Write-Output $d.FileName }"#;
-    let mut command = Command::new("powershell.exe");
-    command.args(["-NoProfile", "-STA", "-Command", script]);
-    #[cfg(target_os = "windows")]
-    command.creation_flags(0x08000000);
-    let output = command
-        .output()
-        .map_err(|error| format!("Не удалось открыть выбор файла: {error}"))?;
-    if !output.status.success() {
-        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    #[cfg(target_os = "linux")]
+    {
+        return Ok(crate::native_dialog::pick_file(
+            "Выберите архив сохранений Crocodile Gena Studio",
+            &["zip", "rar"],
+        ));
     }
-    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    Ok((!path.is_empty()).then_some(path))
+    #[cfg(target_os = "windows")]
+    {
+        let script = r#"Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.OpenFileDialog; $d.Title = 'Выберите архив сохранений Crocodile Gena Studio'; $d.Filter = 'Архивы сохранений (*.zip;*.rar)|*.zip;*.rar|ZIP archive (*.zip)|*.zip|RAR archive (*.rar)|*.rar'; $d.Multiselect = $false; $d.CheckFileExists = $true; if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::OutputEncoding = [Text.Encoding]::UTF8; Write-Output $d.FileName }"#;
+        let mut command = Command::new("powershell.exe");
+        command.args(["-NoProfile", "-STA", "-Command", script]);
+        #[cfg(target_os = "windows")]
+        command.creation_flags(0x08000000);
+        let output = command
+            .output()
+            .map_err(|error| format!("Не удалось открыть выбор файла: {error}"))?;
+        if !output.status.success() {
+            return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+        }
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        Ok((!path.is_empty()).then_some(path))
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        Ok(None)
+    }
 }
 
 fn portable_path(path: &Path) -> String {
     let mut roots = [
+        "HOME",
         "LOCALAPPDATA",
         "APPDATA",
         "USERPROFILE",
@@ -478,6 +586,7 @@ fn expand_portable_path(value: &str) -> Option<PathBuf> {
             "LOCALAPPDATA",
             "APPDATA",
             "USERPROFILE",
+            "HOME",
             "OneDrive",
             "PUBLIC",
             "PROGRAMDATA",
@@ -608,6 +717,19 @@ fn allowed_save_destination(path: &Path) -> bool {
             return true;
         }
     }
+    #[cfg(target_os = "linux")]
+    if let Some(home) = env_path("HOME") {
+        if path_is_within(path, &home.join("Documents"))
+            || path_is_within(path, &home.join(".local/share"))
+            || path_is_within(path, &home.join(".config"))
+            || linux_steam_roots(&home).iter().any(|root| {
+                path_is_within(path, &root.join("userdata"))
+                    || path_is_within(path, &root.join("steamapps/compatdata"))
+            })
+        {
+            return true;
+        }
+    }
     false
 }
 
@@ -674,22 +796,49 @@ fn find_winrar() -> Option<PathBuf> {
 }
 
 fn create_zip(stage: &Path, destination: &Path) -> Result<(), String> {
-    let script = r#"Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::CreateFromDirectory($env:CGS_STAGE, $env:CGS_ARCHIVE, [IO.Compression.CompressionLevel]::Optimal, $false)"#;
-    let mut command = Command::new("powershell.exe");
-    command
-        .args(["-NoProfile", "-NonInteractive", "-Command", script])
-        .env("CGS_STAGE", stage)
-        .env("CGS_ARCHIVE", destination);
-    #[cfg(target_os = "windows")]
-    command.creation_flags(0x08000000);
-    let output = command
-        .output()
-        .map_err(|error| format!("Не удалось запустить ZIP-архиватор: {error}"))?;
-    if output.status.success() {
-        Ok(())
-    } else {
-        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+    let file = File::create(destination)
+        .map_err(|error| format!("Не удалось создать ZIP-архив: {error}"))?;
+    let mut archive = zip::ZipWriter::new(file);
+    let file_options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated)
+        .unix_permissions(0o644);
+    let directory_options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Stored)
+        .unix_permissions(0o755);
+    for entry in WalkDir::new(stage)
+        .follow_links(false)
+        .into_iter()
+        .filter_map(Result::ok)
+    {
+        let Ok(relative) = entry.path().strip_prefix(stage) else {
+            continue;
+        };
+        if relative.as_os_str().is_empty() {
+            continue;
+        }
+        let name = relative.to_string_lossy().replace('\\', "/");
+        if entry.file_type().is_dir() {
+            archive
+                .add_directory(
+                    format!("{}/", name.trim_end_matches('/')),
+                    directory_options,
+                )
+                .map_err(|error| format!("Не удалось добавить папку в ZIP: {error}"))?;
+        } else if entry.file_type().is_file() {
+            archive
+                .start_file(name, file_options)
+                .map_err(|error| format!("Не удалось добавить файл в ZIP: {error}"))?;
+            let mut source = File::open(entry.path()).map_err(|error| {
+                format!("Не удалось прочитать {}: {error}", entry.path().display())
+            })?;
+            std::io::copy(&mut source, &mut archive)
+                .map_err(|error| format!("Не удалось записать файл в ZIP: {error}"))?;
+        }
     }
+    archive
+        .finish()
+        .map(|_| ())
+        .map_err(|error| format!("Не удалось завершить ZIP-архив: {error}"))
 }
 
 fn create_rar(stage: &Path, destination: &Path) -> Result<(), String> {

@@ -66,28 +66,61 @@ fn is_newer(latest: &str, current: &str) -> bool {
 }
 
 fn installer_url(release: &GithubRelease) -> Option<String> {
-    release
+    #[cfg(target_os = "linux")]
+    return release
         .assets
         .iter()
         .find(|asset| {
             let name = asset.name.to_ascii_lowercase();
-            name.ends_with(".exe") && (name.contains("setup") || name.contains("installer"))
+            name.ends_with(".deb") || name.ends_with(".rpm")
         })
-        .map(|asset| asset.browser_download_url.clone())
+        .map(|asset| asset.browser_download_url.clone());
+
+    #[cfg(target_os = "windows")]
+    {
+        release
+            .assets
+            .iter()
+            .find(|asset| {
+                let name = asset.name.to_ascii_lowercase();
+                name.ends_with(".exe") && (name.contains("setup") || name.contains("installer"))
+            })
+            .map(|asset| asset.browser_download_url.clone())
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        None
+    }
 }
 
 fn portable_url(release: &GithubRelease) -> Option<String> {
-    release
+    #[cfg(target_os = "linux")]
+    return release
         .assets
         .iter()
-        .find(|asset| asset.name.eq_ignore_ascii_case("crocodile-gena-studio.exe"))
-        .or_else(|| {
-            release.assets.iter().find(|asset| {
-                let name = asset.name.to_ascii_lowercase();
-                name.ends_with(".exe") && !name.contains("setup") && !name.contains("installer")
+        .find(|asset| asset.name.to_ascii_lowercase().ends_with(".appimage"))
+        .map(|asset| asset.browser_download_url.clone());
+
+    #[cfg(target_os = "windows")]
+    {
+        release
+            .assets
+            .iter()
+            .find(|asset| asset.name.eq_ignore_ascii_case("crocodile-gena-studio.exe"))
+            .or_else(|| {
+                release.assets.iter().find(|asset| {
+                    let name = asset.name.to_ascii_lowercase();
+                    name.ends_with(".exe") && !name.contains("setup") && !name.contains("installer")
+                })
             })
-        })
-        .map(|asset| asset.browser_download_url.clone())
+            .map(|asset| asset.browser_download_url.clone())
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        None
+    }
 }
 
 #[tauri::command]

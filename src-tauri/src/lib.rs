@@ -1,23 +1,52 @@
+#[cfg(target_os = "windows")]
+mod anticheat;
+#[cfg(not(target_os = "windows"))]
+#[path = "linux/anticheat.rs"]
 mod anticheat;
 mod dlc;
 mod dlc_catalog;
 mod engine;
 mod files;
+mod archive_install;
 mod hubcap;
+#[cfg(target_os = "windows")]
+mod hypervisor;
+#[cfg(not(target_os = "windows"))]
+#[path = "linux/hypervisor.rs"]
 mod hypervisor;
 mod luatools;
+#[cfg(target_os = "windows")]
+mod millennium;
+#[cfg(not(target_os = "windows"))]
+#[path = "linux/millennium.rs"]
 mod millennium;
 mod models;
+mod native_dialog;
+mod native_drop;
 mod ryuu;
 mod saves;
 mod smaki;
 mod steam;
 mod steam_library;
+mod game_artwork;
 mod updates;
+#[cfg(target_os = "windows")]
+mod vbs;
+#[cfg(not(target_os = "windows"))]
+#[path = "linux/vbs.rs"]
 mod vbs;
 
+use serde::Serialize;
 use std::process::Command;
 use tauri::{AppHandle, Manager, WebviewWindow};
+
+#[cfg(windows)]
+use std::os::windows::ffi::OsStrExt;
+#[cfg(windows)]
+use windows::{
+    core::PCWSTR,
+    Win32::UI::{Shell::ShellExecuteW, WindowsAndMessaging::SW_SHOWNORMAL},
+};
 
 const EMBEDDED_CORE_COMPONENTS: &[(&str, &[u8])] = &[
     (
@@ -74,30 +103,20 @@ const EMBEDDED_DLC_COMPONENTS: &[(&str, &[u8])] = &[
     ),
 ];
 
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
-
 #[tauri::command]
-async fn pick_game_directory() -> Result<Option<String>, String> {
-    tauri::async_runtime::spawn_blocking(pick_game_directory_blocking)
-        .await
-        .map_err(|error| format!("Диалог выбора прерван: {error}"))?
-}
-
-fn pick_game_directory_blocking() -> Result<Option<String>, String> {
-    let script = r#"Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.FolderBrowserDialog; $d.Description = 'Выберите папку с игрой'; $d.ShowNewFolderButton = $false; if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::OutputEncoding = [Text.Encoding]::UTF8; Write-Output $d.SelectedPath }"#;
-    let mut command = Command::new("powershell.exe");
-    command.args(["-NoProfile", "-STA", "-Command", script]);
-    #[cfg(target_os = "windows")]
-    command.creation_flags(0x08000000);
-    let output = command
-        .output()
-        .map_err(|error| format!("Не удалось открыть выбор папки: {error}"))?;
-    if !output.status.success() {
-        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
-    }
-    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    Ok((!path.is_empty()).then_some(path))
+async fn pick_game_directory(window: WebviewWindow) -> Result<Option<String>, String> {
+    #[cfg(windows)]
+    let owner = window.hwnd().map_err(|error| error.to_string())?.0 as isize;
+    #[cfg(not(windows))]
+    let owner = {
+        let _ = window;
+        0
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        native_dialog::pick_folder("Выберите папку", owner)
+    })
+    .await
+    .map_err(|error| format!("Диалог выбора прерван: {error}"))?
 }
 
 #[tauri::command]
@@ -105,11 +124,49 @@ fn open_external(url: String) -> Result<(), String> {
     if !(url.starts_with("https://") || url.starts_with("http://")) {
         return Err("Разрешены только HTTP(S)-ссылки".into());
     }
-    Command::new("rundll32.exe")
-        .args(["url.dll,FileProtocolHandler", &url])
+    #[cfg(target_os = "windows")]
+    let mut command = {
+        let mut command = Command::new("rundll32.exe");
+        command.args(["url.dll,FileProtocolHandler", &url]);
+        command
+    };
+    #[cfg(target_os = "linux")]
+    let mut command = {
+        let mut command = Command::new("xdg-open");
+        command.arg(&url);
+        command
+    };
+    #[cfg(target_os = "macos")]
+    let mut command = {
+        let mut command = Command::new("open");
+        command.arg(&url);
+        command
+    };
+    command
         .spawn()
         .map(|_| ())
         .map_err(|error| format!("Не удалось открыть ссылку: {error}"))
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PlatformInfo {
+    os: &'static str,
+    windows: bool,
+    windows_only_modules: Vec<&'static str>,
+}
+
+#[tauri::command]
+fn platform_info() -> PlatformInfo {
+    PlatformInfo {
+        os: std::env::consts::OS,
+        windows: cfg!(target_os = "windows"),
+        windows_only_modules: if cfg!(target_os = "windows") {
+            Vec::new()
+        } else {
+            vec!["hypervisor"]
+        },
+    }
 }
 
 #[tauri::command]
@@ -136,15 +193,81 @@ fn start_dragging_window(window: WebviewWindow) -> Result<(), String> {
     window.start_dragging().map_err(|error| error.to_string())
 }
 
+#[tauri::command]
+fn process_is_elevated() -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        Command::new("fltmc.exe")
+            .creation_flags(0x08000000)
+            .status()
+            .map(|status| status.success())
+            .unwrap_or(false)
+    }
+    #[cfg(not(windows))]
+    {
+        false
+    }
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn relaunch_as_admin() -> Result<(), String> {
+    let executable = std::env::current_exe()
+        .map_err(|error| format!("Не удалось определить путь программы: {error}"))?;
+    let executable: Vec<u16> = executable
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    let verb: Vec<u16> = "runas".encode_utf16().chain(std::iter::once(0)).collect();
+    let result = unsafe {
+        ShellExecuteW(
+            None,
+            PCWSTR(verb.as_ptr()),
+            PCWSTR(executable.as_ptr()),
+            PCWSTR::null(),
+            PCWSTR::null(),
+            SW_SHOWNORMAL,
+        )
+    };
+    if result.0 as isize <= 32 {
+        return Err(if result.0 as isize == 5 {
+            "Запрос прав администратора отменён".into()
+        } else {
+            format!(
+                "Не удалось запустить программу с правами администратора (код {})",
+                result.0 as isize
+            )
+        });
+    }
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+#[tauri::command]
+fn relaunch_as_admin() -> Result<(), String> {
+    Err("Повышение прав через UAC доступно только в Windows".into())
+}
+
 pub fn run() {
     tauri::Builder::default()
+        .on_window_event(|window, event| {
+            if window.label() == "main" && matches!(event, tauri::WindowEvent::Destroyed) {
+                archive_install::clear_sessions();
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             pick_game_directory,
+            native_drop::enable_file_drop,
             open_external,
+            platform_info,
             minimize_window,
             toggle_maximize_window,
             close_window,
             start_dragging_window,
+            process_is_elevated,
+            relaunch_as_admin,
             saves::scan_save_locations,
             saves::pick_save_archive,
             saves::create_save_archive,
@@ -159,6 +282,8 @@ pub fn run() {
             dlc::fetch_dlc_catalog,
             steam_library::scan_installed_steam_games,
             steam_library::steam_library_cover,
+            game_artwork::game_artwork,
+            game_artwork::game_artwork_store_url,
             smaki::install_smaki,
             smaki::uninstall_smaki,
             dlc_catalog::scan_dlc_catalog,
@@ -207,6 +332,12 @@ pub fn run() {
             files::files_download,
             files::files_cancel_download,
             files::files_reveal,
+            files::files_copy_password,
+            archive_install::files_archive_inspect,
+            archive_install::files_archive_contents,
+            archive_install::files_archive_prepare,
+            archive_install::files_archive_install,
+            archive_install::files_archive_cancel,
             steam::search_game,
             steam::get_app_details,
             steam::steam_drm_info,
@@ -294,15 +425,12 @@ pub(crate) fn dlc_unlocker_path(app: &AppHandle) -> std::path::PathBuf {
     if let Ok(resource_dir) = app.path().resource_dir() {
         candidates.extend([
             resource_dir.join("CreamAPI"),
-            resource_dir.join("DLCUnlocker"),
             resource_dir.join("_up_").join("CreamAPI"),
-            resource_dir.join("_up_").join("DLCUnlocker"),
         ]);
     }
     if let Ok(executable) = std::env::current_exe() {
         if let Some(directory) = executable.parent() {
             candidates.push(directory.join("CreamAPI"));
-            candidates.push(directory.join("DLCUnlocker"));
         }
     }
     for candidate in candidates {

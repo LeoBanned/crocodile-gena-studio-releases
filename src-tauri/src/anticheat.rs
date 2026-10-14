@@ -372,41 +372,21 @@ pub(crate) async fn anticheat_remove_all(
 }
 
 #[tauri::command]
-pub(crate) async fn anticheat_pick_backup_directory() -> Result<Option<String>, String> {
-    tauri::async_runtime::spawn_blocking(pick_backup_directory_blocking)
-        .await
-        .map_err(|error| format!("Выбор папки прерван: {error}"))?
-}
-
-fn pick_backup_directory_blocking() -> Result<Option<String>, String> {
-    let script = r#"Add-Type -AssemblyName System.Windows.Forms
-$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-$dialog.Description = 'Выберите папку для резервной копии античитов'
-$dialog.ShowNewFolderButton = $true
-if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-  [Console]::OutputEncoding = [Text.Encoding]::UTF8
-  Write-Output $dialog.SelectedPath
-}"#;
-    let mut command = Command::new("powershell.exe");
-    command.args([
-        "-NoLogo",
-        "-NoProfile",
-        "-NonInteractive",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-Command",
-        script,
-    ]);
-    #[cfg(target_os = "windows")]
-    command.creation_flags(CREATE_NO_WINDOW);
-    let output = command
-        .output()
-        .map_err(|error| format!("не удалось открыть окно выбора папки: {error}"))?;
-    if !output.status.success() {
-        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
-    }
-    let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    Ok((!selected.is_empty()).then_some(selected))
+pub(crate) async fn anticheat_pick_backup_directory(
+    window: tauri::WebviewWindow,
+) -> Result<Option<String>, String> {
+    #[cfg(windows)]
+    let owner = window.hwnd().map_err(|error| error.to_string())?.0 as isize;
+    #[cfg(not(windows))]
+    let owner = {
+        let _ = window;
+        0
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::native_dialog::pick_folder("Выберите папку для резервной копии античитов", owner)
+    })
+    .await
+    .map_err(|error| format!("Выбор папки прерван: {error}"))?
 }
 
 fn scan_report() -> Result<AntiCheatReport, String> {

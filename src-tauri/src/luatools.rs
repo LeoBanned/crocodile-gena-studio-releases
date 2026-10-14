@@ -106,6 +106,7 @@ pub struct LuaInstallResult {
     pub added_appids: Vec<String>,
 }
 
+#[cfg(target_os = "windows")]
 fn hidden_command(program: &str) -> Command {
     let mut command = Command::new(program);
     #[cfg(target_os = "windows")]
@@ -114,6 +115,7 @@ fn hidden_command(program: &str) -> Command {
 }
 
 /// Значение из `reg query <key> /v <name>` (строки формата `Name    REG_SZ    Value`).
+#[cfg(target_os = "windows")]
 fn query_registry(key: &str, name: &str) -> Option<String> {
     let output = hidden_command("reg")
         .args(["query", key, "/v", name])
@@ -135,6 +137,7 @@ fn query_registry(key: &str, name: &str) -> Option<String> {
 }
 
 /// Определяет папку Steam из реестра — как это делает LuaTools.
+#[cfg(target_os = "windows")]
 fn detect_steam_path() -> Option<PathBuf> {
     let candidates = [
         (r"HKLM\SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath"),
@@ -150,6 +153,42 @@ fn detect_steam_path() -> Option<PathBuf> {
         }
     }
     None
+}
+
+#[cfg(target_os = "linux")]
+fn detect_steam_path() -> Option<PathBuf> {
+    let home = std::env::var_os("HOME").map(PathBuf::from)?;
+    [
+        home.join(".steam/steam"),
+        home.join(".local/share/Steam"),
+        home.join(".var/app/com.valvesoftware.Steam/.local/share/Steam"),
+        home.join("snap/steam/common/.local/share/Steam"),
+    ]
+    .into_iter()
+    .find(|path| path.join("steamapps").is_dir())
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+fn detect_steam_path() -> Option<PathBuf> {
+    None
+}
+
+fn steam_client_exists(steam: &Path) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        steam.join("steam.exe").is_file()
+    }
+    #[cfg(target_os = "linux")]
+    {
+        steam.join("steam.sh").is_file()
+            || steam.join("ubuntu12_32/steam").is_file()
+            || steam.join("steamapps").is_dir()
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        let _ = steam;
+        false
+    }
 }
 
 pub(crate) fn resolve_steam_path(override_path: Option<String>) -> Option<PathBuf> {
@@ -626,7 +665,7 @@ pub fn luatools_status(app: AppHandle, steam_path: Option<String>) -> LuaStatus 
 
     LuaStatus {
         steam_detected: true,
-        steam_exe: steam.join("steam.exe").is_file(),
+        steam_exe: steam_client_exists(&steam),
         plugin_folder: stplugin.is_dir(),
         lua_folder: Some(stplugin.display().to_string()),
         loader_status,
@@ -683,20 +722,34 @@ pub async fn luatools_pick_files() -> Result<Vec<String>, String> {
 }
 
 fn luatools_pick_files_blocking() -> Result<Vec<String>, String> {
-    let script = r#"Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.OpenFileDialog; $d.Title = 'Выберите файлы .lua, .manifest или .zip'; $d.Multiselect = $true; $d.Filter = 'LuaTools (*.lua;*.manifest;*.zip)|*.lua;*.manifest;*.zip|Все файлы (*.*)|*.*'; if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::OutputEncoding = [Text.Encoding]::UTF8; $d.FileNames -join [Environment]::NewLine }"#;
-    let output = hidden_command("powershell.exe")
-        .args(["-NoProfile", "-STA", "-Command", script])
-        .output()
-        .map_err(|error| format!("Не удалось открыть выбор файлов: {error}"))?;
-    if !output.status.success() {
-        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    #[cfg(target_os = "linux")]
+    {
+        return Ok(crate::native_dialog::pick_files(
+            "Выберите файлы .lua, .manifest или .zip",
+            &["lua", "manifest", "zip"],
+        ));
     }
-    Ok(String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .map(str::to_string)
-        .collect())
+    #[cfg(target_os = "windows")]
+    {
+        let script = r#"Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.OpenFileDialog; $d.Title = 'Выберите файлы .lua, .manifest или .zip'; $d.Multiselect = $true; $d.Filter = 'LuaTools (*.lua;*.manifest;*.zip)|*.lua;*.manifest;*.zip|Все файлы (*.*)|*.*'; if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::OutputEncoding = [Text.Encoding]::UTF8; $d.FileNames -join [Environment]::NewLine }"#;
+        let output = hidden_command("powershell.exe")
+            .args(["-NoProfile", "-STA", "-Command", script])
+            .output()
+            .map_err(|error| format!("Не удалось открыть выбор файлов: {error}"))?;
+        if !output.status.success() {
+            return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+        }
+        Ok(String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .map(str::to_string)
+            .collect())
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        Err("Выбор файлов на этой платформе не поддерживается".into())
+    }
 }
 
 struct InstallContext {
@@ -1124,6 +1177,7 @@ pub async fn luatools_restart_steam(steam_path: Option<String>) -> OperationResu
     }
 }
 
+#[cfg(target_os = "windows")]
 fn luatools_restart_steam_blocking(steam_path: Option<String>) -> OperationResult {
     let Some(steam) = resolve_steam_path(steam_path) else {
         return OperationResult::error("Папка Steam не найдена", vec![]);
@@ -1164,6 +1218,68 @@ fn luatools_restart_steam_blocking(steam_path: Option<String>) -> OperationResul
     }
 }
 
+#[cfg(target_os = "linux")]
+fn luatools_restart_steam_blocking(steam_path: Option<String>) -> OperationResult {
+    let Some(steam) = resolve_steam_path(steam_path) else {
+        return OperationResult::error("Папка Steam не найдена", vec![]);
+    };
+    let flatpak = steam
+        .to_string_lossy()
+        .contains("/.var/app/com.valvesoftware.Steam/");
+    let local_launcher = [steam.join("steam.sh"), steam.join("ubuntu12_32/steam")]
+        .into_iter()
+        .find(|path| path.is_file());
+
+    if flatpak {
+        let _ = Command::new("flatpak")
+            .args(["run", "com.valvesoftware.Steam", "-shutdown"])
+            .output();
+    } else if let Some(launcher) = &local_launcher {
+        let _ = Command::new(launcher).arg("-shutdown").output();
+    } else {
+        let _ = Command::new("steam").arg("-shutdown").output();
+    }
+    for _ in 0..20 {
+        if !process_is_running("steam") {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(250));
+    }
+    if process_is_running("steam") {
+        let _ = Command::new("pkill")
+            .args(["-TERM", "-x", "steam"])
+            .output();
+        let _ = Command::new("pkill")
+            .args(["-TERM", "-x", "steamwebhelper"])
+            .output();
+    }
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    let started = if flatpak {
+        Command::new("flatpak")
+            .args(["run", "com.valvesoftware.Steam"])
+            .spawn()
+    } else if let Some(launcher) = local_launcher {
+        Command::new(launcher).spawn()
+    } else {
+        Command::new("steam").spawn()
+    };
+    match started {
+        Ok(_) => OperationResult::ok("Steam перезапускается…", vec![]),
+        Err(error) => {
+            OperationResult::error(format!("Не удалось запустить Steam: {error}"), vec![])
+        }
+    }
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+fn luatools_restart_steam_blocking(_steam_path: Option<String>) -> OperationResult {
+    OperationResult::error(
+        "Перезапуск Steam на этой платформе не поддерживается",
+        vec![],
+    )
+}
+
+#[cfg(target_os = "windows")]
 fn process_is_running(image_name: &str) -> bool {
     let Ok(output) = hidden_command("tasklist.exe")
         .args(["/FI", &format!("IMAGENAME eq {image_name}"), "/NH"])
@@ -1174,6 +1290,15 @@ fn process_is_running(image_name: &str) -> bool {
     String::from_utf8_lossy(&output.stdout)
         .to_ascii_lowercase()
         .contains(&image_name.to_ascii_lowercase())
+}
+
+#[cfg(target_os = "linux")]
+fn process_is_running(image_name: &str) -> bool {
+    Command::new("pgrep")
+        .args(["-x", image_name])
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false)
 }
 
 /// Все appid/депо, на которые ссылается lua (строки `addappid`/`setManifestid`, без комментариев).
@@ -1348,6 +1473,46 @@ pub async fn luatools_names(appids: Vec<u64>) -> BTreeMap<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn imports_zip_from_unicode_path_with_nested_lua_and_manifest() {
+        use std::io::Write;
+        let root = std::env::temp_dir().join(format!("cgs-zip-import-{}", std::process::id()));
+        let context = InstallContext {
+            stplugin: root.join("steam/config/stplug-in"),
+            depotcache: root.join("steam/depotcache"),
+            manifest_cache: Some(root.join("manifest-cache")),
+            auto_update: true,
+        };
+        fs::create_dir_all(&context.stplugin).unwrap();
+        fs::create_dir_all(&context.depotcache).unwrap();
+        let source = root.join("Манифест игры с пробелами.zip");
+        let mut archive = zip::ZipWriter::new(fs::File::create(&source).unwrap());
+        let options = zip::write::SimpleFileOptions::default();
+        archive.start_file("nested/480.lua", options).unwrap();
+        archive
+            .write_all(b"addappid(480)\nsetManifestid(481,\"123\")")
+            .unwrap();
+        archive
+            .start_file("nested/481_123.manifest", options)
+            .unwrap();
+        archive.write_all(b"manifest fixture").unwrap();
+        archive.finish().unwrap();
+        let mut logs = Vec::new();
+        let mut added = Vec::new();
+        install_archive(&context, &source, &mut logs, &mut added);
+        assert_eq!(added, vec!["480"]);
+        assert!(context.stplugin.join("480.lua").is_file());
+        assert_eq!(
+            fs::read(context.depotcache.join("481_123.manifest")).unwrap(),
+            b"manifest fixture"
+        );
+        assert_eq!(
+            fs::read(context.manifest_cache.unwrap().join("481_123.manifest")).unwrap(),
+            b"manifest fixture"
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn parses_referenced_appids_ignoring_comments() {

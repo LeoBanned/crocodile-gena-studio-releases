@@ -13,6 +13,16 @@ use std::{
 };
 use tauri::{Emitter, Manager};
 
+#[tauri::command]
+pub(crate) async fn files_copy_password(password: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        #[cfg(windows)]
+        { arboard::Clipboard::new().and_then(|mut clipboard| clipboard.set_text(password)).map_err(|e| format!("Не удалось скопировать пароль: {e}")) }
+        #[cfg(not(windows))]
+        { let _ = password; Err("Используйте копирование через интерфейс".into()) }
+    }).await.map_err(|e| e.to_string())?
+}
+
 const GIST_ID: &str = "b314de5f9a3e2293b7e3c22136d49889";
 const GIST_OWNER: &str = "LeoBanned";
 const DOWNLOAD_BUFFER_SIZE: usize = 1024 * 1024;
@@ -133,10 +143,22 @@ pub(crate) fn files_reveal(path: String) -> Result<(), String> {
             .map_err(|error| format!("Не удалось открыть папку: {error}"))
     }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "linux")]
+    {
+        let folder = file
+            .parent()
+            .ok_or_else(|| "Не удалось определить папку загрузки".to_string())?;
+        std::process::Command::new("xdg-open")
+            .arg(folder)
+            .spawn()
+            .map(|_| ())
+            .map_err(|error| format!("Не удалось открыть папку: {error}"))
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
     {
         let _ = file;
-        Err("Открытие папки поддерживается только в Windows".into())
+        Err("Открытие папки на этой платформе не поддерживается".into())
     }
 }
 
@@ -173,7 +195,7 @@ fn download_file(
             .connect_timeout(Duration::from_secs(15))
             .timeout(Duration::from_secs(900))
             .pool_max_idle_per_host(PARALLEL_DOWNLOAD_PARTS as usize)
-            .user_agent("CrocodileGenaStudio/5.1.0")
+            .user_agent(concat!("CrocodileGenaStudio/", env!("CARGO_PKG_VERSION")))
             .build()
             .map_err(|error| format!("HTTP-клиент не создан: {error}"))?;
         let head = client
@@ -487,7 +509,7 @@ fn load_catalog(app: &tauri::AppHandle) -> Result<FilesCatalog, String> {
 fn download_catalog() -> Result<String, String> {
     let client = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(20))
-        .user_agent("CrocodileGenaStudio/5.1.0")
+        .user_agent(concat!("CrocodileGenaStudio/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|error| format!("HTTP-клиент не создан: {error}"))?;
     let refs_url =

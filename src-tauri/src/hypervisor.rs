@@ -26,11 +26,7 @@ const UPDATE_TIMEOUT_SECONDS: u32 = 20;
 const MIN_REMOTE_MANIFEST_VERSION: u32 = 2;
 const DEFAULT_LAUNCHER_ID: &str = "hv_launcher";
 const PLUG_N_PLAY_LAUNCHER_ID: &str = "plug_n_play";
-// Встроенные бинарники гипервизора исключены из публичной сборки для безопасности на GitHub
-const EMBEDDED_HV_BATCH: &str = "";
-const EMBEDDED_PLUG_N_PLAY_BATCH: &str = "";
-const EMBEDDED_KVC: &[u8] = &[];
-const EMBEDDED_DRVLOADER: &[u8] = &[];
+include!(concat!(env!("OUT_DIR"), "/hypervisor_resources.rs"));
 
 #[derive(Clone, Copy)]
 struct LauncherProfile {
@@ -583,12 +579,11 @@ fn ensure_batch(
         );
         read_batch_source(profile)
     };
-    if content.trim().is_empty() {
-        content = format!(
-            "@echo off\r\nrem CrocodileGena Studio Launcher ({})\r\nstart \"\" \"%~dp0{}\"\r\n",
-            profile.name, loader_name
-        );
+
+    if content.trim().is_empty() && target.is_file() {
+        content = read_text_lossy(&target)?;
     }
+    require_batch_source(&content, profile.batch_name)?;
     content = patch_custom_exe(&content, loader_name);
     fs::write(&target, content)
         .map_err(|error| format!("Не удалось записать {}: {error}", target.display()))?;
@@ -1584,7 +1579,7 @@ fn copy_file_if_changed(source: &Path, target: &Path) -> Result<bool, String> {
 
 fn write_embedded_binary_if_changed(target: &Path, content: &[u8]) -> Result<bool, String> {
     if content.is_empty() {
-        return Ok(false);
+        return Err(format!("{} не включён в эту сборку. Добавьте файлы профиля из разрешённого источника.", target.file_name().unwrap_or_default().to_string_lossy()));
     }
     if target.exists() && fs::read(target).is_ok_and(|current| current == content) {
         return Ok(false);
@@ -1661,6 +1656,14 @@ fn read_batch_source(profile: LauncherProfile) -> String {
     }
 
     embedded
+}
+
+fn require_batch_source(content: &str, filename: &str) -> Result<(), String> {
+    if content.trim().is_empty() {
+        Err(format!("{filename} не включён в эту сборку. Для запуска профиля нужны его файлы из разрешённого источника; остальные модули доступны."))
+    } else {
+        Ok(())
+    }
 }
 
 fn patch_custom_exe(content: &str, loader_name: &str) -> String {
@@ -2387,7 +2390,25 @@ fn strip_ansi(input: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::tasklist_contains_process;
+    use super::{tasklist_contains_process, require_batch_source, write_embedded_binary_if_changed};
+
+    #[test]
+    fn missing_profile_batch_is_rejected_instead_of_generating_an_empty_launcher() {
+        assert!(require_batch_source("", "HV-Launcher.bat").is_err());
+        assert!(require_batch_source(" \r\n", "HV-PlugNPlay.bat").is_err());
+        assert!(require_batch_source("@echo off\r\n", "HV-Launcher.bat").is_ok());
+    }
+
+    #[test]
+    fn missing_embedded_helper_never_creates_or_truncates_a_file() {
+        let directory = tempfile::tempdir().unwrap();
+        let target = directory.path().join("drvloader.exe");
+        assert!(write_embedded_binary_if_changed(&target, &[]).is_err());
+        assert!(!target.exists());
+        std::fs::write(&target, b"existing helper").unwrap();
+        assert!(write_embedded_binary_if_changed(&target, &[]).is_err());
+        assert_eq!(std::fs::read(&target).unwrap(), b"existing helper");
+    }
 
     #[test]
     fn tasklist_detects_selected_executable_case_insensitively() {

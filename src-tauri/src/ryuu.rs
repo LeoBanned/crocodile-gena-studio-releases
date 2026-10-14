@@ -20,7 +20,12 @@ const PROXY_BASE: &str = "";
 /// Встроенный ключ доступа к API генератора. Компилируется в бинарник и не попадает во фронтенд.
 /// ВНИМАНИЕ: в exe его технически можно извлечь реверс-инжинирингом — полностью скрыть можно
 /// только через промежуточный прокси-сервер.
-const AUTH_KEY: &str = "AUTH_KEY HERE";
+// Public builds never include the developer's credential.
+// Optional: set CGS_RYUU_API_KEY before invoking Cargo/Tauri.
+const AUTH_KEY: &str = match option_env!("CGS_RYUU_API_KEY") {
+    Some(key) => key,
+    None => "",
+};
 
 const CATALOG_URL: &str = "https://generator.ryuu.lol/api/games";
 const DOWNLOAD_BASE: &str = "https://generator.ryuu.lol/api/download/";
@@ -409,6 +414,15 @@ fn ryuu_get_blocking(
         return LuaInstallResult {
             success: false,
             message: "Некорректный AppID".into(),
+            logs: vec![],
+            added_appids: vec![],
+        };
+    }
+
+    if AUTH_KEY.trim().is_empty() {
+        return LuaInstallResult {
+            success: false,
+            message: "В публичной сборке ключ Ryuu не задан. Задайте CGS_RYUU_API_KEY перед сборкой или выберите HubCap в настройках.".into(),
             logs: vec![],
             added_appids: vec![],
         };

@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Crocodile Gena Studio",
-  "version": "5.1.0",
+  "version": "5.5.5",
   "identifier": "studio.crocodilegena.desktop",
   "build": {
     "frontendDist": "../ui"
@@ -33,7 +33,12 @@
     "targets": "all",
     "category": "Utility",
     "shortDescription": "Premium Steam and EOS utility workspace",
-    "icon": ["icon.ico"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
     "resources": {
       "../backend/core_engine/": "backend/core_engine/",
       "../CreamAPI/steam_api.dll": "CreamAPI/steam_api.dll",
