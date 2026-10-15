@@ -35,6 +35,7 @@ function harness(options = {}) {
   setView(active.dataset.viewPanel);
   node('#lua-auto-update').checked = true;
   const context = {
+    luaLoaderUpdating: Boolean(options.loaderBusy),
     $: node,
     $$: selector => selector === '[data-module-toggle]' ? toggles : [...nav, ...tiles],
     localStorage: { getItem: key => stored.get(key), setItem: (key, value) => stored.set(key, value) },
@@ -74,6 +75,13 @@ test('concurrent drops cannot start a second CrocLua install', async () => {
   release({ success: false }); await first;
   h.advance(1500); const second = h.handleFileDrop(['E:\\two.zip']);
   assert.equal(h.calls.length, 2); release({ success: false }); await second;
+});
+
+test('DLL selection prevents a simultaneous CrocLua archive import', async () => {
+  const h = harness({loaderBusy:true});
+  await h.handleFileDrop(['E:\\one.zip']);
+  assert.equal(h.calls.length, 0);
+  assert.equal(h.node('#lua-drop-zone').classList.contains('busy'), false);
 });
 
 test('failed imports release the drop zone and can be retried', async () => {

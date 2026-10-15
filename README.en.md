@@ -6,7 +6,7 @@
 
 ### **The all-in-one hub for your Steam library, DLC, online fixes, and Windows environment**
 
-[![Version](https://img.shields.io/badge/Version-5.5.6-63f5c2?style=for-the-badge&logo=tauri&logoColor=black)](https://github.com/)
+[![Version](https://img.shields.io/badge/Version-5.5.7-63f5c2?style=for-the-badge&logo=tauri&logoColor=black)](https://github.com/)
 [![Platform](https://img.shields.io/badge/Platform-Windows_10_|_11_(x64)-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com/windows)
 [![Stack](https://img.shields.io/badge/Stack-Rust_Tauri_v2_+_Modern_JS-black?style=for-the-badge&logo=rust&logoColor=orange)](https://tauri.app/)
 [![Safety](https://img.shields.io/badge/Safety-Byte--for--byte_Backups-2ea44f?style=for-the-badge&logo=shield)](#safety)
@@ -183,6 +183,7 @@ A tool for adding licensed games directly to the official Steam client through L
     * Track daily quotas and remaining downloads in the interface (0/25 counter).
 * **Automatic file placement**:
   * Place `.lua` files in `config/lua/` and `.manifest` files in the root `depotcache/` directory.
+  * **Update DLLs** checks the bundled OpenSteamTool.dll, dwmapi.dll and xinput1_4.dll. Matching DLLs are left untouched; replaced originals are backed up. DLLs are not automatically replaced when the application starts.
 * **Manual import**:
   * Drag and drop `.lua`, `.manifest`, or `.zip` files.
 * **Added game management**:
@@ -190,7 +191,7 @@ A tool for adding licensed games directly to the official Steam client through L
   * Detailed game cards: release date, cover image, and a comparison of unlocked DLC against DLC missing from the Lua file.
   * **Automatic manifest updates** option.
 * **Millennium plugin (“Crocodile Manifest”)**:
-  * Bundled plugin for Millennium (v0.5.0), sharing CrocLua's DLL bundle and `config/lua/` folder.
+  * Bundled plugin for Millennium (v0.5.1), using the DLL bundle pinned in CrocLua and the `config/lua/` folder.
   * One-click installation adds a **“Get manifest”** button directly to game pages in the official Steam Store!
 
 ---
@@ -313,6 +314,10 @@ Use **Settings** to tailor the application to your preferences:
 | **White** | A light interface |
 
 ### 🧩 Make the Workspace Your Own
+
+**CrocLua → Update DLLs:** choose the original or alternative OpenSteamTool bundle,
+pin the selection for the app and plugin, with backups and an in-app guide.
+See the [DLL selection and protection guide (Russian)](CROCLUA-DLL.md).
 
 * **Sidebar**: full, compact, or icons only. Change the module order.
 * **Module visibility**: hide unused sections from the menu and Home, then restore them in Settings.

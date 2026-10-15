@@ -72,7 +72,7 @@
         pluginInstalled: false,
         pluginCurrent: false,
         pluginVersion: "",
-        bundledVersion: "0.5.0",
+        bundledVersion: "0.5.1",
         pluginPath: "",
       },
       millenniumPrompted: false,
@@ -1209,7 +1209,7 @@
     if (accepted) await downloadMillenniumInstaller();
   }
 
-  async function luaRefresh() {
+  async function luaRefresh(options = {}) {
     try {
       const [status, millennium] = await Promise.all([
         call("luatools_status", { steamPath: state.lua.steamPath || null }),
@@ -1226,7 +1226,7 @@
       if (state.lua.steamPath) localStorage.setItem("luaSteamPath", state.lua.steamPath);
       renderLuaStatus();
       luaLoadNames();
-      if (millennium?.status === "millennium_missing" && !state.lua.millenniumPrompted) {
+      if (options.offerMillennium !== false && millennium?.status === "millennium_missing" && !state.lua.millenniumPrompted) {
         state.lua.millenniumPrompted = true;
         await offerMillenniumInstall();
       }
@@ -1251,11 +1251,31 @@
     }
   }
 
+  let luaLoaderUpdating = false;
+
+  async function luaUpdateDlls() {
+    if (luaLoaderUpdating || luaInstalling) return;
+    luaLoaderUpdating = true;
+    const button = $("#lua-update-dll-button");
+    setBusy(button, true, "Выбираем…");
+    try {
+      const result = await window.cgsLoaderDialog.open({ steamPath: state.lua.steamPath || null });
+      if (result && consumeResult(result)) await luaRefresh({ offerMillennium: false });
+    } catch (error) {
+      toast(errorText(error), "error");
+    } finally {
+      luaLoaderUpdating = false;
+      setBusy(button, false);
+      // Keep a Russian source label for live translation after busy HTML is restored.
+      if (button) { button.textContent = "Обновить DLL"; button.focus({preventScroll:true}); }
+    }
+  }
+
   let luaInstalling = false;
 
   async function luaInstall(paths) {
     const files = (paths || []).filter(Boolean);
-    if (!files.length || luaInstalling) return;
+    if (!files.length || luaInstalling || luaLoaderUpdating) return;
     luaInstalling = true;
     $("#lua-drop-zone").classList.add("busy");
     log(`CrocLua: добавление файлов — ${files.length}`, "system");
@@ -2090,6 +2110,7 @@
     $("#lua-browse-button").addEventListener("click", luaBrowseFiles);
     $("#lua-drop-zone").addEventListener("dblclick", luaBrowseFiles);
     $("#lua-refresh-button").addEventListener("click", luaRefresh);
+    $("#lua-update-dll-button").addEventListener("click", luaUpdateDlls);
     $("#lua-restart-button").addEventListener("click", luaRestartSteam);
     $("#millennium-site-button").addEventListener("click", downloadMillenniumInstaller);
     $("#millennium-install-button").addEventListener("click", installMillenniumPlugin);
@@ -2251,7 +2272,7 @@
       if ($("#view-lua")?.classList.contains("active")) refreshMillenniumStatus();
       call("luatools_restore_manifests", { steamPath: state.lua.steamPath || null }).catch(() => {});
     }, 3_000);
-    log("Crocodile Gena Studio 5.5.6 инициализирован", "system");
+    log("Crocodile Gena Studio 5.5.7 инициализирован", "system");
     log(invoke ? "Все компоненты готовы к работе" : "Запустите установленное приложение", invoke ? "success" : "error");
     if (invoke) setTimeout(() => checkForUpdates(false), 1800);
   }
