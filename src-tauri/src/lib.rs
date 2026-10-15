@@ -15,6 +15,7 @@ mod hypervisor;
 #[path = "linux/hypervisor.rs"]
 mod hypervisor;
 mod luatools;
+mod lua_loader;
 #[cfg(target_os = "windows")]
 mod millennium;
 #[cfg(not(target_os = "windows"))]
@@ -290,6 +291,8 @@ pub fn run() {
             dlc::install_dlc_unlocker,
             dlc::uninstall_dlc_unlocker,
             luatools::luatools_status,
+            luatools::luatools_update_loader,
+            lua_loader::luatools_loader_info,
             luatools::luatools_restore_manifests,
             luatools::luatools_detect_steam,
             luatools::luatools_pick_files,

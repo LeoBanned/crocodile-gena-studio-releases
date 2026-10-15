@@ -23,6 +23,8 @@ const LUA_REL: &[&str] = &["config", "lua"];
 // Старые версии CGS ошибочно писали их в `<Steam>\config\depotcache`.
 const DEPOTCACHE_REL: &[&str] = &["depotcache"];
 const LEGACY_DEPOTCACHE_REL: &[&str] = &["config", "depotcache"];
+#[cfg(test)]
+const LOADER_DLL_FILES: &[(&str, &[u8])] = crate::lua_loader::STANDARD;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -212,37 +214,55 @@ fn legacy_stplugin_dir(steam: &Path) -> PathBuf {
 }
 
 pub(crate) fn ensure_opensteamtool_installed(steam: &Path) -> Result<(), String> {
-    let config_path = steam.join("opensteamtool.toml");
-    let existing_config = match fs::read_to_string(&config_path) {
-        Ok(content) => content,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
-        Err(error) => return Err(format!("Не удалось прочитать opensteamtool.toml: {error}")),
-    };
-    let config = configure_lua_folder(&existing_config)?;
-    let files = [
-        (
-            "OpenSteamTool.dll",
-            include_bytes!("assets/OpenSteamTool.dll").as_slice(),
-        ),
-        ("dwmapi.dll", include_bytes!("assets/dwmapi.dll").as_slice()),
-        (
-            "opensteamtool.toml",
-            config.as_bytes(),
-        ),
-        (
-            "xinput1_4.dll",
-            include_bytes!("assets/xinput1_4.dll").as_slice(),
-        ),
-    ];
-
-    install_loader_resources(steam, &files)?;
-    let target = stplugin_dir(steam);
-    fs::create_dir_all(&target).map_err(|e| format!("Не удалось создать config/lua: {e}"))?;
-    migrate_legacy_lua(steam, &target);
-    Ok(())
+    crate::lua_loader::ensure(steam)
 }
 
-fn configure_lua_folder(existing: &str) -> Result<String, String> {
+#[cfg(test)]
+fn loader_dlls_are_current(steam: &Path) -> Result<bool, String> {
+    Ok(LOADER_DLL_FILES.iter().all(|(name, bytes)| fs::read(steam.join(name)).is_ok_and(|current| current == *bytes)))
+}
+
+#[cfg(test)]
+fn update_loader_for(steam: &Path) -> OperationResult {
+    crate::lua_loader::update(steam, None)
+}
+
+/// Explicit manual action only: startup and ordinary status refreshes never replace DLLs.
+fn update_loader_blocking_with_variant(steam_path: Option<String>, variant: Option<String>) -> OperationResult {
+    // Never fall back to another Steam installation after an invalid explicit selection.
+    let steam = match steam_path.filter(|path| !path.trim().is_empty()) {
+        Some(path) => {
+            let path = PathBuf::from(path.trim());
+            path.is_dir().then_some(path)
+        }
+        None => resolve_steam_path(None),
+    };
+    let Some(steam) = steam else {
+        return OperationResult::error("Папка Steam не найдена", vec![]);
+    };
+    crate::lua_loader::update(&steam, variant.as_deref())
+}
+
+#[cfg(test)]
+fn update_loader_blocking(steam_path: Option<String>) -> OperationResult {
+    update_loader_blocking_with_variant(steam_path, None)
+}
+
+#[tauri::command]
+pub async fn luatools_update_loader(steam_path: Option<String>, variant: Option<String>) -> OperationResult {
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (steam_path, variant);
+        return OperationResult::error("Обновление этих DLL доступно только в Windows", vec![]);
+    }
+    #[cfg(target_os = "windows")]
+    match tauri::async_runtime::spawn_blocking(move || update_loader_blocking_with_variant(steam_path, variant)).await {
+        Ok(result) => result,
+        Err(error) => OperationResult::error(format!("Обновление DLL прервано: {error}"), vec![]),
+    }
+}
+
+pub(crate) fn configure_lua_folder(existing: &str) -> Result<String, String> {
     let source = if existing.trim().is_empty() {
         include_str!("assets/opensteamtool.toml")
     } else {
@@ -268,9 +288,10 @@ fn atomic_loader_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
     Ok(())
 }
 
-// Called only during explicit import/download, never from the status scan.
+// Called only during explicit import/download, plugin install or manual DLL update.
+// Never from startup or the status scan.
 // Existing DLLs/configs are backed up before any replacement. Failed updates roll back.
-fn install_loader_resources(steam: &Path, files: &[(&str, &[u8])]) -> Result<(), String> {
+pub(crate) fn install_loader_resources(steam: &Path, files: &[(&str, &[u8])]) -> Result<(), String> {
     let mut changes = Vec::new();
     for &(name, bytes) in files {
         let destination = steam.join(name);
@@ -287,9 +308,14 @@ fn install_loader_resources(steam: &Path, files: &[(&str, &[u8])]) -> Result<(),
     }
     if changes.is_empty() { return Ok(()); }
     let backup = steam.join("config").join("cgs-luatools-backups").join(uuid::Uuid::new_v4().to_string());
-    fs::create_dir_all(&backup).map_err(|e| format!("Не удалось подготовить резервную копию загрузчика: {e}"))?;
+    if changes.iter().any(|(_, _, previous)| previous.is_some()) {
+        fs::create_dir_all(&backup).map_err(|e| format!("Не удалось подготовить резервную копию загрузчика: {e}"))?;
+    }
     for (name, _, previous) in &changes {
         if let Some(bytes) = previous {
+            if let Some(parent) = backup.join(name).parent() {
+                fs::create_dir_all(parent).map_err(|e| format!("Не удалось подготовить папку резервной копии: {e}"))?;
+            }
             fs::write(backup.join(name), bytes).map_err(|e| format!("Не удалось сохранить резервную копию {name}: {e}. Файлы загрузчика не изменены."))?;
         }
     }
@@ -410,7 +436,7 @@ fn opensteamtool_lua_dirs(steam: &Path) -> Vec<PathBuf> {
 
 /// Все новые импорты, список игр, включение/выключение и удаление используют config/lua.
 /// stplug-in остаётся только источником миграции старых Lua.
-fn stplugin_dir(steam: &Path) -> PathBuf {
+pub(crate) fn stplugin_dir(steam: &Path) -> PathBuf {
     LUA_REL.iter().fold(steam.to_path_buf(), |dir, part| dir.join(part))
 }
 
@@ -457,7 +483,7 @@ fn loader_state(steam: &Path) -> (String, Option<String>, Option<String>) {
 /// Переносит Lua, которые старые версии CGS положили в `config\stplug-in`,
 /// в фактическую папку OpenSteamTool. Исходники сохраняются, существующие файлы
 /// в целевой папке не перезаписываются.
-fn migrate_legacy_lua(steam: &Path, target: &Path) -> usize {
+pub(crate) fn migrate_legacy_lua(steam: &Path, target: &Path) -> usize {
     let legacy = legacy_stplugin_dir(steam);
     if legacy == target || !legacy.is_dir() {
         return 0;
@@ -493,7 +519,9 @@ fn migrate_legacy_lua(steam: &Path, target: &Path) -> usize {
             migrated.insert(key);
         }
     }
-    if let Ok(bytes) = serde_json::to_vec(&migrated) { let _ = fs::write(&marker, bytes); }
+    if let Ok(bytes) = serde_json::to_vec(&migrated) {
+        if fs::read(&marker).ok().as_deref() != Some(bytes.as_slice()) { let _ = fs::write(&marker, bytes); }
+    }
     copied
 }
 
@@ -1718,6 +1746,88 @@ paths = ["ignore"]
         assert!(fs::read_to_string(backups[0].path().join("opensteamtool.toml")).unwrap().contains("config/stplug-in"));
         ensure_opensteamtool_installed(steam).unwrap();
         assert_eq!(fs::read_dir(&backup_root).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn manual_dll_update_is_a_noop_when_all_dlls_are_current() {
+        let temp = tempfile::tempdir().unwrap();
+        let steam = temp.path();
+        fs::write(steam.join("steam.exe"), []).unwrap();
+        // A no-op must not even parse/rewrite the config or create migration/backup folders.
+        fs::write(steam.join("opensteamtool.toml"), b"custom invalid config left untouched").unwrap();
+        for &(name, bytes) in LOADER_DLL_FILES { fs::write(steam.join(name), bytes).unwrap(); }
+        let before: Vec<_> = LOADER_DLL_FILES.iter().map(|(name, _)| fs::metadata(steam.join(name)).unwrap().modified().unwrap()).collect();
+        let result = update_loader_for(steam);
+        assert!(result.success, "{}", result.message);
+        assert!(result.message.contains("уже актуальны"));
+        assert!(result.logs.is_empty());
+        for (index, &(name, bytes)) in LOADER_DLL_FILES.iter().enumerate() {
+            assert_eq!(fs::read(steam.join(name)).unwrap(), bytes);
+            assert_eq!(fs::metadata(steam.join(name)).unwrap().modified().unwrap(), before[index]);
+        }
+        assert_eq!(fs::read(steam.join("opensteamtool.toml")).unwrap(), b"custom invalid config left untouched");
+        assert!(steam.join("config/cgs-luatools-loader.json").is_file());
+        assert!(!steam.join("config/cgs-luatools-backups").exists());
+    }
+
+    #[test]
+    fn manual_dll_update_detects_same_size_old_file_and_only_replaces_that_dll() {
+        let temp = tempfile::tempdir().unwrap();
+        let steam = temp.path();
+        fs::write(steam.join("steam.exe"), []).unwrap();
+        ensure_opensteamtool_installed(steam).unwrap();
+        let mut old = LOADER_DLL_FILES[0].1.to_vec();
+        let last = old.len() - 1;
+        old[last] ^= 1;
+        fs::write(steam.join("OpenSteamTool.dll"), &old).unwrap();
+        let untouched = fs::metadata(steam.join("dwmapi.dll")).unwrap().modified().unwrap();
+        let result = update_loader_for(steam);
+        assert!(result.success, "{}", result.message);
+        assert!(result.message.starts_with("DLL обновлены"));
+        assert_eq!(fs::read(steam.join("OpenSteamTool.dll")).unwrap(), LOADER_DLL_FILES[0].1);
+        assert_eq!(fs::metadata(steam.join("dwmapi.dll")).unwrap().modified().unwrap(), untouched);
+        let backups: Vec<_> = fs::read_dir(steam.join("config/cgs-luatools-backups")).unwrap().flatten().collect();
+        assert!(backups.iter().any(|entry| fs::read(entry.path().join("OpenSteamTool.dll")).ok() == Some(old.clone())));
+    }
+
+    #[test]
+    fn manual_dll_update_requires_steam_and_repairs_missing_dlls() {
+        let temp = tempfile::tempdir().unwrap();
+        let steam = temp.path();
+        assert!(!update_loader_for(steam).success);
+        assert!(fs::read_dir(steam).unwrap().next().is_none());
+        fs::write(steam.join("steam.exe"), []).unwrap();
+        assert!(update_loader_for(steam).success);
+        assert!(loader_dlls_are_current(steam).unwrap());
+        assert!(steam.join("config/lua").is_dir());
+    }
+
+    #[test]
+    fn manual_dll_update_never_falls_back_from_an_invalid_explicit_path() {
+        let temp = tempfile::tempdir().unwrap();
+        let invalid = temp.path().join("missing-steam");
+        let result = update_loader_blocking(Some(invalid.display().to_string()));
+        assert!(!result.success);
+        assert!(fs::read_dir(temp.path()).unwrap().next().is_none());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn manual_dll_update_reports_locked_file_and_rolls_back() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let steam = temp.path();
+        fs::write(steam.join("steam.exe"), []).unwrap();
+        fs::write(steam.join("OpenSteamTool.dll"), b"old main").unwrap();
+        fs::write(steam.join("dwmapi.dll"), b"old proxy").unwrap();
+        let _lock = fs::OpenOptions::new().read(true).share_mode(1).open(steam.join("dwmapi.dll")).unwrap();
+        let result = update_loader_for(steam);
+        assert!(!result.success);
+        assert!(result.message.contains("Закройте Steam"));
+        assert_eq!(fs::read(steam.join("OpenSteamTool.dll")).unwrap(), b"old main");
+        assert_eq!(fs::read(steam.join("dwmapi.dll")).unwrap(), b"old proxy");
+        assert!(!steam.join("xinput1_4.dll").exists());
+        assert!(!steam.join("opensteamtool.toml").exists());
     }
 
     #[test]

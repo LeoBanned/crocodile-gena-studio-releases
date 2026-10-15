@@ -78,18 +78,91 @@ function Configure-Lua([string]$Content) {
     return $Content.Remove($taskBodyStart, $taskBody.Length).Insert($taskBodyStart, $taskNewBody)
 }
 
+# The application and plugin share an OS-held file lock and a pinned SHA-256 selection.
+# The lock file stays on disk; closing its handle releases the lock even after a crash.
+$taskConfigDir = Join-Path $taskSteam 'config'
+if ((Test-Path -LiteralPath $taskConfigDir) -and ((Get-Item -LiteralPath $taskConfigDir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+    throw 'Steam config is a link. Loader files were not changed.'
+}
+[IO.Directory]::CreateDirectory($taskConfigDir) | Out-Null
+$taskLockPath = Join-Path $taskConfigDir 'cgs-luatools-loader.lock'
+[void](Read-OptionalBytes $taskLockPath)
+try { $taskLoaderLock = [IO.File]::Open($taskLockPath, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None) }
+catch { throw 'Loader is busy in CrocLua or another plugin operation. Wait and try again.' }
+try {
+$taskSelectionPath = Join-Path $taskConfigDir 'cgs-luatools-loader.json'
+if ((Test-Path -LiteralPath $taskSelectionPath) -and (Get-Item -LiteralPath $taskSelectionPath).Length -gt 16384) { throw 'Invalid loader selection. Choose the DLL version again in CrocLua.' }
+$taskOldSelection = Read-OptionalBytes $taskSelectionPath
+$taskUtf8 = New-Object Text.UTF8Encoding($false, $true)
+$taskSelection = $null
+if ($null -ne $taskOldSelection) {
+    try { $taskSelection = $taskUtf8.GetString($taskOldSelection) | ConvertFrom-Json }
+    catch { throw 'Invalid loader selection. Automatic replacement refused. Choose a version in CrocLua.' }
+    if ($null -eq $taskSelection -or $taskSelection.schema -ne 1 -or
+        ($taskSelection.schema -isnot [int] -and $taskSelection.schema -isnot [long]) -or
+        $taskSelection.variant -cnotin @('standard','compatibility') -or
+        @($taskSelection.PSObject.Properties).Count -ne 3 -or @($taskSelection.hashes.PSObject.Properties).Count -ne 3) {
+        throw 'Unsupported loader selection. Automatic replacement refused. Choose a version in CrocLua.'
+    }
+    foreach ($taskName in @('OpenSteamTool.dll','dwmapi.dll','xinput1_4.dll')) {
+        if (@($taskSelection.hashes.PSObject.Properties | Where-Object { $_.Name -ceq $taskName }).Count -ne 1 -or $taskSelection.hashes.$taskName -cnotmatch '^[0-9a-f]{64}$') {
+            throw 'Invalid pinned DLL fingerprint. Automatic replacement refused.'
+        }
+    }
+}
+$taskVariant = if ($null -ne $taskSelection) { $taskSelection.variant } else { 'standard' }
+if ($null -eq $taskSelection) {
+    $taskExistingMain = Read-OptionalBytes (Join-Path $taskSteam 'OpenSteamTool.dll')
+    $taskAlternateMain = [IO.File]::ReadAllBytes((Join-Path $taskResources 'compatibility\OpenSteamTool.dll'))
+    if (Same-Bytes $taskExistingMain $taskAlternateMain) { $taskVariant = 'compatibility' }
+    elseif ($null -eq $taskExistingMain) {
+        foreach ($taskName in @('dwmapi.dll','xinput1_4.dll')) {
+            if (Same-Bytes (Read-OptionalBytes (Join-Path $taskSteam $taskName)) ([IO.File]::ReadAllBytes((Join-Path $taskResources ('compatibility\' + $taskName))))) { $taskVariant = 'compatibility' }
+        }
+    }
+}
+$taskVariantResources = if ($taskVariant -eq 'compatibility') { Join-Path $taskResources 'compatibility' } else { $taskResources }
+$taskHashes = [ordered]@{}
+$taskDllBytes = @{}
+$taskCurrent = $true
+foreach ($taskName in @('OpenSteamTool.dll','dwmapi.dll','xinput1_4.dll')) {
+    $taskBytes = [IO.File]::ReadAllBytes((Join-Path $taskVariantResources $taskName))
+    if ($taskBytes.Length -lt 1024 -or $taskBytes[0] -ne 77 -or $taskBytes[1] -ne 90) { throw "Invalid bundled DLL: $taskName" }
+    $taskDllBytes[$taskName] = $taskBytes
+    $taskHasher = [Security.Cryptography.SHA256]::Create()
+    try { $taskHashes[$taskName] = ([BitConverter]::ToString($taskHasher.ComputeHash($taskBytes))).Replace('-','').ToLowerInvariant() }
+    finally { $taskHasher.Dispose() }
+    $taskInstalledBytes = Read-OptionalBytes (Join-Path $taskSteam $taskName)
+    if ($null -ne $taskSelection -and $null -ne $taskInstalledBytes) {
+        $taskHasher = [Security.Cryptography.SHA256]::Create()
+        try { $taskInstalledHash = ([BitConverter]::ToString($taskHasher.ComputeHash($taskInstalledBytes))).Replace('-','').ToLowerInvariant() }
+        finally { $taskHasher.Dispose() }
+        $taskCurrent = $taskCurrent -and ($taskInstalledHash -ceq $taskSelection.hashes.$taskName)
+    } else { $taskCurrent = $taskCurrent -and (Same-Bytes $taskInstalledBytes $taskBytes) }
+}
+if ($null -ne $taskSelection -and -not $taskCurrent) {
+    foreach ($taskName in @('OpenSteamTool.dll','dwmapi.dll','xinput1_4.dll')) {
+        if ($taskHashes[$taskName] -cne $taskSelection.hashes.$taskName) {
+            throw 'Pinned DLLs need repair but differ from this plugin bundle. Automatic replacement refused. Choose a version explicitly in CrocLua.'
+        }
+    }
+}
+if ($null -eq $taskSelection) { $taskSelection = [ordered]@{ schema=1; variant=$taskVariant; hashes=$taskHashes } }
+$taskSelectionBytes = if ($null -ne $taskOldSelection) { $taskOldSelection } else { $taskUtf8.GetBytes(($taskSelection | ConvertTo-Json -Depth 4)) }
+
 $taskConfigPath = Join-Path $taskSteam 'opensteamtool.toml'
 $taskOldConfig = Read-OptionalBytes $taskConfigPath
 $taskUtf8 = New-Object Text.UTF8Encoding($false, $true)
 $taskConfigText = if ($null -ne $taskOldConfig) { $taskUtf8.GetString($taskOldConfig).TrimStart([char]0xfeff) } else { '' }
 $taskConfigBytes = $taskUtf8.GetBytes((Configure-Lua $taskConfigText))
 $taskChanges = @()
-foreach ($taskName in @('OpenSteamTool.dll', 'dwmapi.dll', 'xinput1_4.dll', 'opensteamtool.toml')) {
+foreach ($taskName in @('OpenSteamTool.dll', 'dwmapi.dll', 'xinput1_4.dll', 'opensteamtool.toml', 'config/cgs-luatools-loader.json')) {
+    if ($taskCurrent -and $taskName -like '*.dll') { continue }
     $taskTarget = Join-Path $taskSteam $taskName
     $taskOriginal = Read-OptionalBytes $taskTarget
-    $taskBytes = if ($taskName -eq 'opensteamtool.toml') { $taskConfigBytes } else {
-        [IO.File]::ReadAllBytes((Join-Path $taskResources $taskName))
-    }
+    $taskBytes = if ($taskName -eq 'opensteamtool.toml') { $taskConfigBytes }
+        elseif ($taskName -eq 'config/cgs-luatools-loader.json') { $taskSelectionBytes }
+        else { $taskDllBytes[$taskName] }
     if ($taskName -like '*.dll' -and ($taskBytes.Length -lt 1024 -or $taskBytes[0] -ne 77 -or $taskBytes[1] -ne 90)) {
         throw "Invalid bundled DLL: $taskName"
     }
@@ -101,7 +174,11 @@ if ($taskChanges.Count -gt 0) {
     $taskBackup = Join-Path $taskSteam ('config\cgs-luatools-backups\' + [guid]::NewGuid().ToString())
     [IO.Directory]::CreateDirectory($taskBackup) | Out-Null
     foreach ($taskChange in $taskChanges) {
-        if ($null -ne $taskChange.Original) { [IO.File]::WriteAllBytes((Join-Path $taskBackup $taskChange.Name), $taskChange.Original) }
+        if ($null -ne $taskChange.Original) {
+            $taskBackupFile = Join-Path $taskBackup $taskChange.Name
+            [IO.Directory]::CreateDirectory((Split-Path -Parent $taskBackupFile)) | Out-Null
+            [IO.File]::WriteAllBytes($taskBackupFile, $taskChange.Original)
+        }
     }
     $taskCommitted = @()
     try {
@@ -154,5 +231,9 @@ if ([IO.Directory]::Exists($taskLegacy)) {
         [void]$taskMigrated.Add($taskKey)
     }
     $taskLedger = ConvertTo-Json -InputObject @($taskMigrated | Sort-Object) -Compress
-    Write-Atomic $taskMarker $taskUtf8.GetBytes($taskLedger)
+    $taskLedgerBytes = $taskUtf8.GetBytes($taskLedger)
+    if (-not (Same-Bytes (Read-OptionalBytes $taskMarker) $taskLedgerBytes)) {
+        Write-Atomic $taskMarker $taskLedgerBytes
+    }
 }
+} finally { $taskLoaderLock.Dispose() }

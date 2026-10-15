@@ -6,7 +6,7 @@ use std::{
 };
 
 const PLUGIN_FOLDER_NAME: &str = "crocodile-manifest";
-const BUNDLED_PLUGIN_VERSION: &str = "0.5.0";
+const BUNDLED_PLUGIN_VERSION: &str = "0.5.1";
 
 const EMBEDDED_MILLENNIUM_FILES: &[(&str, &[u8])] = &[
     ("wsock32.dll", include_bytes!("../../millenium/wsock32.dll")),
@@ -36,6 +36,9 @@ const EMBEDDED_PLUGIN_FILES: &[(&str, &[u8])] = &[
     ("backend/loader/OpenSteamTool.dll", include_bytes!("assets/OpenSteamTool.dll")),
     ("backend/loader/dwmapi.dll", include_bytes!("assets/dwmapi.dll")),
     ("backend/loader/xinput1_4.dll", include_bytes!("assets/xinput1_4.dll")),
+    ("backend/loader/compatibility/OpenSteamTool.dll", include_bytes!("assets/loader-v2/OpenSteamTool.dll")),
+    ("backend/loader/compatibility/dwmapi.dll", include_bytes!("assets/loader-v2/dwmapi.dll")),
+    ("backend/loader/compatibility/xinput1_4.dll", include_bytes!("assets/loader-v2/xinput1_4.dll")),
     ("backend/loader/opensteamtool.toml", include_bytes!("assets/opensteamtool.toml")),
     (
         "plugin.json",
@@ -266,6 +269,26 @@ pub fn millennium_remove_plugin(steam_path: Option<String>) -> OperationResult {
     }
 }
 
+/// Only after an explicit DLL selection: old installers do not understand pinning.
+pub(crate) fn update_installed_for_loader(steam: &Path) -> Result<(), String> {
+    let plugin = plugin_dir(steam);
+    if !plugin.join("plugin.json").is_file() { return Ok(()); }
+    if installed_plugin_name(&plugin).as_deref() != Some(PLUGIN_FOLDER_NAME) {
+        return Err("В папке Crocodile Manifest найден другой плагин. Обновите его вручную до версии с поддержкой закрепления DLL.".into());
+    }
+    let installed_version = installed_plugin_version(&plugin);
+    if let Some(version) = &installed_version {
+        let parts: Vec<u32> = version.split('.').map(str::parse).collect::<Result<_, _>>()
+            .map_err(|_| "Неизвестная версия установленного плагина. Проверьте поддержку закрепления DLL вручную.".to_string())?;
+        if parts.len() != 3 { return Err("Неизвестная версия установленного плагина. Проверьте его вручную.".into()); }
+        if parts.as_slice() > [0, 5, 1].as_slice() { return Ok(()); } // Never downgrade a later plugin.
+    }
+    if installed_version.as_deref() == Some(BUNDLED_PLUGIN_VERSION)
+        && fs::read(plugin.join("backend/install-loader.ps1")).ok().as_deref() == Some(EMBEDDED_PLUGIN_FILES[0].1) { return Ok(()); }
+    let result = millennium_install_plugin(Some(steam.display().to_string()));
+    if result.success { Ok(()) } else { Err(result.message) }
+}
+
 fn install_bundled_runtime(steam: &Path) -> OperationResult {
     let mut logs = Vec::new();
     let mut changed = 0_u32;
@@ -364,6 +387,13 @@ mod tests {
             include_bytes!("assets/OpenSteamTool.dll"));
         assert!(fs::read_to_string(steam.join("opensteamtool.toml")).unwrap().contains("config/lua"));
         assert!(expected.join("backend/install-loader.ps1").is_file());
+        let dll_times: Vec<_> = ["OpenSteamTool.dll", "dwmapi.dll", "xinput1_4.dll"].iter()
+            .map(|name| fs::metadata(steam.join(name)).unwrap().modified().unwrap()).collect();
+        let repeated = millennium_install_plugin(Some(steam.display().to_string()));
+        assert!(repeated.success, "{}", repeated.message);
+        for (index, name) in ["OpenSteamTool.dll", "dwmapi.dll", "xinput1_4.dll"].iter().enumerate() {
+            assert_eq!(fs::metadata(steam.join(name)).unwrap().modified().unwrap(), dll_times[index]);
+        }
         assert!(expected
             .join(".millennium")
             .join("Dist")
