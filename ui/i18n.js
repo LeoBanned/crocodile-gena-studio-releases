@@ -5,6 +5,13 @@
   const SUPPORTED = new Set(["ru", "en"]);
 
   const EN = {
+    "Обновление": "Update",
+    "Актуально": "Up to date",
+    "Другой комплект": "Other bundle",
+    "Совпадает": "Matches",
+    "Нет файла": "Missing file",
+    "Без уведомлений": "No notifications",
+    "version.dll устанавливается, но не влияет на уведомления об обновлении.": "version.dll is installed, but does not trigger update notifications.",
     "Выберите комплект DLL для своего Steam. Актуальные файлы будут получены из GitHub.": "Choose a DLL bundle for Steam. Current files will be fetched from GitHub.",
     "У standard все DLL идут в корень Steam. У compatibility файл dwmapi.dll идёт в Steam/bin, остальные DLL — в корень.": "All standard DLLs go in the Steam root. The compatibility dwmapi.dll goes in Steam/bin; the other DLLs go in the root.",
     "Старые DLL сохраняются в Steam/config/cgs-luatools-backups. Совпадающие DLL не скачиваются повторно и не переписываются.": "Previous DLLs are backed up in Steam/config/cgs-luatools-backups. Matching DLLs are not downloaded again or rewritten.",

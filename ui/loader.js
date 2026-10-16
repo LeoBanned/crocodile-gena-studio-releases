@@ -4,6 +4,7 @@
   let opened = false;
   const checks = new Map();
   let generation = 0;
+  function invalidateChecks() { ++generation; checks.clear(); }
   async function check({steamPath = null, force = false} = {}) {
     if (!invoke || document.body.dataset.platform === 'linux') return null;
     const token = ++generation;
@@ -11,7 +12,7 @@
     const banner = document.querySelector('#loader-update-banner');
     let request = checks.get(key);
     if (!request) {
-      request = invoke('luatools_check_loader_updates', {steamPath, force}).finally(() => checks.delete(key));
+      request = invoke('luatools_check_loader_updates', {steamPath, force}).finally(() => { if (checks.get(key) === request) checks.delete(key); });
       checks.set(key, request);
     }
     try {
@@ -52,10 +53,11 @@
       <p class="loader-description">Выберите комплект DLL для своего Steam. Актуальные файлы будут получены из GitHub.</p>
       <div class="loader-path"><strong>Папка Steam</strong><span id="loader-steam-path"></span></div>
       <fieldset class="loader-choices" disabled><legend>Версия файлов</legend>
-        <label class="loader-choice"><input type="radio" name="loader-variant" value="standard" checked/><span><strong>Версия 1 · Текущая</strong><small>Исходный комплект CrocLua. Если всё работает — оставьте его.</small></span></label>
-        <label class="loader-choice"><input type="radio" name="loader-variant" value="compatibility"/><span><strong>Версия 2 · Альтернативная</strong><small>Другой комплект OpenSteamTool для тех, у кого не работает первый.</small></span></label>
+        <label class="loader-choice"><input type="radio" name="loader-variant" value="standard" checked/><span><strong>Версия 1 · Текущая</strong><span class="loader-bundle-badge" hidden></span><small>Исходный комплект CrocLua. Если всё работает — оставьте его.</small></span></label>
+        <label class="loader-choice"><input type="radio" name="loader-variant" value="compatibility"/><span><strong>Версия 2 · Альтернативная</strong><span class="loader-bundle-badge" hidden></span><small>Другой комплект OpenSteamTool для тех, у кого не работает первый.</small></span></label>
       </fieldset>
       <div class="loader-files"><header><span>Файлы выбранного комплекта</span><small>GitHub</small></header><div class="loader-file-list"></div></div>
+      <p class="loader-notification-note">version.dll устанавливается, но не влияет на уведомления об обновлении.</p>
       <div class="loader-protection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6zM8 12l3 3 5-6"/></svg><span>Выбор закрепляется в папке Steam. Если Crocodile Manifest установлен, он тоже будет обновлён до 0.5.2. Добавление манифестов не переключит версию DLL.</span></div>
       <details class="personalization-details loader-instructions"><summary>Как установить и что важно знать</summary><ol><li>Полностью закройте Steam через значок в трее → «Выход».</li><li>Выберите версию и нажмите «Установить и закрепить».</li><li>У standard все DLL идут в корень Steam. У compatibility файл dwmapi.dll идёт в Steam/bin, остальные DLL — в корень.</li><li>Запустите Steam заново. Lua-файлы останутся в Steam/config/lua.</li><li>Старые DLL сохраняются в Steam/config/cgs-luatools-backups. Совпадающие DLL не скачиваются повторно и не переписываются.</li><li>Плагин 0.5.2+ учитывает новые пути и кэш скачанных DLL. Защита не управляет старыми плагинами, сторонними программами и ручной заменой файлов.</li></ol></details>
       <div class="loader-status" role="status" aria-live="polite">Проверяем установленный комплект…</div>
@@ -63,13 +65,27 @@
     </section>`;
     const $ = selector => overlay.querySelector(selector);
     let busy = false, done = false, closed = false, result = null, remote = null;
+    function showBadges() {
+      for (const choice of overlay.querySelectorAll('.loader-choice')) {
+        const variant = choice.querySelector('input').value;
+        const item = remote?.variants?.find(item => item.variant === variant);
+        const badge = choice.querySelector('.loader-bundle-badge');
+        badge.hidden = !item;
+        const state = item?.status || (variant === remote?.selectedVariant ? (item?.updateAvailable ? 'update' : 'current') : 'not_installed');
+        badge.dataset.status = state;
+        badge.textContent = ({update:'Обновление',current:'Актуально',not_installed:'Другой комплект'})[state] || 'Другой комплект';
+      }
+    }
     function showFiles() {
       const variant = $('input[name="loader-variant"]:checked')?.value;
       const files = remote?.variants?.find(item => item.variant === variant)?.files || [];
       const list = $('.loader-file-list'); list.replaceChildren();
       for (const file of files) {
         const row = document.createElement('div'); row.innerHTML = fileIcon;
-        const name = document.createElement('span'); name.textContent = String(file.path).replaceAll('/', '\\'); row.appendChild(name); list.appendChild(row);
+        const name = document.createElement('span'); name.className = 'loader-file-name'; name.textContent = String(file.path).replaceAll('/', '\\'); row.appendChild(name);
+        const label = ({changed:'Обновление',missing:'Нет файла',current:'Совпадает',ignored:'Без уведомлений'})[file.status];
+        if (label) { const badge = document.createElement('small'); badge.className = 'loader-file-state'; badge.dataset.status = file.status; badge.textContent = label; row.appendChild(badge); }
+        list.appendChild(row);
       }
     }
     $('.loader-choices').addEventListener('change', showFiles);
@@ -116,6 +132,9 @@
         if (!response?.success) throw new Error(response?.message || 'Не удалось обновить DLL');
         result = response;
         done = true;
+        invalidateChecks();
+        const refreshed = await check({steamPath}).catch(() => null);
+        if (refreshed) { remote = refreshed; showBadges(); showFiles(); }
         status(response.message, 'success');
         $('#loader-install').textContent = 'Готово';
         $('#loader-cancel').hidden = true;
@@ -145,10 +164,11 @@
         remote = await check({steamPath});
         if (closed) return completed;
         showFiles();
+        showBadges();
         $('.loader-choices').disabled = false;
         $('#loader-install').disabled = false;
         status(info.issue || (info.pinned
-          ? (info.current ? 'Версия закреплена. Сменить её можно только вручную в этом окне.' : 'Версия закреплена, но DLL отсутствуют или отличаются. Установите выбранный комплект заново.')
+          ? (remote.variants.find(item => item.variant === remote.selectedVariant)?.status === 'current' ? 'Версия закреплена. Сменить её можно только вручную в этом окне.' : 'Версия закреплена, но DLL отсутствуют или отличаются. Установите выбранный комплект заново.')
           : 'После установки выбранная версия будет закреплена.'), info.issue ? 'error' : '');
       }
     } catch (error) { if (!closed) status(String(error?.message || error), 'error'); }
