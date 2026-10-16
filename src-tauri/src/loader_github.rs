@@ -64,6 +64,7 @@ pub(crate) struct Bundle {
 pub struct FileInfo {
     path: String,
     bytes: usize,
+    status: String,
 }
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -71,6 +72,7 @@ pub struct VariantInfo {
     variant: String,
     available: bool,
     update_available: bool,
+    status: String,
     files: Vec<FileInfo>,
 }
 #[derive(Serialize)]
@@ -278,38 +280,68 @@ pub(crate) fn validate_dll(bytes: &[u8]) -> Result<(), String> {
     }
     Ok(())
 }
-fn check(steam_path: Option<String>, force: bool) -> Result<UpdateInfo, String> {
-    let steam = lua_loader::resolve(steam_path)?;
-    let selected = lua_loader::selected_variant(&steam).unwrap_or_else(|_| "standard".into());
-    let snapshot = snapshot(force)?;
+fn check_snapshot(steam: &Path, snapshot: &Snapshot) -> Result<UpdateInfo, String> {
+    let selected = lua_loader::selected_variant(steam).unwrap_or_else(|_| "standard".into());
     let mut variants = Vec::new();
     for (variant, files) in &snapshot.variants {
+        let mut info = Vec::new();
         let mut current = true;
         for file in files {
-            current &= file_current(&steam, file)?;
+            // version.dll is still downloaded, verified and installed, but deliberately
+            // excluded from discovery: Steam may remove it after startup.
+            let state = if file.target == "version.dll" {
+                "ignored"
+            } else if *variant != selected {
+                "available"
+            } else {
+                match lua_loader::read_optional(&steam.join(&file.target))? {
+                    Some(bytes) if bytes.len() == file.size && blob_hash(&bytes) == file.sha => {
+                        "current"
+                    }
+                    Some(_) => {
+                        current = false;
+                        "changed"
+                    }
+                    None => {
+                        current = false;
+                        "missing"
+                    }
+                }
+            };
+            info.push(FileInfo {
+                path: file.target.clone(),
+                bytes: file.size,
+                status: state.into(),
+            });
         }
+        let state = if *variant != selected {
+            "not_installed"
+        } else if current {
+            "current"
+        } else {
+            "update"
+        };
         variants.push(VariantInfo {
             variant: variant.clone(),
             available: true,
-            update_available: !current,
-            files: files
-                .iter()
-                .map(|f| FileInfo {
-                    path: f.target.clone(),
-                    bytes: f.size,
-                })
-                .collect(),
+            update_available: state == "update",
+            status: state.into(),
+            files: info,
         });
     }
     let update_available = variants
         .iter()
         .any(|v| v.variant == selected && v.update_available);
     Ok(UpdateInfo {
-        commit: snapshot.commit,
+        commit: snapshot.commit.clone(),
         selected_variant: selected,
         update_available,
         variants,
     })
+}
+fn check(steam_path: Option<String>, force: bool) -> Result<UpdateInfo, String> {
+    let steam = lua_loader::resolve(steam_path)?;
+    check_snapshot(&steam, &snapshot(force)?)
 }
 #[tauri::command]
 pub async fn luatools_check_loader_updates(
@@ -395,6 +427,125 @@ mod tests {
             size: bytes.len(),
         };
         assert!(file_current(dir.path(), &file).unwrap());
+    }
+    fn installed_snapshot(steam: &Path, variant: &str) -> Snapshot {
+        if variant == "standard" {
+            let mut files: BTreeMap<String, Vec<u8>> = lua_loader::STANDARD
+                .iter()
+                .map(|(name, bytes)| (name.to_string(), bytes.to_vec()))
+                .collect();
+            let proxy = files.remove("dwmapi.dll").unwrap();
+            files.insert("version.dll".into(), proxy);
+            let result = lua_loader::install_downloaded(
+                steam,
+                Bundle {
+                    variant: variant.into(),
+                    files,
+                },
+            );
+            assert!(result.success, "{}", result.message);
+        } else {
+            let result = lua_loader::update(steam, Some(variant));
+            assert!(result.success, "{}", result.message);
+        }
+        let mut snapshot = snapshot_from_tree(&"a".repeat(40), tree()).unwrap();
+        for file in snapshot.variants.get_mut(variant).unwrap() {
+            let bytes = std::fs::read(steam.join(&file.target)).unwrap();
+            file.sha = blob_hash(&bytes);
+            file.size = bytes.len();
+        }
+        snapshot
+    }
+    #[test]
+    fn version_dll_never_triggers_update_but_other_dlls_do() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("steam.exe"), []).unwrap();
+        let snapshot = installed_snapshot(dir.path(), "standard");
+        std::fs::remove_file(dir.path().join("version.dll")).unwrap();
+        let info = check_snapshot(dir.path(), &snapshot).unwrap();
+        assert!(!info.update_available);
+        assert_eq!(
+            info.variants
+                .iter()
+                .find(|v| v.variant == "standard")
+                .unwrap()
+                .status,
+            "current"
+        );
+        assert!(
+            !dir.path().join("version.dll").exists(),
+            "Discovery must not restore files"
+        );
+        std::fs::write(dir.path().join("version.dll"), b"different version.dll").unwrap();
+        assert!(
+            !check_snapshot(dir.path(), &snapshot)
+                .unwrap()
+                .update_available
+        );
+        std::fs::remove_file(dir.path().join("OpenSteamTool.dll")).unwrap();
+        assert!(
+            check_snapshot(dir.path(), &snapshot)
+                .unwrap()
+                .update_available
+        );
+    }
+    #[test]
+    fn version_only_remote_release_is_ignored_and_inactive_bundle_is_not_outdated() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("steam.exe"), []).unwrap();
+        let mut snapshot = installed_snapshot(dir.path(), "standard");
+        let proxy = snapshot
+            .variants
+            .get_mut("standard")
+            .unwrap()
+            .iter_mut()
+            .find(|f| f.target == "version.dll")
+            .unwrap();
+        proxy.sha = "b".repeat(40);
+        let info = check_snapshot(dir.path(), &snapshot).unwrap();
+        assert!(!info.update_available);
+        let other = info
+            .variants
+            .iter()
+            .find(|v| v.variant == "compatibility")
+            .unwrap();
+        assert_eq!(other.status, "not_installed");
+        assert!(!other.update_available);
+        snapshot
+            .variants
+            .get_mut("standard")
+            .unwrap()
+            .iter_mut()
+            .find(|f| f.target == "xinput1_4.dll")
+            .unwrap()
+            .sha = "c".repeat(40);
+        assert!(
+            check_snapshot(dir.path(), &snapshot)
+                .unwrap()
+                .update_available
+        );
+    }
+    #[test]
+    fn compatibility_bin_proxy_is_still_checked() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("steam.exe"), []).unwrap();
+        let snapshot = installed_snapshot(dir.path(), "compatibility");
+        let current = check_snapshot(dir.path(), &snapshot).unwrap();
+        assert!(!current.update_available);
+        assert_eq!(current.selected_variant, "compatibility");
+        std::fs::remove_file(dir.path().join("bin/dwmapi.dll")).unwrap();
+        let info = check_snapshot(dir.path(), &snapshot).unwrap();
+        assert!(info.update_available);
+        let selected = info
+            .variants
+            .iter()
+            .find(|v| v.variant == "compatibility")
+            .unwrap();
+        assert_eq!(selected.status, "update");
+        assert!(selected
+            .files
+            .iter()
+            .any(|f| f.path == "bin/dwmapi.dll" && f.status == "missing"));
     }
     #[cfg(windows)]
     #[test]
