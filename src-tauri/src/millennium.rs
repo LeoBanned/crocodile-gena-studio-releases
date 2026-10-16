@@ -6,7 +6,7 @@ use std::{
 };
 
 const PLUGIN_FOLDER_NAME: &str = "crocodile-manifest";
-const BUNDLED_PLUGIN_VERSION: &str = "0.5.1";
+const BUNDLED_PLUGIN_VERSION: &str = "0.5.2";
 
 const EMBEDDED_MILLENNIUM_FILES: &[(&str, &[u8])] = &[
     ("wsock32.dll", include_bytes!("../../millenium/wsock32.dll")),
@@ -281,7 +281,7 @@ pub(crate) fn update_installed_for_loader(steam: &Path) -> Result<(), String> {
         let parts: Vec<u32> = version.split('.').map(str::parse).collect::<Result<_, _>>()
             .map_err(|_| "Неизвестная версия установленного плагина. Проверьте поддержку закрепления DLL вручную.".to_string())?;
         if parts.len() != 3 { return Err("Неизвестная версия установленного плагина. Проверьте его вручную.".into()); }
-        if parts.as_slice() > [0, 5, 1].as_slice() { return Ok(()); } // Never downgrade a later plugin.
+        if parts.as_slice() > [0, 5, 2].as_slice() { return Ok(()); } // Never downgrade a later plugin.
     }
     if installed_version.as_deref() == Some(BUNDLED_PLUGIN_VERSION)
         && fs::read(plugin.join("backend/install-loader.ps1")).ok().as_deref() == Some(EMBEDDED_PLUGIN_FILES[0].1) { return Ok(()); }

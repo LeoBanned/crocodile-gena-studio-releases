@@ -16,6 +16,7 @@ mod hypervisor;
 mod hypervisor;
 mod luatools;
 mod lua_loader;
+mod loader_github;
 #[cfg(target_os = "windows")]
 mod millennium;
 #[cfg(not(target_os = "windows"))]
@@ -293,6 +294,7 @@ pub fn run() {
             luatools::luatools_status,
             luatools::luatools_update_loader,
             lua_loader::luatools_loader_info,
+            loader_github::luatools_check_loader_updates,
             luatools::luatools_restore_manifests,
             luatools::luatools_detect_steam,
             luatools::luatools_pick_files,

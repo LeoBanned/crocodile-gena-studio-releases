@@ -240,7 +240,8 @@ fn update_loader_blocking_with_variant(steam_path: Option<String>, variant: Opti
     let Some(steam) = steam else {
         return OperationResult::error("Папка Steam не найдена", vec![]);
     };
-    crate::lua_loader::update(&steam, variant.as_deref())
+    let variant = match variant { Some(variant) => variant, None => crate::lua_loader::selected_variant(&steam).unwrap_or_else(|_| "standard".into()) };
+    crate::loader_github::update(&steam, &variant)
 }
 
 #[cfg(test)]
@@ -291,60 +292,67 @@ fn atomic_loader_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
 // Called only during explicit import/download, plugin install or manual DLL update.
 // Never from startup or the status scan.
 // Existing DLLs/configs are backed up before any replacement. Failed updates roll back.
+#[cfg(test)]
 pub(crate) fn install_loader_resources(steam: &Path, files: &[(&str, &[u8])]) -> Result<(), String> {
+    let plan: Vec<_> = files.iter().map(|(name, bytes)| (*name, Some(*bytes))).collect();
+    install_loader_changes(steam, &plan)
+}
+
+/// Includes owned-file removals in the same backup/rollback transaction as DLLs and selection.
+pub(crate) fn install_loader_changes(steam: &Path, files: &[(&str, Option<&[u8]>)]) -> Result<(), String> {
+    let read = |path: &Path| -> Result<Option<Vec<u8>>, String> {
+        crate::lua_loader::read_optional(path)
+    };
     let mut changes = Vec::new();
-    for &(name, bytes) in files {
-        let destination = steam.join(name);
-        if fs::symlink_metadata(&destination).is_ok_and(|m| m.file_type().is_symlink()) {
-            return Err(format!("Не удалось обновить {name}: файл является ссылкой. Файлы не изменены."));
+    for &(name, desired) in files {
+        let relative=Path::new(name);
+        if relative.is_absolute() || relative.components().any(|c| !matches!(c,std::path::Component::Normal(_))) {
+            return Err("Недопустимый путь загрузчика".into());
         }
-        let previous = match fs::read(&destination) {
-            Ok(previous) if previous == bytes => continue,
-            Ok(previous) => Some(previous),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
-            Err(e) => return Err(format!("Не удалось прочитать {name}: {e}. Закройте Steam и повторите.")),
-        };
-        changes.push((name, bytes, previous));
+        let destination=steam.join(relative);
+        let mut parent=steam.to_path_buf();
+        let parts:Vec<_>=relative.components().collect();
+        for part in &parts[..parts.len().saturating_sub(1)] {
+            parent.push(part.as_os_str());
+            crate::lua_loader::reject_link(&parent)?;
+            if desired.is_some() { fs::create_dir_all(&parent).map_err(|e|e.to_string())?; }
+        }
+        let previous=read(&destination)?;
+        if previous.as_deref()==desired { continue; }
+        changes.push((name,desired,previous));
     }
     if changes.is_empty() { return Ok(()); }
-    let backup = steam.join("config").join("cgs-luatools-backups").join(uuid::Uuid::new_v4().to_string());
-    if changes.iter().any(|(_, _, previous)| previous.is_some()) {
-        fs::create_dir_all(&backup).map_err(|e| format!("Не удалось подготовить резервную копию загрузчика: {e}"))?;
-    }
-    for (name, _, previous) in &changes {
-        if let Some(bytes) = previous {
-            if let Some(parent) = backup.join(name).parent() {
-                fs::create_dir_all(parent).map_err(|e| format!("Не удалось подготовить папку резервной копии: {e}"))?;
-            }
-            fs::write(backup.join(name), bytes).map_err(|e| format!("Не удалось сохранить резервную копию {name}: {e}. Файлы загрузчика не изменены."))?;
+    let backup=steam.join("config/cgs-luatools-backups").join(uuid::Uuid::new_v4().to_string());
+    for (name,_,previous) in &changes {
+        if let Some(bytes)=previous {
+            let output=backup.join(name);
+            fs::create_dir_all(output.parent().unwrap()).map_err(|e|e.to_string())?;
+            fs::write(output,bytes).map_err(|e|format!("Не удалось сохранить резервную копию: {e}. DLL не изменены."))?;
         }
     }
-    for (index, (name, bytes, previous)) in changes.iter().enumerate() {
-        let destination = steam.join(name);
-        let unchanged = match fs::read(&destination) {
-            Ok(current) => previous.as_ref().is_some_and(|old| *old == current),
-            Err(e) => e.kind() == std::io::ErrorKind::NotFound && previous.is_none(),
+    for (index,(name,desired,previous)) in changes.iter().enumerate() {
+        let destination=steam.join(name);
+        let operation=match read(&destination) {
+            Ok(current) if &current==previous => {
+                if let Some(bytes)=desired { atomic_loader_write(&destination,bytes) }
+                else { fs::remove_file(&destination).map_err(|e|e.to_string()) }
+            },
+            Ok(_) => Err("Файл изменился во время обновления".into()),
+            Err(error)=>Err(error),
         };
-        let result = if unchanged {
-            atomic_loader_write(&destination, bytes)
-        } else { Err("Файл изменился во время обновления".into()) };
-        if let Err(error) = result {
-            let mut rollback_errors = Vec::new();
-            for (restored_name, installed, original) in changes[..index].iter().rev() {
-                let restored_path = steam.join(restored_name);
-                // Do not overwrite a concurrent third-party edit while rolling back.
-                if !fs::read(&restored_path).is_ok_and(|current| current == *installed) {
-                    rollback_errors.push(format!("{restored_name}: файл изменён извне"));
-                    continue;
+        if let Err(error)=operation {
+            let mut failures=Vec::new();
+            for (old_name,installed,original) in changes[..index].iter().rev() {
+                let path=steam.join(old_name);
+                if !read(&path).is_ok_and(|current|current.as_deref()==*installed) {
+                    failures.push(format!("{old_name}: файл изменён извне")); continue;
                 }
-                let restored = if let Some(original) = original {
-                    atomic_loader_write(&restored_path, original)
-                } else { fs::remove_file(&restored_path).map_err(|e| e.to_string()) };
-                if let Err(e) = restored { rollback_errors.push(format!("{restored_name}: {e}")); }
+                let rollback=if let Some(bytes)=original { atomic_loader_write(&path,bytes) }
+                    else { fs::remove_file(&path).map_err(|e|e.to_string()) };
+                if let Err(error)=rollback { failures.push(format!("{old_name}: {error}")); }
             }
-            let rollback = if rollback_errors.is_empty() { "Изменения отменены.".into() }
-                else { format!("Не удалось полностью отменить изменения: {}.", rollback_errors.join("; ")) };
-            return Err(format!("Не удалось обновить {name}: {error}. Закройте Steam и повторите. {rollback} Резервная копия: {}", backup.display()));
+            return Err(format!("Не удалось обновить {name}: {error}. Закройте Steam и повторите. Откат: {}. Резервная копия: {}",
+                if failures.is_empty() {"изменения отменены".into()} else {failures.join("; ")},backup.display()));
         }
     }
     Ok(())
