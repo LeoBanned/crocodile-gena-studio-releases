@@ -72,7 +72,7 @@
         pluginInstalled: false,
         pluginCurrent: false,
         pluginVersion: "",
-        bundledVersion: "0.5.1",
+        bundledVersion: "0.5.2",
         pluginPath: "",
       },
       millenniumPrompted: false,
@@ -1226,6 +1226,7 @@
       if (state.lua.steamPath) localStorage.setItem("luaSteamPath", state.lua.steamPath);
       renderLuaStatus();
       luaLoadNames();
+      if (document.querySelector('#view-lua.active')) window.cgsLoaderDialog?.check({steamPath:state.lua.steamPath || null});
       if (options.offerMillennium !== false && millennium?.status === "millennium_missing" && !state.lua.millenniumPrompted) {
         state.lua.millenniumPrompted = true;
         await offerMillenniumInstall();

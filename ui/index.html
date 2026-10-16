@@ -391,11 +391,17 @@
               <div class="lua-steam-row">
                 <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8l6 2-4 5-4-1z"/></svg>
                 <input id="lua-steam-path" type="text" spellcheck="false" placeholder="Steam не найден" />
-                <button class="ghost-button windows-only" id="lua-update-dll-button" title="Обновить OpenSteamTool.dll, dwmapi.dll и xinput1_4.dll">Обновить DLL</button>
+                <button class="ghost-button windows-only" id="lua-update-dll-button" title="Проверить и установить комплект DLL с GitHub">Обновить DLL</button>
                 <button class="ghost-button" id="lua-steam-browse">Изменить</button>
               </div>
               <span id="lua-steam-hint">Определяется автоматически из реестра</span>
             </article>
+          </div>
+
+          <div class="loader-update-banner windows-only hidden" id="loader-update-banner" role="status" aria-live="polite">
+            <span class="loader-update-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg><i></i></span>
+            <div class="loader-update-copy"><strong id="loader-update-title">Доступно обновление DLL</strong><p id="loader-update-message">Обновите загрузчик для корректной работы CrocLua в Steam.</p></div>
+            <button type="button" class="primary-button loader-update-action" id="loader-update-action">Обновить DLL</button>
           </div>
 
           <section class="premium-panel millennium-panel windows-only">

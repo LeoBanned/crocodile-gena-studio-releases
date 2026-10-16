@@ -2,6 +2,42 @@
   "use strict";
   const invoke = window.__TAURI__?.core?.invoke;
   let opened = false;
+  const checks = new Map();
+  let generation = 0;
+  async function check({steamPath = null, force = false} = {}) {
+    if (!invoke || document.body.dataset.platform === 'linux') return null;
+    const token = ++generation;
+    const key = String(steamPath || '') + ':' + force;
+    const banner = document.querySelector('#loader-update-banner');
+    let request = checks.get(key);
+    if (!request) {
+      request = invoke('luatools_check_loader_updates', {steamPath, force}).finally(() => checks.delete(key));
+      checks.set(key, request);
+    }
+    try {
+      const info = await request;
+      if (!Array.isArray(info?.variants) || info.variants.length !== 2) throw new Error('Не удалось проверить версии DLL на GitHub');
+      if (token === generation && banner) {
+        banner.classList.remove('error');
+        banner.classList.toggle('hidden', !info.updateAvailable);
+        document.querySelector('#loader-update-title').textContent = 'Доступно обновление DLL';
+        document.querySelector('#loader-update-message').textContent = 'Обновите загрузчик для корректной работы CrocLua в Steam. Автоматической замены файлов не будет.';
+        const action = document.querySelector('#loader-update-action');
+        action.textContent = 'Обновить DLL';
+        action.onclick = () => document.querySelector('#lua-update-dll-button').click();
+      }
+      return info;
+    } catch (error) {
+      if (token === generation && banner) {
+        banner.classList.remove('hidden'); banner.classList.add('error');
+        document.querySelector('#loader-update-title').textContent = 'Проверка DLL недоступна';
+        document.querySelector('#loader-update-message').textContent = String(error?.message || error) + ' Установленные DLL не изменены.';
+        const action = document.querySelector('#loader-update-action');
+        action.textContent = 'Повторить'; action.onclick = () => check({steamPath, force:true}).catch(() => {});
+      }
+      throw error;
+    }
+  }
   const displayPath = value => String(value || '').replace(/^\\\\\?\\UNC\\/i, '\\\\').replace(/^\\\\\?\\/, '');
   const fileIcon = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2h7l4 4v12H5zM12 2v5h4"/></svg>';
 
@@ -13,20 +49,30 @@
     overlay.className = 'loader-backdrop';
     overlay.innerHTML = `<section class="premium-panel loader-dialog" role="dialog" aria-modal="true" aria-labelledby="loader-title">
       <span class="hero-kicker">MODULE 04 · CROCLUA</span><h3 id="loader-title">Загрузчик OpenSteamTool</h3>
-      <p class="loader-description">Выберите комплект DLL для своего Steam. Если текущий не работает, попробуйте альтернативный.</p>
+      <p class="loader-description">Выберите комплект DLL для своего Steam. Актуальные файлы будут получены из GitHub.</p>
       <div class="loader-path"><strong>Папка Steam</strong><span id="loader-steam-path"></span></div>
       <fieldset class="loader-choices" disabled><legend>Версия файлов</legend>
         <label class="loader-choice"><input type="radio" name="loader-variant" value="standard" checked/><span><strong>Версия 1 · Текущая</strong><small>Исходный комплект CrocLua. Если всё работает — оставьте его.</small></span></label>
         <label class="loader-choice"><input type="radio" name="loader-variant" value="compatibility"/><span><strong>Версия 2 · Альтернативная</strong><small>Другой комплект OpenSteamTool для тех, у кого не работает первый.</small></span></label>
       </fieldset>
-      <div class="loader-files"><header><span>Файлы в корне Steam</span><small>3 DLL</small></header><div>${fileIcon}OpenSteamTool.dll</div><div>${fileIcon}dwmapi.dll</div><div>${fileIcon}xinput1_4.dll</div></div>
-      <div class="loader-protection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6zM8 12l3 3 5-6"/></svg><span>Выбор закрепляется в папке Steam. Если Crocodile Manifest установлен, он тоже будет обновлён до 0.5.1. Добавление манифестов не переключит версию DLL.</span></div>
-      <details class="personalization-details loader-instructions"><summary>Как установить и что важно знать</summary><ol><li>Полностью закройте Steam через значок в трее → «Выход».</li><li>Выберите версию и нажмите «Установить и закрепить».</li><li>Запустите Steam заново. Lua-файлы останутся в Steam/config/lua.</li><li>Если игры не появились, закройте Steam и попробуйте другую версию в этом же окне.</li><li>Старые DLL сохраняются в Steam/config/cgs-luatools-backups. Уже совпадающие файлы не переписываются.</li><li>Обновите Crocodile Manifest до 0.5.1 или новее. Защита не управляет старыми плагинами, сторонними программами и ручной заменой файлов.</li></ol></details>
+      <div class="loader-files"><header><span>Файлы выбранного комплекта</span><small>GitHub</small></header><div class="loader-file-list"></div></div>
+      <div class="loader-protection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6zM8 12l3 3 5-6"/></svg><span>Выбор закрепляется в папке Steam. Если Crocodile Manifest установлен, он тоже будет обновлён до 0.5.2. Добавление манифестов не переключит версию DLL.</span></div>
+      <details class="personalization-details loader-instructions"><summary>Как установить и что важно знать</summary><ol><li>Полностью закройте Steam через значок в трее → «Выход».</li><li>Выберите версию и нажмите «Установить и закрепить».</li><li>У standard все DLL идут в корень Steam. У compatibility файл dwmapi.dll идёт в Steam/bin, остальные DLL — в корень.</li><li>Запустите Steam заново. Lua-файлы останутся в Steam/config/lua.</li><li>Старые DLL сохраняются в Steam/config/cgs-luatools-backups. Совпадающие DLL не скачиваются повторно и не переписываются.</li><li>Плагин 0.5.2+ учитывает новые пути и кэш скачанных DLL. Защита не управляет старыми плагинами, сторонними программами и ручной заменой файлов.</li></ol></details>
       <div class="loader-status" role="status" aria-live="polite">Проверяем установленный комплект…</div>
       <div class="loader-footer"><button type="button" class="secondary-button" id="loader-cancel">Отмена</button><button type="button" class="primary-button" id="loader-install" disabled>Установить и закрепить</button></div>
     </section>`;
     const $ = selector => overlay.querySelector(selector);
-    let busy = false, done = false, closed = false, result = null;
+    let busy = false, done = false, closed = false, result = null, remote = null;
+    function showFiles() {
+      const variant = $('input[name="loader-variant"]:checked')?.value;
+      const files = remote?.variants?.find(item => item.variant === variant)?.files || [];
+      const list = $('.loader-file-list'); list.replaceChildren();
+      for (const file of files) {
+        const row = document.createElement('div'); row.innerHTML = fileIcon;
+        const name = document.createElement('span'); name.textContent = String(file.path).replaceAll('/', '\\'); row.appendChild(name); list.appendChild(row);
+      }
+    }
+    $('.loader-choices').addEventListener('change', showFiles);
     let finish;
     const completed = new Promise(resolve => { finish = resolve; });
     const blocked = [...document.querySelectorAll('.main-area, .sidebar')].map(element => ({element, inert:element.inert}));
@@ -63,7 +109,7 @@
       $('.loader-choices').disabled = true;
       $('#loader-install').disabled = true;
       $('#loader-cancel').disabled = true;
-      status('Устанавливаем выбранный комплект…');
+      status('Скачиваем и проверяем комплект GitHub…');
       window.dispatchEvent(new CustomEvent('cgs:busy-changed', {detail:{id:'loader', busy:true}}));
       try {
         const response = await invoke('luatools_update_loader', {steamPath, variant});
@@ -95,6 +141,10 @@
         steamPath = info.steamPath || steamPath;
         $('#loader-steam-path').textContent = displayPath(steamPath);
         $(`input[value="${info.selectedVariant === 'compatibility' ? 'compatibility' : 'standard'}"]`).checked = true;
+        status('Проверяем версии DLL на GitHub…');
+        remote = await check({steamPath});
+        if (closed) return completed;
+        showFiles();
         $('.loader-choices').disabled = false;
         $('#loader-install').disabled = false;
         status(info.issue || (info.pinned
@@ -104,5 +154,5 @@
     } catch (error) { if (!closed) status(String(error?.message || error), 'error'); }
     return completed;
   }
-  window.cgsLoaderDialog = {open};
+  window.cgsLoaderDialog = {open, check: options => check(options).catch(() => null)};
 })();
