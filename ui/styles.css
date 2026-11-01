@@ -23,6 +23,16 @@
   --font: "Segoe UI Variable", "Segoe UI", Inter, system-ui, sans-serif;
 }
 
+/* Native VBS 2.0 troubleshooting actions. */
+.vbs-version{display:inline-block;vertical-align:middle;margin-left:8px;padding:5px 9px;border:1px solid var(--line-strong);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700}
+.vbs-repair-panel{overflow:hidden}
+.vbs-repair-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:20px 24px 24px}
+.vbs-repair-grid article{display:flex;flex-direction:column;align-items:flex-start;padding:18px;border:1px solid var(--line);border-radius:var(--ui-control-radius,10px);background:var(--panel-soft)}
+.vbs-repair-grid h4{margin:0 0 10px;color:var(--text);font-size:13px}
+.vbs-repair-grid p{flex:1;margin:0 0 18px;color:var(--muted);font-size:11px;line-height:1.7}
+.vbs-repair-grid button{width:100%}
+@media(max-width:1100px){.vbs-repair-grid{grid-template-columns:1fr}}
+
 /* Module 03 — Installed Steam library and DLC methods */
 #view-dlc .saves-hero{align-items:center;gap:24px}
 #view-dlc.dlc-detail .saves-hero{display:none}

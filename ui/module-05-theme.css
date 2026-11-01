@@ -1,0 +1,93 @@
+/* Module 05 follows the same surface and accent tokens as the rest of the app. */
+#view-hypervisor {
+  --module-surface: var(--skin-panel);
+  --module-inner: var(--panel-solid);
+  --module-border: var(--line);
+  --module-text: var(--text);
+  --module-muted: var(--muted);
+  --module-accent-soft: rgba(var(--accent-rgb), .1);
+}
+
+/* Override the older module-wide surface rule, including secondary panels. */
+#view-hypervisor .premium-panel:not(.hv-stat) {
+  background: var(--module-surface);
+  border-color: var(--module-border);
+}
+
+#view-hypervisor :is(.hv-module-tabs, .hv-stats, .hv-log, .ac-stats) {
+  background: var(--module-surface);
+  border-color: var(--module-border);
+}
+#view-hypervisor :is(.hv-hero, .hv-selected-panel, .ac-hero, .vbs-hero, .vbs-dse-card) {
+  background: var(--module-surface) !important;
+  border-color: var(--module-border);
+}
+#view-hypervisor :is(.hv-game-card, .ac-item, .vbs-repair-grid article) {
+  background: var(--module-inner);
+  border-color: var(--module-border);
+}
+#view-hypervisor :is(.hv-game-card.selected, .ac-item.detected) {
+  background: var(--module-accent-soft);
+  border-color: var(--line-strong);
+}
+#view-hypervisor :is(.hv-module-tabs button.active, .hv-game-symbol, .hv-selected-icon, .ac-hero-icon, .vbs-hero-icon) {
+  color: var(--accent);
+  background: var(--module-accent-soft);
+  border-color: var(--line-strong);
+}
+#view-hypervisor :is(.hv-module-tabs button, .hv-selected-copy h3, .hv-stat strong, .hv-game-heading strong, .hv-step strong, .ac-stats strong, .ac-item-heading h4, .vbs-repair-grid h4) {
+  color: var(--module-text);
+}
+#view-hypervisor :is(.hv-hero p, .hv-stat small, .hv-stat span, .hv-selected-copy > p, .hv-selected-meta span, .hv-game-path, .hv-step p, .ac-hero-copy p, .ac-stats small, .ac-stats span, .ac-results-header p, .ac-item-heading small, .ac-evidence span, .vbs-hero-copy p, .vbs-test-notice p, .vbs-dse-card p, .vbs-components-header p, .vbs-repair-grid p, .vbs-scan-time) {
+  color: var(--module-muted);
+}
+#view-hypervisor :is(.hv-panel-header, .hv-panel-title, .ac-results-header, .vbs-components-header, .hv-step, .ac-item, .vbs-component) {
+  border-color: var(--module-border);
+}
+#view-hypervisor :is(.hv-game-symbol, .hv-add-icon, .hv-play, .vbs-version) {
+  color: var(--accent);
+  border-color: var(--line-strong);
+  background: var(--module-accent-soft);
+}
+#view-hypervisor :is(.hv-control-button, .hv-add-button, .hv-check-button, .hv-game-action, .ghost-button, .ac-scan-button, .vbs-scan-button, .vbs-enable-button, .vbs-test-button) {
+  color: var(--accent);
+  border-color: var(--line-strong);
+  background: var(--module-accent-soft);
+  text-shadow: none;
+  box-shadow: none;
+}
+#view-hypervisor :is(.hv-control-button, .hv-add-button, .hv-check-button, .hv-game-action, .ghost-button, .ac-scan-button, .vbs-scan-button, .vbs-enable-button, .vbs-test-button):hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), .17);
+}
+#view-hypervisor .hv-launch-button:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--module-accent-soft);
+  box-shadow: 0 8px 24px rgba(var(--accent-rgb), .11);
+}
+#view-hypervisor .hv-launch-button:disabled {
+  color: var(--module-muted) !important;
+  border-color: var(--module-border) !important;
+  background: var(--module-inner) !important;
+}
+#view-hypervisor :is(.vbs-disable-button, .ac-remove-button, .ac-remove-all) {
+  background: var(--module-inner);
+  border-color: var(--line-strong);
+}
+#view-hypervisor :is(.ac-stats article + article, .vbs-component, .hv-game-card) {
+  border-color: var(--module-border);
+}
+#view-hypervisor .vbs-repair-grid article {
+  border-radius: var(--ui-control-radius);
+}
+#view-hypervisor .vbs-hero-copy .vbs-scan-time {
+  display: block;
+  margin-top: 8px;
+  font-size: 10px;
+}
+:root[data-ui-theme="white"] #view-hypervisor :is(.hv-game-card, .ac-item, .vbs-repair-grid article, .hv-module-tabs, .hv-stats, .ac-stats, .hv-log) {
+  background: var(--panel-soft) !important;
+  border-color: var(--line) !important;
+}

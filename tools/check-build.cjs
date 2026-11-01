@@ -47,9 +47,6 @@ for (const file of Object.keys(config.bundle.resources || {})) resource(path.res
 for (const file of config.bundle.icon || []) resource(path.resolve(root, 'src-tauri', file));
 resource(path.resolve(root, 'src-tauri', config.build.frontendDist, 'index.html'));
 if (checked) ok(`Checked ${checked} embedded/resource paths`);
-for (const name of ['HV-Launcher.bat', 'HV-PlugNPlay.bat', 'kvc.exe', 'drvloader.exe']) {
-  if (!fs.existsSync(path.join(root, 'src-tauri/resources/hypervisor', name))) console.log(`[INFO] Optional hypervisor resource omitted: ${name}. Build is supported without it.`);
-}
 if (!fs.existsSync(path.join(root, 'node_modules/@tauri-apps/cli/package.json'))) fail('npm dependencies missing. Run npm ci in the repository root.');
 else ok('Local Tauri CLI installed');
 if (!process.env.CGS_RYUU_API_KEY) console.warn('[INFO] CGS_RYUU_API_KEY is not set. Public builds still work with HubCap and local import; Ryuu download needs your key.');

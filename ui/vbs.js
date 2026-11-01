@@ -16,7 +16,7 @@
 
   function call(command, args = {}) {
     if (!invoke) return Promise.reject(new Error("Системный модуль VBS недоступен"));
-    if (["vbs_disable", "vbs_restore", "vbs_set_test_mode", "vbs_restart"].includes(command) && window.cgsInvokePrivileged) {
+    if (["vbs_disable", "vbs_restore", "vbs_set_test_mode", "vbs_restart", "vbs_repair"].includes(command) && window.cgsInvokePrivileged) {
       return window.cgsInvokePrivileged(command, args, "hypervisor");
     }
     return invoke(command, args);
@@ -28,9 +28,7 @@
 
   function setBusy(busy, label = "") {
     state.scanning = busy;
-    $("#vbs-loading")?.classList.toggle("hidden", !busy);
-    $("#vbs-components")?.classList.toggle("hidden", busy);
-    ["#vbs-scan-button", "#vbs-enable-button", "#vbs-disable-button", "#vbs-test-button"].forEach((selector) => {
+    ["#vbs-scan-button", "#vbs-enable-button", "#vbs-disable-button", "#vbs-test-button", "#vbs-fix-wmi", "#vbs-fix-dism", "#vbs-fix-sfc"].forEach((selector) => {
       const button = $(selector);
       if (button) button.disabled = busy || state.changing || (selector === "#vbs-test-button" && !state.report);
     });
@@ -42,16 +40,9 @@
     return report?.testSigningActive === true || report?.dse?.state === "testsigning";
   }
 
-  function stateLabel(component) {
-    if (component.locked) return "Заблокирован";
-    if (component.state === "configured") return "Настроен";
-    return component.enabled ? "Включён" : "Выключен";
-  }
-
   function render() {
     const report = state.report;
     if (!report) return;
-    const components = Array.isArray(report.components) ? report.components : [];
 
     const dse = report.dse || {};
     const dseCard = $("#vbs-dse-card");
@@ -59,15 +50,6 @@
     $("#vbs-dse-label").textContent = dse.label || "Не определено";
     $("#vbs-dse-detail").textContent = dse.detail || "Windows не вернула состояние Code Integrity";
     $("#vbs-dse-badge").textContent = dse.state === "testsigning" ? "TEST MODE" : dse.state === "disabled" ? "DSE OFF" : dse.state === "enabled" ? "DSE ON" : "DSE TEST";
-
-    $("#vbs-components").innerHTML = components.map((item) => `
-      <article class="vbs-component ${item.enabled ? "enabled" : "disabled"} ${item.locked ? "locked" : ""}">
-        <div>
-          <h4>${escapeHtml(item.name)}</h4>
-          <p>${escapeHtml(item.description)}</p>
-        </div>
-        <span>${escapeHtml(stateLabel(item))}</span>
-      </article>`).join("");
 
     const warnings = Array.isArray(report.warnings) ? report.warnings : [];
     $("#vbs-warning-panel").classList.toggle("hidden", warnings.length === 0);
@@ -118,7 +100,7 @@
     const rollbackMode = !enabling && state.report?.canRestore && state.report?.dse?.state === "enabled";
     const title = enabling ? "Включить визор?" : rollbackMode ? "Откатить визор?" : "Выключить визор?";
     const message = enabling
-      ? "Программа отключит VBS, HVCI, Credential Guard и системный гипервизор, затем подготовит одноразовое меню загрузки Windows. После перезапуска выберите «Отключить обязательную проверку подписи драйверов»."
+      ? "Нативный VBS 2.0 проверит Windows Hello, AVX и виртуализацию, сохранит исходные настройки и отключит активные компоненты. При выключенном Secure Boot будет подготовлен Test Signing; иначе — одноразовое меню загрузки с выбором 7/F7. Если BitLocker включён, его защита будет приостановлена на одну перезагрузку."
       : "Программа вернёт системные защиты и параметры загрузчика, сохранённые до включения визора. Для применения потребуется перезапуск Windows.";
     if (typeof window.cgsShowModal === "function") {
       return window.cgsShowModal(title, message, { confirm: true, confirmText: enabling ? "Включить" : rollbackMode ? "Откатить" : "Выключить", cancelText: "Отмена", symbol: "!" });
@@ -132,7 +114,9 @@
       : mode === "test-disable"
       ? "Сохраните открытые файлы. После обычной перезагрузки Windows тестовый режим будет выключен, а сохранённые системные защиты восстановлены."
       : mode === "enable"
-      ? "Сохраните открытые файлы. После перезапуска Windows откроет дополнительные параметры загрузки — выберите «Отключить обязательную проверку подписи драйверов». После входа в систему программа покажет DSE OFF."
+      ? state.report?.secureBoot === "false"
+        ? "Сохраните открытые файлы. После обычной перезагрузки Windows включится Test Signing. Если был подготовлен SecConfig.efi, подтвердите изменение UEFI на экране компьютера."
+        : "Сохраните открытые файлы. После перезапуска выберите 7/F7 — «Отключить обязательную проверку подписи драйверов». Если был подготовлен SecConfig.efi, подтвердите изменение UEFI на экране компьютера."
       : "Сохранённые системные защиты будут полностью включены после обычного перезапуска Windows.";
     const accepted = typeof window.cgsShowModal === "function"
       ? await window.cgsShowModal("Требуется перезапуск", message, { confirm: true, confirmText: "Перезапустить", cancelText: "Позже", symbol: "↻" })
@@ -143,6 +127,7 @@
   async function change(mode) {
     if (state.scanning || state.changing) return;
     state.changing = true;
+    liveLines = [];
     const enabling = mode === "enable";
     const testMode = mode === "test-enable" || mode === "test-disable";
     const rollbackMode = !enabling && state.report?.canRestore && state.report?.dse?.state === "enabled";
@@ -151,10 +136,15 @@
     const log = $("#vbs-log");
     try {
       if (!(await confirmChange(mode))) return;
+      let allowUefi = false;
+      if ((enabling || mode === "test-enable") && state.report?.needsUefiConsent) {
+        allowUefi = await window.cgsShowModal("Снять UEFI-блокировки?", "VBS 2.0 подготовит SecConfig.efi и одноразовую запись загрузки. Продолжайте только на личном компьютере. При следующей загрузке потребуется ваше физическое подтверждение. Исходные параметры сохранятся для отката.", { confirm: true, confirmText: "Подготовить", cancelText: "Отмена", symbol: "!" });
+        if (!allowUefi) return;
+      }
       setBusy(false, testMode ? mode === "test-enable" ? "Включение тестового режима…" : "Выключение тестового режима…" : enabling ? "Включение визора…" : rollbackMode ? "Откат визора…" : "Выключение визора…");
       const result = testMode
-        ? await call("vbs_set_test_mode", { enabled: mode === "test-enable" })
-        : await call(enabling ? "vbs_disable" : "vbs_restore");
+        ? await call("vbs_set_test_mode", { enabled: mode === "test-enable", allowUefi })
+        : await call(enabling ? "vbs_disable" : "vbs_restore", enabling ? { allowUefi } : {});
       const lines = [result.message, `Изменено параметров: ${result.changed || 0}`];
       if (result.restartRequired) lines.push("Для применения изменений требуется перезагрузка Windows.");
       if (Array.isArray(result.failed) && result.failed.length) lines.push("", "Ошибки:", ...result.failed.map((value) => `• ${value}`));
@@ -173,6 +163,54 @@
       await scan();
     }
   }
+
+  const repairNames = { wmi: "Fix WMI", dism: "DISM RestoreHealth", sfc: "SFC Scannow" };
+  let liveLines = [];
+  function appendProgress(line) {
+    if (!state.changing) return;
+    liveLines.push(String(line));
+    if (liveLines.length > 1500) liveLines.shift();
+    $("#vbs-log-panel").classList.remove("hidden");
+    const log = $("#vbs-log");
+    log.textContent = liveLines.join("\n");
+    log.scrollTop = log.scrollHeight;
+  }
+  window.__TAURI__?.event?.listen("vbs-progress", event => appendProgress(event.payload ?? event)).catch(() => {});
+
+  async function repair(kind) {
+    if (state.scanning || state.changing || !repairNames[kind]) return;
+    state.changing = true;
+    liveLines = [];
+    setBusy(false);
+    try {
+      const detail = kind === "wmi"
+        ? "Программа проверит WMI и при необходимости восстановит репозиторий и регистрацию компонентов. Служба WMI и зависимые службы могут временно останавливаться. Прежний репозиторий будет сохранён. На Windows Server перестройка не выполняется."
+        : kind === "dism"
+          ? "Восстановление хранилища компонентов Windows через DISM. Может потребоваться интернет и работающий Центр обновления Windows. Обычно занимает 5–15 минут или больше."
+          : "Проверка и восстановление системных файлов Windows через SFC. Рекомендуется сначала выполнить DISM RestoreHealth. Может занять 10–15 минут или больше.";
+      const accepted = typeof window.cgsShowModal === "function"
+        ? await window.cgsShowModal(`Запустить ${repairNames[kind]}?`, detail, { confirm: true, confirmText: "Запустить", cancelText: "Отмена", symbol: "🛠" })
+        : window.confirm(detail);
+      if (!accepted) return;
+      appendProgress(`${repairNames[kind]}: запуск…`);
+      const result = await call("vbs_repair", { kind });
+      appendProgress(result.message);
+      if (result.logPath) appendProgress(`Журналы: ${result.logPath}`);
+      if (result.restartRequired) appendProgress("Windows сообщает о необходимости перезагрузки. Перезагрузите компьютер после сохранения работы.");
+      if (typeof window.cgsShowModal === "function") await window.cgsShowModal(result.success ? "Проверка завершена" : "Восстановление не завершено", result.message, { symbol: result.success ? "✓" : "!" });
+    } catch (error) {
+      appendProgress(String(error));
+      if (typeof window.cgsShowModal === "function") await window.cgsShowModal("Ошибка восстановления Windows", String(error), { symbol: "!" });
+    } finally {
+      state.changing = false;
+      setBusy(false);
+      // A broken WMI scan must never prevent the repair buttons from being used.
+    }
+  }
+
+  $("#vbs-fix-wmi")?.addEventListener("click", () => repair("wmi"));
+  $("#vbs-fix-dism")?.addEventListener("click", () => repair("dism"));
+  $("#vbs-fix-sfc")?.addEventListener("click", () => repair("sfc"));
 
   $("#vbs-scan-button")?.addEventListener("click", scan);
   $("#vbs-enable-button")?.addEventListener("click", () => change("enable"));

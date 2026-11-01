@@ -50,6 +50,11 @@ try {
     foreach ($taskFile in @('dlc.test.cjs','vbs.test.cjs','workspace.test.cjs')) { Copy-ExportFile "tests/$taskFile" }
     Copy-ExportFile 'README.en.md'
     Copy-ExportFile 'CROCLUA-DLL.md'
+    Copy-ExportFile 'src-tauri/resources/hypervisor/Crocodile-HV.exe'
+    Rewrite-ExportFile '.gitignore' {
+        param($t)
+        $t.Replace('src-tauri/resources/hypervisor/', "src-tauri/resources/hypervisor/*`n!src-tauri/resources/hypervisor/Crocodile-HV.exe")
+    }
     Copy-ExportFile 'docs/images/home.png'
     Rewrite-ExportFile 'src-tauri/src/lib.rs' { param($t) $t.Replace('DLCUnlocker','CreamAPI') }
     Rewrite-ExportFile 'src-tauri/tauri.conf.json' { param($t) $t.Replace('DLCUnlocker','CreamAPI') }

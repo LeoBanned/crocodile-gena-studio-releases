@@ -23,6 +23,9 @@ body {
 .navigation { min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; padding-right: 2px; }
 .page-topbar { background: var(--skin-topbar); backdrop-filter: none; }
 .premium-panel { background: var(--skin-panel); }
+:root .titlebar { background: var(--skin-topbar); border-color: var(--line); }
+:root .intro-strip { background: var(--skin-panel); border-color: var(--line); }
+:root .intro-strip::before { background: radial-gradient(circle at 80% 20%, rgba(var(--accent-rgb), .06), transparent 35%); }
 :is(.premium-panel, .module-card, .file-card, .dlc-library-game, .save-location, .utility-card) { border-radius: var(--ui-panel-radius) !important; }
 :is(.nav-item, .channel-card, .ghost-button, .secondary-button, .primary-button, .install-button, .uninstall-button, .dlc-button, .dlc-method, .path-entry, .drop-zone, .manual-search, .file-actions button) { border-radius: var(--ui-control-radius) !important; }
 

@@ -6,18 +6,14 @@
   const $ = (selector, root = document) => root.querySelector(selector);
 
   const steps = [
-    ["Проверка системы", "Core Isolation и права администратора"],
-    ["Подготовка профиля", "Выбранный профиль KVC или DRV"],
-    ["Служебные файлы", "Проверка загрузчика и BAT-файла"],
-    ["Запуск сценария", "Системная подготовка Windows"],
-    ["Запуск игры", "Старт выбранного EXE"],
-    ["Возврат DSE", "Восстановление после запуска"],
-    ["Очистка", "Завершение сценария"],
+    ["Выбор игры", "Оригинальный EXE игры"],
+    ["Подготовка лаунчера", "Crocodile-HV.exe в папке игры"],
+    ["Ярлык на рабочем столе", "Значок и название оригинальной игры"],
+    ["Запуск", "Crocodile-HV запускает игру"],
   ];
 
   const state = {
     selectedId: null,
-    launchers: [],
     games: [],
     running: false,
     launching: false,
@@ -25,8 +21,6 @@
     processMonitorToken: 0,
     initialized: false,
     confirmingRemove: "",
-    profileSwitching: false,
-    pendingProfile: null,
   };
 
   const call = (command, args = {}) => {
@@ -46,7 +40,7 @@
       .replaceAll("'", "&#039;");
   }
 
-  // Artwork is an independent, read-only visual layer. Launch/profile operations below are unchanged.
+  // Artwork is an independent, read-only visual layer.
   const artworkRequests = new Map();
   const artworkAssets = new Map();
   const artworkUrls = new Set();
@@ -270,7 +264,6 @@
 
   function applyLibrary(library) {
     state.selectedId = library?.selected_id || null;
-    state.launchers = Array.isArray(library?.launchers) ? library.launchers : [];
     state.games = Array.isArray(library?.games) ? library.games : [];
     renderGames();
   }
@@ -293,7 +286,7 @@
             <div class="hv-game-heading"><strong>${escapeHtml(game.name)}</strong><b class="${game.ready ? "ready" : ""}"><i></i>${game.ready ? "Готова к запуску" : "Нужна проверка"}</b></div>
             <div class="hv-game-path" title="${escapeHtml(game.exe_path)}">${escapeHtml(game.exe_path)}</div>
             <div class="hv-game-bottom">
-              <div class="hv-game-profile"><span>ПРОФИЛЬ</span><strong>${escapeHtml(game.launcher_name || "HV-Launcher")}</strong></div>
+              <div class="hv-game-profile"><span>ЗАПУСК</span><strong>Crocodile-HV</strong></div>
               <div class="hv-game-actions">
                 ${selected ? '<span class="hv-active-game"><i></i>Активна</span>' : `<button class="hv-game-action select" data-hv-action="select" data-game-id="${escapeHtml(game.id)}" ${state.running ? "disabled" : ""}>Выбрать</button>`}
                 <button class="hv-game-action" data-hv-action="verify" data-game-id="${escapeHtml(game.id)}" ${state.running ? "disabled" : ""}><span>↻</span> Проверить</button>
@@ -316,12 +309,11 @@
       state.gameRunning = false;
       $("#hv-selected-title").textContent = "Игра не выбрана";
       $("#hv-selected-path").textContent = "Добавьте исполняемый файл игры.";
-      $("#hv-selected-profile").textContent = "Профиль: —";
+      $("#hv-selected-profile").textContent = "Ярлык: —";
       $("#hv-selected-state").textContent = "Нет игры";
       $("#hv-selected-state").className = "";
       $("#hv-ready-status").textContent = "Нет игры";
       $("#hv-selected-verify").disabled = true;
-      $("#hv-selected-profiles").innerHTML = "";
       updateLaunchButton();
       return;
     }
@@ -330,22 +322,12 @@
     }
     $("#hv-selected-title").textContent = game.name;
     $("#hv-selected-path").textContent = game.exe_path;
-    $("#hv-selected-profile").textContent = `Профиль: ${game.launcher_name || status?.selected_launcher?.name || "—"}`;
+    $("#hv-selected-profile").textContent = game.shortcut_path ? "Ярлык игры создан" : "Ярлык не создан";
     $("#hv-selected-state").textContent = game.ready ? "Готова" : "Нужна проверка";
     $("#hv-selected-state").className = game.ready ? "ready" : "";
     $("#hv-ready-status").textContent = game.ready ? "Готово" : "Проверить";
     $("#hv-selected-verify").disabled = state.running || !state.selectedId;
     updateLaunchButton();
-    const profiles = state.launchers.length ? state.launchers : [
-      { id: "hv_launcher", badge: "KVC", name: "HV-Launcher" },
-      { id: "plug_n_play", badge: "DRV", name: "HV-PlugNPlay" },
-    ];
-    $("#hv-selected-profiles").innerHTML = profiles.map((profile) => `
-      <button class="hv-selected-profile ${game.launcher_id === profile.id ? "active" : ""}"
-        data-hv-top-profile="${escapeHtml(profile.id)}" title="${escapeHtml(profile.name)}"
-        ${state.running ? "disabled" : ""}>
-        <span>${escapeHtml(profile.badge)}</span>
-      </button>`).join("");
   }
 
   async function refreshAll(silent = false) {
@@ -354,7 +336,7 @@
       applyLibrary(library);
       renderStatus(status);
       if (status?.game_running && !state.running) monitorGameProcess(false);
-      if (!silent) appendLog("success", "Библиотека и состояние профилей обновлены.");
+      if (!silent) appendLog("success", "Библиотека игр обновлена.");
     } catch (error) {
       appendLog("error", `Не удалось обновить модуль: ${error}`);
     }
@@ -367,10 +349,10 @@
       if (!exePath) return;
       setBusy(true, "Подготовка");
       appendLog("info", `Выбран EXE: ${exePath}`);
-      const library = await call("add_game", { exePath, launcherId: "hv_launcher" });
+      const library = await call("add_game", { exePath });
       applyLibrary(library);
       await refreshAll(true);
-      appendLog("success", "Игра добавлена и подготовлена с профилем KVC.");
+      appendLog("success", "Crocodile-HV установлен в папку игры; ярлык создан на рабочем столе.");
     } catch (error) {
       appendLog("error", String(error));
     } finally {
@@ -399,43 +381,6 @@
     finally { setBusy(false, "Ожидание"); }
   }
 
-  async function setProfile(id, launcherId) {
-    const game = state.games.find((item) => item.id === id);
-    const profile = state.launchers.find((item) => item.id === launcherId);
-    if (!game || game.launcher_id === launcherId) return;
-
-    // The selector responds instantly. File swaps are serialized in the
-    // background so a second click is never blocked and the last choice wins.
-    game.launcher_id = launcherId;
-    game.launcher_name = profile?.name || (launcherId === "plug_n_play" ? "HV-PlugNPlay" : "HV-Launcher");
-    game.ready = false;
-    state.pendingProfile = { id, launcherId };
-    renderGames();
-    renderStatus({ selected_game: selectedGame(), games_count: state.games.length });
-
-    if (state.profileSwitching) return;
-    state.profileSwitching = true;
-
-    while (state.pendingProfile) {
-      const request = state.pendingProfile;
-      state.pendingProfile = null;
-      try {
-        const library = await call("set_game_launcher", request);
-        if (!state.pendingProfile) {
-          applyLibrary(library);
-          renderStatus({ selected_game: selectedGame(), games_count: state.games.length });
-          appendLog("success", `Профиль ${request.launcherId === "plug_n_play" ? "DRV" : "KVC"} установлен, файлы заменены.`);
-        }
-      } catch (error) {
-        appendLog("error", String(error));
-        if (!state.pendingProfile) await refreshAll(true);
-      }
-    }
-
-    state.profileSwitching = false;
-    $("#hv-run-state").textContent = "Ожидание";
-  }
-
   async function removeGame(id) {
     if (state.confirmingRemove !== id) {
       state.confirmingRemove = id;
@@ -457,7 +402,7 @@
     activateStep(1);
     state.launching = true;
     setBusy(true, "Запуск");
-    appendLog("info", "Запущен сценарий выбранного профиля.");
+    appendLog("info", "Запускаю игру через Crocodile-HV.");
     let launchSucceeded = false;
     try {
       const report = await call("launch_selected_game");
@@ -509,10 +454,10 @@
     $("#hv-help-button")?.addEventListener("click", () => {
       const message = [
         "1. Нажмите «Добавить игру» и выберите основной EXE игры.",
-        "2. Выберите KVC или DRV — нужные файлы заменятся автоматически.",
-        "3. Если карточка показывает «Нужна проверка», нажмите «Проверить».",
-        "4. Нажмите светлую кнопку «Запустить» и подтвердите UAC.",
-        "5. Пока игра работает, повторный запуск заблокирован. После закрытия игры кнопка включится сама.",
+        "2. Crocodile-HV.exe появится в папке игры. На рабочем столе появится ярлык со значком игры.",
+        "3. Открывайте игру через этот ярлык или кнопку «Запустить».",
+        "4. Если карточка показывает «Нужна проверка», нажмите «Проверить».",
+        "5. Для системных действий Crocodile-HV может запросить права администратора.",
       ].join("\n\n");
       if (typeof window.cgsShowModal === "function") {
         const modal = document.querySelector("#modal-backdrop .modal");
@@ -527,10 +472,6 @@
     $("#hv-selected-verify")?.addEventListener("click", () => {
       if (state.selectedId) verifyGame(state.selectedId);
     });
-    $("#hv-selected-profiles")?.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-hv-top-profile]");
-      if (button && state.selectedId && !button.disabled) setProfile(state.selectedId, button.dataset.hvTopProfile);
-    });
     $("#hv-copy-log")?.addEventListener("click", copyLog);
     $("#hv-clear-log")?.addEventListener("click", () => { $("#hv-log").innerHTML = ""; });
     $("#hv-game-list")?.addEventListener("click", (event) => {
@@ -541,7 +482,6 @@
       if (action === "select") selectGame(id);
       if (action === "verify") verifyGame(id);
       if (action === "remove") removeGame(id);
-      if (action === "profile") setProfile(id, button.dataset.profileId);
     });
     window.addEventListener("cgs:view-changed", (event) => {
       if (event.detail === "hypervisor") refreshAll(true);
@@ -559,7 +499,6 @@
       catch (error) { appendLog("warning", `События запуска недоступны: ${error}`); }
     }
     await refreshAll(true);
-    call("check_asset_updates").catch((error) => appendLog("warning", `Обновление профилей пропущено: ${error}`));
   }
 
   boot();

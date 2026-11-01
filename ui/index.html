@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./light-theme.css" />
   <link rel="stylesheet" href="./archive.css" />
   <link rel="stylesheet" href="./hypervisor-artwork.css" />
+  <link rel="stylesheet" href="./module-05-theme.css" />
   <link rel="stylesheet" href="./loader.css" />
   <script src="./personalization.js"></script>
 </head>
@@ -22,7 +23,7 @@
       <div class="titlebar-brand" data-tauri-drag-region>
         <div class="mini-mark" data-tauri-drag-region><img src="./app-icon.png" alt="" data-tauri-drag-region /></div>
         <span data-tauri-drag-region>Crocodile Gena Studio</span>
-        <span class="titlebar-version" data-tauri-drag-region>5.5.7</span>
+        <span class="titlebar-version" data-tauri-drag-region>5.6.0</span>
       </div>
       <div class="window-actions">
         <button class="window-button" id="window-minimize" aria-label="Свернуть">
@@ -123,7 +124,7 @@
         <div class="home-hero premium-panel">
           <div class="home-glow"></div>
           <div class="hero-copy">
-            <span class="hero-kicker">CROCODILE GENA STUDIO 5.5.7</span>
+            <span class="hero-kicker">CROCODILE GENA STUDIO 5.6.0</span>
             <h2>Ваша игровая<br/><span>лаборатория.</span></h2>
             <p>Единое пространство для настройки игр, управления сетевыми компонентами и будущих инструментов.</p>
           </div>
@@ -134,7 +135,7 @@
           <article class="metric-card module-card" data-open-view="saves"><span class="metric-icon blue"><svg viewBox="0 0 24 24"><path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 15h8v5H8z"/></svg></span><div><small>Модуль 02</small><strong>Менеджер сохранений</strong><p>Поиск и резервное копирование прогресса</p></div></article>
           <article class="metric-card module-card" data-open-view="dlc"><span class="metric-icon violet"><svg viewBox="0 0 24 24"><path d="M5 10h14v10H5zM8 10V7a4 4 0 018 0M12 14v3"/></svg></span><div><small>Модуль 03</small><strong>DLC Unlocker</strong><p>Выборочная разблокировка дополнений</p></div></article>
           <article class="metric-card module-card" data-open-view="lua"><span class="metric-icon mint"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V7z"/><path d="M9.5 12.5l1.8 1.8 3.5-3.6"/></svg></span><div><small>Модуль 04</small><strong>CrocLua</strong><p>Игры в библиотеку Steam через манифесты</p></div></article>
-          <article class="metric-card module-card" data-open-view="hypervisor"><span class="metric-icon violet"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4.8-3.1 8.1-8 9.5C7.1 20.1 4 16.8 4 12V7z"/><path d="M8 12h8M12 8v8"/></svg></span><div><small>Модуль 05</small><strong>Гипервизор</strong><p>Библиотека и запуск игр через профили KVC или DRV</p></div></article>
+          <article class="metric-card module-card" data-open-view="hypervisor"><span class="metric-icon violet"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4.8-3.1 8.1-8 9.5C7.1 20.1 4 16.8 4 12V7z"/><path d="M8 12h8M12 8v8"/></svg></span><div><small>Модуль 05</small><strong>Гипервизор</strong><p>Запуск игр через встроенный Crocodile-HV и ярлык на рабочем столе</p></div></article>
           <article class="metric-card module-card" data-open-view="files"><span class="metric-icon blue"><svg viewBox="0 0 24 24"><path d="M4 7h6l2 2h8v10H4z"/><path d="M4 7V5h6l2 2"/></svg></span><div><small>Модуль 06</small><strong>Кряки</strong><p>Актуальные кряки с билдом, паролем и загрузкой</p></div></article>
           <article class="metric-card module-card" data-open-view="utilities"><span class="metric-icon mint"><svg viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 1-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.4 2.4-3-3z"/><path d="m15.5 15.5 4.5 4.5"/></svg></span><div><small>Модуль 07</small><strong>Утилиты</strong><p>Полезные программы и сетевые инструменты</p></div></article>
         </div>
@@ -479,8 +480,8 @@
             <div class="hv-hero-copy">
               <span class="hero-kicker">MODULE 05</span>
               <h2>Гипервизор</h2>
-              <p>Добавляйте EXE игр, выбирайте профиль KVC или DRV и запускайте подготовленную конфигурацию из одного окна.</p>
-              <div class="hv-warning"><span>!</span><p>Профили работают с системными компонентами Windows. Перед запуском сохраните важные данные: несовместимый драйвер может привести к перезагрузке или BSOD.</p></div>
+              <p>Добавьте EXE игры: программа поместит Crocodile-HV рядом с ней и создаст игровой ярлык на рабочем столе.</p>
+              <div class="hv-warning"><span>!</span><p>Crocodile-HV изменяет системные параметры Windows при запуске игры. Может потребоваться подтверждение UAC или перезагрузка.</p></div>
             </div>
             <div class="hv-hero-actions">
               <button class="hv-control-button" id="hv-help-button"><span class="hv-help-icon">?</span><span>Подсказки</span></button>
@@ -490,7 +491,7 @@
 
           <div class="hv-stats">
             <article class="premium-panel hv-stat"><small>ИГР В БИБЛИОТЕКЕ</small><strong id="hv-games-count">0</strong><span>добавлено в модуль</span></article>
-            <article class="premium-panel hv-stat"><small>ГОТОВНОСТЬ</small><strong id="hv-ready-status">Нет игры</strong><span>файлы выбранного профиля</span></article>
+            <article class="premium-panel hv-stat"><small>ГОТОВНОСТЬ</small><strong id="hv-ready-status">Нет игры</strong><span>лаунчер и ярлык игры</span></article>
             <article class="premium-panel hv-stat"><small>ПРАВА ЗАПУСКА</small><strong id="hv-admin-status">Проверка</strong><span>UAC будет запрошен при необходимости</span></article>
           </div>
 
@@ -500,10 +501,9 @@
               <span class="coming-label">ВЫБРАННАЯ ИГРА</span>
               <h3 id="hv-selected-title">Игра не выбрана</h3>
               <p id="hv-selected-path">Добавьте исполняемый файл игры.</p>
-              <div class="hv-selected-meta"><span id="hv-selected-profile">Профиль: —</span><b id="hv-selected-state">Нет игры</b></div>
+              <div class="hv-selected-meta"><span id="hv-selected-profile">Ярлык: —</span><b id="hv-selected-state">Нет игры</b></div>
             </div>
             <div class="hv-selected-actions">
-              <div class="hv-selected-profiles" id="hv-selected-profiles"></div>
               <button class="hv-check-button" id="hv-selected-verify" disabled><svg viewBox="0 0 20 20"><path d="M15.5 6.5A6.5 6.5 0 105 15M15.5 3v3.8h-3.8"/></svg><span>Проверить</span></button>
               <button class="hv-launch-button" id="hv-launch-button" disabled><span class="hv-play">▶</span><span>Запустить</span></button>
             </div>
@@ -512,7 +512,7 @@
           <div class="hv-workspace">
             <section class="premium-panel hv-library-panel">
               <div class="save-browser-header hv-panel-header">
-                <div><span class="coming-label">БИБЛИОТЕКА</span><h3>Добавленные игры</h3><p>Выберите игру и назначьте ей профиль запуска.</p></div>
+                <div><span class="coming-label">БИБЛИОТЕКА</span><h3>Добавленные игры</h3><p>Выберите игру, чтобы проверить лаунчер или запустить её.</p></div>
                 <span class="required-chip" id="hv-library-count">0 игр</span>
               </div>
               <div class="hv-empty" id="hv-empty"><span>＋</span><h3>Библиотека пустая</h3><p>Нажмите «Добавить EXE» и выберите исполняемый файл игры.</p></div>
@@ -578,7 +578,8 @@
               </div>
               <div class="vbs-hero-copy">
                 <span class="hero-kicker">WINDOWS SECURITY</span>
-                <h2>VBS</h2>
+                <h2>VBS <small class="vbs-version">2.0</small></h2>
+                <span class="vbs-scan-time" id="vbs-scan-time">Сканирование ещё не выполнялось</span>
               </div>
               <div class="vbs-hero-actions">
                 <button class="vbs-scan-button" id="vbs-scan-button"><span>⌕</span>Сканировать</button>
@@ -615,15 +616,6 @@
               <span class="vbs-dse-badge" id="vbs-dse-badge">DSE TEST</span>
             </section>
 
-            <section class="premium-panel vbs-components-panel">
-              <div class="vbs-components-header">
-                <div><span class="coming-label">КОМПОНЕНТЫ VBS</span><h3>Системная защита</h3><p>Отключаются только активные параметры. Исходное состояние сохраняется для отката.</p></div>
-                <span class="vbs-scan-time" id="vbs-scan-time">Сканирование ещё не выполнялось</span>
-              </div>
-              <div class="vbs-loading hidden" id="vbs-loading"><span></span><strong>Проверяем Windows</strong><p>Читаем Device Guard, Code Integrity, Secure Boot и параметры загрузки.</p></div>
-              <div class="vbs-components" id="vbs-components"></div>
-            </section>
-
             <section class="premium-panel vbs-warning-panel hidden" id="vbs-warning-panel">
               <div class="vbs-warning-icon">!</div>
               <div><span class="coming-label">ВАЖНО</span><h3>Перед изменением параметров</h3><div id="vbs-warnings"></div></div>
@@ -632,6 +624,16 @@
             <section class="premium-panel vbs-log-panel hidden" id="vbs-log-panel">
               <div><span class="coming-label">ОТЧЁТ</span><h3>Результат операции</h3></div>
               <pre id="vbs-log"></pre>
+            </section>
+            <section class="premium-panel vbs-repair-panel">
+              <div class="vbs-components-header">
+                <div><span class="coming-label">TROUBLESHOOT</span><h3>Восстановление Windows</h3><p>Три отдельных исправления. Прогресс и результат отображаются в журнале программы.</p></div>
+              </div>
+              <div class="vbs-repair-grid">
+                <article><h4>Fix WMI</h4><p>Если установщик репака не запускается или возникают ошибки WMI, попробуйте Fix WMI. Программа проверит и восстановит компоненты WMI.</p><button class="vbs-scan-button" id="vbs-fix-wmi">Fix WMI</button></article>
+                <article><h4>DISM RestoreHealth</h4><p>Восстановление хранилища компонентов Windows. Может потребоваться интернет.</p><button class="vbs-scan-button" id="vbs-fix-dism">DISM RestoreHealth</button></article>
+                <article><h4>SFC Scannow</h4><p>Проверка и восстановление системных файлов. Рекомендуется запускать после DISM.</p><button class="vbs-scan-button" id="vbs-fix-sfc">SFC Scannow</button></article>
+              </div>
             </section>
           </div>
         </div>
@@ -808,7 +810,7 @@
 
       </section>
 
-          <section class="premium-panel settings-card"><span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>О программе</h2><div class="about-row"><span>Версия</span><b>5.5.7</b></div><div class="about-row"><span>Назначение</span><b>Игровые инструменты</b></div><div class="about-row"><span>Активные модули</span><b>Online Fix · Сохранения · DLC · CrocLua · Гипервизор · Кряки · Утилиты</b></div></section>
+          <section class="premium-panel settings-card"><span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>О программе</h2><div class="about-row"><span>Версия</span><b>5.6.0</b></div><div class="about-row"><span>Назначение</span><b>Игровые инструменты</b></div><div class="about-row"><span>Активные модули</span><b>Online Fix · Сохранения · DLC · CrocLua · Гипервизор · Кряки · Утилиты</b></div></section>
           </div>
           <div class="settings-column">
           <section class="premium-panel settings-card module-visibility-card">
@@ -831,7 +833,7 @@
           <section class="premium-panel settings-card update-card">
             <span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>Обновления</h2>
             <p>Проверка новых версий через официальный репозиторий Crocodile Gena Studio.</p>
-            <div class="about-row"><span>Текущая версия</span><b id="update-current-version">5.5.7</b></div>
+            <div class="about-row"><span>Текущая версия</span><b id="update-current-version">5.6.0</b></div>
             <div class="update-actions">
               <button class="ghost-button" id="check-update-button">Проверить обновления</button>
               <span id="update-status">Проверка ещё не выполнялась</span>
