@@ -21,7 +21,8 @@ design-previews/
 github_export/
 github_export.previous-*/
 github_export.staging-*/
-src-tauri/resources/hypervisor/
+src-tauri/resources/hypervisor/*
+!src-tauri/resources/hypervisor/Crocodile-HV.exe
 
 # Required embedded plugin output must remain in the public repository.
 !src-tauri/src/assets/crocodile-manifest/.millennium/
