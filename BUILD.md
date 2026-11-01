@@ -1,6 +1,6 @@
 # Собрать Crocodile Gena Studio самостоятельно
 
-Инструкция для **Windows 10/11 x64**, версия проекта **5.5.7**.
+Инструкция для **Windows 10/11 x64**, версия проекта **5.6.0**.
 GitHub Actions, платный аккаунт GitHub, Python и установленный Steam для сборки не нужны.
 
 ## Коротко
@@ -99,10 +99,10 @@ src-tauri\target\release\crocodile-gena-studio.exe
 npm run build:setup
 ~~~
 
-Результат для версии 5.5.7:
+Результат для версии 5.6.0:
 
 ~~~text
-src-tauri\target\release\bundle\nsis\Crocodile Gena Studio_5.5.7_x64-setup.exe
+src-tauri\target\release\bundle\nsis\Crocodile Gena Studio_5.6.0_x64-setup.exe
 ~~~
 
 NSIS-установщик настроен на загрузку WebView2 при необходимости, поэтому
@@ -117,7 +117,7 @@ npm run build -- --ci
 Дополнительно появится:
 
 ~~~text
-src-tauri\target\release\bundle\msi\Crocodile Gena Studio_5.5.7_x64_en-US.msi
+src-tauri\target\release\bundle\msi\Crocodile Gena Studio_5.6.0_x64_en-US.msi
 ~~~
 
 Для MSI могут понадобиться включённые компоненты VBScript в Windows.
@@ -201,12 +201,10 @@ THIRD_PARTY.md
 Поэтому исходников `.rs` и `ui` без перечисленных ресурсов недостаточно.
 Помощник `npm run doctor` проверяет конкретные пути из Rust-кода и конфигурации Tauri.
 
-**Четыре файла гипервизора не нужны для сборки:** `HV-Launcher.bat`,
-`HV-PlugNPlay.bat`, `kvc.exe` и `drvloader.exe`. Публичный экспорт их не содержит.
-Программа собирается и запускается без них. Если профиля нет также в локальных
-файлах/кэше, запуск соответствующего профиля покажет сообщение об отсутствии ресурсов.
-Остальные модули доступны. Для полной собственной сборки разрешённые файлы можно
-положить в `src-tauri/resources/hypervisor` перед компиляцией — сборщик встроит их автоматически.
+Модуль 05 использует **`src-tauri/resources/hypervisor/Crocodile-HV.exe`**.
+Этот ресурс включён в экспорт и встраивается через `include_bytes!`; без него сборка не пройдёт.
+Старые профили KVC/DRV и BAT-файлы для запуска больше не используются.
+Статус стороннего EXE описан в `THIRD_PARTY.md`.
 
 Имя с точкой, например `.millennium`, **не делает папку автоматически скрытой в Windows**.
 Однако некоторые способы выборочного копирования пропускают такие каталоги.
