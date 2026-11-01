@@ -1,3 +1,5 @@
+#[path = "vbs_native.rs"]
+mod native;
 use serde::{Deserialize, Serialize};
 use std::{
     fs,
@@ -15,66 +17,6 @@ use std::os::windows::process::CommandExt;
 
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
-
-#[derive(Clone, Copy)]
-struct RegistryTarget {
-    path: &'static str,
-    name: &'static str,
-    disabled_value: u32,
-}
-
-const REGISTRY_TARGETS: &[RegistryTarget] = &[
-    RegistryTarget {
-        path: r"SYSTEM\CurrentControlSet\Control\DeviceGuard",
-        name: "EnableVirtualizationBasedSecurity",
-        disabled_value: 0,
-    },
-    RegistryTarget {
-        path: r"SOFTWARE\Policies\Microsoft\Windows\DeviceGuard",
-        name: "EnableVirtualizationBasedSecurity",
-        disabled_value: 0,
-    },
-    RegistryTarget {
-        path: r"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity",
-        name: "Enabled",
-        disabled_value: 0,
-    },
-    RegistryTarget {
-        path: r"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\CredentialGuard",
-        name: "Enabled",
-        disabled_value: 0,
-    },
-    RegistryTarget {
-        path: r"SYSTEM\CurrentControlSet\Control\Lsa",
-        name: "LsaCfgFlags",
-        disabled_value: 0,
-    },
-    RegistryTarget {
-        path: r"SOFTWARE\Policies\Microsoft\Windows\DeviceGuard",
-        name: "LsaCfgFlags",
-        disabled_value: 0,
-    },
-    RegistryTarget {
-        path: r"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\SystemGuard",
-        name: "Enabled",
-        disabled_value: 0,
-    },
-    RegistryTarget {
-        path: r"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HyperGuard",
-        name: "Enabled",
-        disabled_value: 0,
-    },
-    RegistryTarget {
-        path: r"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\Host-Guardian",
-        name: "Enabled",
-        disabled_value: 0,
-    },
-    RegistryTarget {
-        path: r"SYSTEM\CurrentControlSet\Control\DeviceGuard",
-        name: "DisableHypervisorEnforcedPagingTranslation",
-        disabled_value: 1,
-    },
-];
 
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -116,6 +58,7 @@ pub(crate) struct VbsReport {
     hypervisor_present: bool,
     restart_required: bool,
     can_restore: bool,
+    needs_uefi_consent: bool,
     test_signing_configured: Option<bool>,
     test_signing_active: bool,
     dse: VbsDseStatus,
@@ -158,15 +101,6 @@ enum BootMode {
     TestSigning,
 }
 
-fn boot_changes(mode: BootMode) -> Vec<(&'static str, &'static str)> {
-    let mut changes = vec![("hypervisorlaunchtype", "off"), ("vsmlaunchtype", "off")];
-    match mode {
-        BootMode::AdvancedOptions => changes.push(("onetimeadvancedoptions", "on")),
-        BootMode::TestSigning => changes.push(("testsigning", "on")),
-    }
-    changes
-}
-
 #[tauri::command]
 pub(crate) async fn vbs_scan(app: AppHandle) -> Result<VbsReport, String> {
     tauri::async_runtime::spawn_blocking(move || scan_report(&app))
@@ -175,15 +109,20 @@ pub(crate) async fn vbs_scan(app: AppHandle) -> Result<VbsReport, String> {
 }
 
 #[tauri::command]
-pub(crate) async fn vbs_disable(app: AppHandle) -> Result<VbsChangeResult, String> {
-    tauri::async_runtime::spawn_blocking(move || disable_vbs(&app, BootMode::AdvancedOptions))
-        .await
-        .map_err(|error| format!("Отключение VBS было прервано: {error}"))?
+pub(crate) async fn vbs_disable(
+    app: AppHandle,
+    allow_uefi: Option<bool>,
+) -> Result<VbsChangeResult, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        native::disable(&app, BootMode::AdvancedOptions, allow_uefi.unwrap_or(false))
+    })
+    .await
+    .map_err(|error| format!("Отключение VBS было прервано: {error}"))?
 }
 
 #[tauri::command]
 pub(crate) async fn vbs_restore(app: AppHandle) -> Result<VbsChangeResult, String> {
-    tauri::async_runtime::spawn_blocking(move || restore_vbs(&app, false))
+    tauri::async_runtime::spawn_blocking(move || restore_current(&app, false))
         .await
         .map_err(|error| format!("Восстановление VBS было прервано: {error}"))?
 }
@@ -192,12 +131,13 @@ pub(crate) async fn vbs_restore(app: AppHandle) -> Result<VbsChangeResult, Strin
 pub(crate) async fn vbs_set_test_mode(
     app: AppHandle,
     enabled: bool,
+    allow_uefi: Option<bool>,
 ) -> Result<VbsChangeResult, String> {
     tauri::async_runtime::spawn_blocking(move || {
         if enabled {
-            disable_vbs(&app, BootMode::TestSigning)
+            native::disable(&app, BootMode::TestSigning, allow_uefi.unwrap_or(false))
         } else {
-            restore_vbs(&app, true)
+            restore_current(&app, true)
         }
     })
     .await
@@ -206,6 +146,7 @@ pub(crate) async fn vbs_set_test_mode(
 
 #[tauri::command]
 pub(crate) fn vbs_restart() -> Result<(), String> {
+    let _guard = native::lock()?;
     run_command("shutdown.exe", &["/r", "/t", "0"])
         .map(|_| ())
         .map_err(|error| format!("Не удалось перезапустить Windows: {error}"))
@@ -276,13 +217,24 @@ fn scan_report(app: &AppHandle) -> Result<VbsReport, String> {
         components[2].state = "configured".into();
     }
 
+    for (id, name) in native::SCENARIOS {
+        let key = format!(r"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\{id}");
+        components.push(component(
+            id,
+            name,
+            "Компонент VBS 2.0",
+            registry_enabled(&key, "Enabled"),
+            false,
+        ));
+    }
     let enabled_count = components.iter().filter(|item| item.enabled).count();
     let mut warnings = Vec::new();
+    warnings.extend(native::compatibility_warnings());
     if !probe.virtualization_firmware_enabled && !probe.hypervisor_present {
         warnings.push("Аппаратная виртуализация VT-x/SVM отключена в BIOS/UEFI.".into());
     }
     if vbs_locked || hvci_locked || credential_locked {
-        warnings.push("Обнаружена UEFI-защита одного или нескольких компонентов. Автоматическое отключение заблокированных параметров не выполняется.".into());
+        warnings.push("Обнаружена UEFI-защита одного или нескольких компонентов. Снятие блокировок через SecConfig.efi требует отдельного подтверждения и подтверждения на экране при загрузке.".into());
     }
     if windows_hello_enabled {
         warnings.push("Windows Hello защищён VBS. Перед отключением проверьте, что у учётной записи настроен обычный пароль.".into());
@@ -293,8 +245,9 @@ fn scan_report(app: &AppHandle) -> Result<VbsReport, String> {
         secure_boot: probe.secure_boot,
         virtualization_enabled: probe.virtualization_firmware_enabled || probe.hypervisor_present,
         hypervisor_present: probe.hypervisor_present,
-        restart_required: snapshot_path(app)?.exists(),
-        can_restore: snapshot_path(app)?.exists(),
+        restart_required: snapshot_path(app)?.exists() || native::has_snapshot(app),
+        can_restore: snapshot_path(app)?.exists() || native::has_snapshot(app),
+        needs_uefi_consent: vbs_locked || hvci_locked || credential_locked,
         test_signing_configured: configured_test_signing(),
         test_signing_active: probe.dse_mode == 1,
         dse: dse_status(probe.dse_mode),
@@ -347,90 +300,23 @@ fn dse_status(mode: i32) -> VbsDseStatus {
     }
 }
 
-fn disable_vbs(app: &AppHandle, mode: BootMode) -> Result<VbsChangeResult, String> {
-    if !is_admin() {
-        return Err("Для изменения VBS запустите программу от имени администратора".into());
+// Only the reader for the previous version's recovery snapshot is retained.
+fn restore_current(app: &AppHandle, disable_test_mode: bool) -> Result<VbsChangeResult, String> {
+    if native::has_snapshot(app) {
+        return native::restore(app);
     }
+    let _guard = native::lock()?;
+    restore_vbs(app, disable_test_mode)
+}
 
-    let test_mode = matches!(mode, BootMode::TestSigning);
-    if test_mode && system_probe()?.secure_boot == "true" {
-        return Err("Для включения тестового режима и запуска игры отключите Secure Boot в BIOS/UEFI, затем повторите действие.".into());
-    }
-
-    let snapshot_file = snapshot_path(app)?;
-    let new_snapshot = !snapshot_file.exists();
-    if new_snapshot {
-        let snapshot = capture_snapshot();
-        if let Some(parent) = snapshot_file.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|error| format!("Не удалось создать папку восстановления: {error}"))?;
-        }
-        fs::write(
-            &snapshot_file,
-            serde_json::to_vec_pretty(&snapshot)
-                .map_err(|error| format!("Не удалось подготовить снимок VBS: {error}"))?,
-        )
-        .map_err(|error| format!("Не удалось сохранить снимок VBS: {error}"))?;
-    }
-
-    let mut changed = 0;
-    let mut failed = Vec::new();
-    if test_mode {
-        // Secure Boot may be unavailable to the probe. Ask BCDEdit first so a
-        // rejected test-signing change leaves the protection settings untouched.
-        if let Err(error) = run_command("bcdedit.exe", &["/set", "{current}", "testsigning", "on"])
-        {
-            if new_snapshot {
-                let _ = fs::remove_file(&snapshot_file);
-            }
-            return Err(format!("Не удалось включить тестовый режим: {error}"));
-        }
-        changed += 1;
-        if bcd_value("onetimeadvancedoptions").is_some() {
-            match run_command(
-                "bcdedit.exe",
-                &["/deletevalue", "{current}", "onetimeadvancedoptions"],
-            ) {
-                Ok(_) => changed += 1,
-                Err(error) => {
-                    failed.push(format!("Меню дополнительных параметров загрузки: {error}"))
-                }
-            }
-        }
-    }
-    for target in REGISTRY_TARGETS {
-        if registry_dword(target.path, target.name) == Some(target.disabled_value) {
-            continue;
-        }
-        match set_registry_dword(target.path, target.name, target.disabled_value) {
-            Ok(()) => changed += 1,
-            Err(error) => failed.push(error),
-        }
-    }
-
-    for (name, value) in boot_changes(mode) {
-        if test_mode && name == "testsigning" {
-            continue;
-        }
-        match run_command("bcdedit.exe", &["/set", "{current}", name, value]) {
-            Ok(_) => changed += 1,
-            Err(error) => failed.push(format!("BCD {name}: {error}")),
-        }
-    }
-
-    Ok(VbsChangeResult {
-        success: failed.is_empty(),
-        message: if test_mode && failed.is_empty() {
-            "Тестовый режим подготовлен к включению. Перезапустите Windows".into()
-        } else if failed.is_empty() {
-            "VBS и системный гипервизор подготовлены к отключению".into()
-        } else {
-            "Часть параметров VBS изменить не удалось".into()
-        },
-        changed,
-        failed,
-        restart_required: changed > 0,
-    })
+#[tauri::command]
+pub(crate) async fn vbs_repair(
+    app: AppHandle,
+    kind: String,
+) -> Result<native::RepairResult, String> {
+    tauri::async_runtime::spawn_blocking(move || native::repair(&app, &kind))
+        .await
+        .map_err(|e| format!("Восстановление Windows прервано: {e}"))?
 }
 
 fn restore_vbs(app: &AppHandle, disable_test_mode: bool) -> Result<VbsChangeResult, String> {
@@ -543,22 +429,6 @@ fn restore_vbs(app: &AppHandle, disable_test_mode: bool) -> Result<VbsChangeResu
     })
 }
 
-fn capture_snapshot() -> VbsSnapshot {
-    VbsSnapshot {
-        registry: REGISTRY_TARGETS
-            .iter()
-            .map(|target| RegistrySnapshot {
-                path: target.path.into(),
-                name: target.name.into(),
-                value: registry_dword(target.path, target.name),
-            })
-            .collect(),
-        hypervisor_launch_type: bcd_value("hypervisorlaunchtype"),
-        vsm_launch_type: bcd_value("vsmlaunchtype"),
-        test_signing: bcd_value("testsigning"),
-    }
-}
-
 fn system_probe() -> Result<SystemProbe, String> {
     let script = r#"
 $ErrorActionPreference='SilentlyContinue'
@@ -626,7 +496,8 @@ fn delete_registry_value(path: &str, name: &str) -> Result<(), String> {
         .open_subkey_with_flags(path, KEY_WRITE | KEY_WOW64_64KEY)
     {
         Ok(key) => key,
-        Err(_) => return Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(format!("Не удалось открыть HKLM\\{path}: {error}")),
     };
     match key.delete_value(name) {
         Ok(()) => Ok(()),
@@ -681,20 +552,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_mode_uses_normal_boot_and_same_protection_settings() {
-        let changes = boot_changes(BootMode::TestSigning);
-        assert!(changes.contains(&("testsigning", "on")));
-        assert!(!changes
-            .iter()
-            .any(|(name, _)| *name == "onetimeadvancedoptions"));
-        for (name, value) in boot_changes(BootMode::AdvancedOptions) {
-            if name != "onetimeadvancedoptions" {
-                assert!(changes.contains(&(name, value)));
-            }
-        }
-    }
-
-    #[test]
     fn detects_configured_test_mode_and_pending_rollback() {
         assert_eq!(test_signing_from_bcd("testsigning Yes"), Some(true));
         assert_eq!(test_signing_from_bcd("testsigning Нет"), Some(false));
@@ -742,7 +599,15 @@ fn powershell_output(script: &str) -> Result<String, String> {
 }
 
 fn run_command(program: &str, args: &[&str]) -> Result<Output, String> {
-    let mut command = Command::new(program);
+    let system =
+        PathBuf::from(std::env::var_os("SystemRoot").unwrap_or_else(|| "C:\\Windows".into()))
+            .join("System32");
+    let executable = match program {
+        "powershell.exe" => system.join("WindowsPowerShell/v1.0/powershell.exe"),
+        "winmgmt.exe" => system.join("wbem/winmgmt.exe"),
+        name => system.join(name),
+    };
+    let mut command = Command::new(executable);
     command.args(args);
     #[cfg(target_os = "windows")]
     command.creation_flags(CREATE_NO_WINDOW);

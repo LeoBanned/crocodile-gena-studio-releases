@@ -6,7 +6,7 @@ use std::{
 };
 
 const PLUGIN_FOLDER_NAME: &str = "crocodile-manifest";
-const BUNDLED_PLUGIN_VERSION: &str = "0.5.2";
+const BUNDLED_PLUGIN_VERSION: &str = "0.5.3";
 
 const EMBEDDED_MILLENNIUM_FILES: &[(&str, &[u8])] = &[
     ("wsock32.dll", include_bytes!("../../millenium/wsock32.dll")),

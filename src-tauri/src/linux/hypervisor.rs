@@ -1,17 +1,12 @@
 use serde_json::Value;
 
 fn unsupported<T>() -> Result<T, String> {
-    Err("Гипервизор KVC/DRV работает только с Windows-драйверами".into())
+    Err("Crocodile-HV доступен только в Windows".into())
 }
 
 #[tauri::command]
 pub(crate) fn get_app_status() -> Result<Value, String> {
     unsupported()
-}
-
-#[tauri::command]
-pub(crate) async fn check_asset_updates(_app: tauri::AppHandle) -> Result<(), String> {
-    Ok(())
 }
 
 #[tauri::command]
@@ -29,15 +24,6 @@ pub(crate) fn add_game(
     _app: tauri::AppHandle,
     _exe_path: String,
     _launcher_id: Option<String>,
-) -> Result<Value, String> {
-    unsupported()
-}
-
-#[tauri::command]
-pub(crate) fn set_game_launcher(
-    _app: tauri::AppHandle,
-    _id: String,
-    _launcher_id: String,
 ) -> Result<Value, String> {
     unsupported()
 }

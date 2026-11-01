@@ -10,7 +10,10 @@ pub(crate) async fn vbs_scan(_app: tauri::AppHandle) -> Result<Value, String> {
 }
 
 #[tauri::command]
-pub(crate) async fn vbs_disable(_app: tauri::AppHandle) -> Result<Value, String> {
+pub(crate) async fn vbs_disable(
+    _app: tauri::AppHandle,
+    _allow_uefi: Option<bool>,
+) -> Result<Value, String> {
     unsupported()
 }
 
@@ -23,11 +26,17 @@ pub(crate) async fn vbs_restore(_app: tauri::AppHandle) -> Result<Value, String>
 pub(crate) async fn vbs_set_test_mode(
     _app: tauri::AppHandle,
     _enabled: bool,
+    _allow_uefi: Option<bool>,
 ) -> Result<Value, String> {
     unsupported()
 }
 
 #[tauri::command]
 pub(crate) fn vbs_restart() -> Result<(), String> {
+    unsupported()
+}
+
+#[tauri::command]
+pub(crate) async fn vbs_repair(_app: tauri::AppHandle, _kind: String) -> Result<Value, String> {
     unsupported()
 }
