@@ -519,7 +519,7 @@ dependencies = [
 
 [[package]]
 name = "crocodile-gena-studio"
-version = "5.6.0"
+version = "5.6.1"
 dependencies = [
  "arboard",
  "reqwest 0.12.28",
