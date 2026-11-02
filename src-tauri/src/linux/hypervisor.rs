@@ -1,5 +1,12 @@
 use serde_json::Value;
 
+#[tauri::command]
+pub(crate) fn steam_launch_status(_id: String, _account: Option<String>) -> Result<Value, String> { unsupported() }
+#[tauri::command]
+pub(crate) fn set_steam_launch(_id: String, _enabled: bool, _account: Option<String>) -> Result<Value, String> { unsupported() }
+#[tauri::command]
+pub(crate) fn steam_launch_accounts() -> Result<Value, String> { unsupported() }
+
 fn unsupported<T>() -> Result<T, String> {
     Err("Crocodile-HV доступен только в Windows".into())
 }

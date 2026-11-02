@@ -31,6 +31,8 @@ mod smaki;
 mod steam;
 mod steam_library;
 mod game_artwork;
+#[cfg(target_os = "windows")]
+mod steam_hv;
 mod updates;
 #[cfg(target_os = "windows")]
 mod vbs;
@@ -322,6 +324,9 @@ pub fn run() {
             hypervisor::verify_game,
             hypervisor::launch_selected_game,
             hypervisor::is_selected_game_running,
+            hypervisor::steam_launch_status,
+            hypervisor::steam_launch_accounts,
+            hypervisor::set_steam_launch,
             anticheat::anticheat_scan,
             anticheat::anticheat_pick_backup_directory,
             anticheat::anticheat_remove,

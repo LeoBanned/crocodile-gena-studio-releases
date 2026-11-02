@@ -31,6 +31,61 @@ const HELPER_BYTES: &[u8] = include_bytes!(concat!(
 ));
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
+pub(crate) fn require_steam_closed() -> Result<(), String> {
+    if process_name_running("steam.exe")? {
+        return Err("Полностью закройте Steam через «Steam → Выход», затем повторите. Окно Steam, свёрнутое в трей, всё ещё работает.".into());
+    }
+    Ok(())
+}
+
+fn steam_target(id: &str) -> Result<(PathBuf, u64, PathBuf), String> {
+    let library = load_library()?;
+    let game = library.games.iter().find(|g|g.id==id).ok_or("Игра не найдена")?;
+    let exe = validate_exe_path(&game.exe_path)?;
+    let installed = exe.parent().into_iter().flat_map(Path::ancestors)
+        .find_map(crate::steam_library::installed_game_for_path)
+        .ok_or("Игра не найдена среди установленных игр Steam. Установите её через Steam и выберите EXE из её папки.")?;
+    let steam = crate::luatools::resolve_steam_path(None).ok_or("Папка Steam не найдена")?;
+    Ok((steam, installed.appid, exe.parent().unwrap().join(HELPER_NAME)))
+}
+
+#[tauri::command]
+pub(crate) fn steam_launch_accounts() -> Result<Vec<crate::steam_hv::Account>, String> {
+    let steam=crate::luatools::resolve_steam_path(None).ok_or("Папка Steam не найдена")?;
+    crate::steam_hv::accounts(&steam)
+}
+#[tauri::command]
+pub(crate) fn steam_launch_status(id: String, account: Option<String>) -> Result<crate::steam_hv::Status, String> {
+    let (steam, appid, helper) = steam_target(&id)?;
+    crate::steam_hv::status_for(&steam, appid, &helper,account.as_deref())
+}
+
+#[tauri::command]
+pub(crate) async fn set_steam_launch(id: String, enabled: bool, account: Option<String>) -> Result<crate::steam_hv::Status, String> {
+    tauri::async_runtime::spawn_blocking(move||set_steam_launch_inner(id,enabled,account)).await.map_err(|error|format!("Настройка Steam прервана: {error}"))?
+}
+fn set_steam_launch_inner(id:String,enabled:bool,account:Option<String>)->Result<crate::steam_hv::Status,String>{
+    static LOCK:std::sync::Mutex<()>=std::sync::Mutex::new(());
+    let _guard=LOCK.lock().map_err(|_|"Настройка Steam прервана")?;
+    let (steam, appid, helper) = steam_target(&id)?;
+    let before=crate::steam_hv::status_for(&steam,appid,&helper,account.as_deref())?;
+    if enabled { ensure_helper(helper.parent().unwrap())?; }
+    let client=steam.join("steam.exe");
+    if !client.is_file(){return Err("Не найден steam.exe".into())}
+    let was_running=process_name_running("steam.exe")?;
+    crate::steam_hv::restart_around(was_running,||{
+        Command::new(&client).arg("-shutdown").current_dir(&steam).creation_flags(CREATE_NO_WINDOW).spawn().map_err(|error|format!("Не удалось завершить Steam: {error}"))?;
+        let deadline=std::time::Instant::now()+std::time::Duration::from_secs(30);
+        loop {
+            if !process_name_running("steam.exe")? {return Ok(())}
+            if std::time::Instant::now()>=deadline{return Err("Steam не завершился за 30 секунд. Параметры не изменены; проверьте, не ожидает ли Steam завершения игры.".into())}
+            std::thread::sleep(std::time::Duration::from_millis(400));
+        }
+    },||crate::steam_hv::set(&steam,appid,&helper,enabled,Some(&before.account)),||{
+        Command::new(&client).current_dir(&steam).spawn().map(|_|()).map_err(|error|error.to_string())
+    })
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 struct GameEntry {
     id: String,
@@ -228,6 +283,9 @@ pub(crate) fn set_selected_game(id: String) -> Result<LibraryView, String> {
 
 #[tauri::command]
 pub(crate) fn remove_game(id: String) -> Result<LibraryView, String> {
+    if steam_launch_accounts().unwrap_or_default().into_iter().any(|account|steam_launch_status(id.clone(),Some(account.id)).is_ok_and(|status|status.managed)) {
+        return Err("Сначала нажмите «Вернуть обычный запуск» для этой игры, затем удалите её из библиотеки.".into());
+    }
     let mut library = load_library()?;
     library.games.retain(|game| game.id != id);
     if library.selected_id.as_deref() == Some(&id) {
