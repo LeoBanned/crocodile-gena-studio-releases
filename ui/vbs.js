@@ -44,6 +44,20 @@
     const report = state.report;
     if (!report) return;
 
+    const components = Array.isArray(report.components) ? report.components : [];
+    const visible = [
+      ["vbs", "Virtualization-based Security (VBS)"],
+      ["hvci", "Memory Integrity (HVCI)"],
+      ["credential-guard", "Credential Guard"],
+    ];
+    $("#vbs-components").innerHTML = visible.map(([id, name]) => {
+      const item = components.find(component => component.id === id);
+      const unknown = !item || item.state === "unknown";
+      const label = unknown ? "Не определено" : item.locked ? "Заблокирован" : item.state === "configured" ? "Настроен" : item.enabled ? "Включён" : "Выключен";
+      const style = unknown ? "unknown" : item.locked ? "locked" : item.enabled ? "enabled" : "disabled";
+      return `<article class="vbs-component ${style}"><div><h4>${escapeHtml(name)}</h4><p>${escapeHtml(item?.description || "Windows не вернула состояние компонента.")}</p></div><span>${escapeHtml(label)}</span></article>`;
+    }).join("");
+
     const dse = report.dse || {};
     const dseCard = $("#vbs-dse-card");
     if (dseCard) dseCard.dataset.state = dse.state || "unknown";

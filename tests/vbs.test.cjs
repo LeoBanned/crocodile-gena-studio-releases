@@ -70,6 +70,22 @@ async function createView(initialReport = {}, options = {}) {
   };
 }
 
+test('shows only the three main VBS components and their states', async () => {
+  const view = await createView({ components: [
+    {id:'vbs',enabled:true,description:'VBS details'},
+    {id:'hvci',enabled:false,locked:true},
+    {id:'credential-guard',enabled:false,state:'configured'},
+    {id:'windows-hello',name:'Windows Hello',enabled:true},
+  ] });
+  const html=view.node('#vbs-components').innerHTML;
+  assert.equal((html.match(/<article /g)||[]).length,3);
+  for (const text of ['Virtualization-based Security (VBS)','Memory Integrity (HVCI)','Credential Guard','Включён','Заблокирован','Настроен']) assert(html.includes(text));
+  assert(!html.includes('Windows Hello'));
+});
+test('missing component data is shown as unknown rather than disabled', async () => {
+  const view = await createView();
+  assert.equal((view.node('#vbs-components').innerHTML.match(/Не определено/g)||[]).length,3);
+});
 test('one button enables test mode and cancels it before reboot', async () => {
   const view = await createView();
   assert.equal(view.node('#vbs-test-label').textContent, 'Включить тестовый');

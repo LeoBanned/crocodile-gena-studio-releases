@@ -1,6 +1,6 @@
 # Собрать Crocodile Gena Studio самостоятельно
 
-Инструкция для **Windows 10/11 x64**, версия проекта **5.6.0**.
+Инструкция для **Windows 10/11 x64**, версия проекта **5.6.1**.
 GitHub Actions, платный аккаунт GitHub, Python и установленный Steam для сборки не нужны.
 
 ## Коротко
@@ -99,10 +99,10 @@ src-tauri\target\release\crocodile-gena-studio.exe
 npm run build:setup
 ~~~
 
-Результат для версии 5.6.0:
+Результат для версии 5.6.1:
 
 ~~~text
-src-tauri\target\release\bundle\nsis\Crocodile Gena Studio_5.6.0_x64-setup.exe
+src-tauri\target\release\bundle\nsis\Crocodile Gena Studio_5.6.1_x64-setup.exe
 ~~~
 
 NSIS-установщик настроен на загрузку WebView2 при необходимости, поэтому
@@ -117,7 +117,7 @@ npm run build -- --ci
 Дополнительно появится:
 
 ~~~text
-src-tauri\target\release\bundle\msi\Crocodile Gena Studio_5.6.0_x64_en-US.msi
+src-tauri\target\release\bundle\msi\Crocodile Gena Studio_5.6.1_x64_en-US.msi
 ~~~
 
 Для MSI могут понадобиться включённые компоненты VBScript в Windows.

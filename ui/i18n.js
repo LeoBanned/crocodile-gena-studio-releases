@@ -5,6 +5,21 @@
   const SUPPORTED = new Set(["ru", "en"]);
 
   const EN = {
+    "Состояние VBS, целостности памяти и Credential Guard после сканирования.": "VBS, Memory Integrity and Credential Guard status after scanning.",
+    "Нажмите «Сканировать», чтобы проверить компоненты.": "Click Scan to check the components.",
+    "Windows не вернула состояние компонента.": "Windows did not return the component status.",
+    "Аккаунт Steam": "Steam account",
+    "Выберите аккаунт": "Select an account",
+    "Выберите аккаунт Steam в списке.": "Select a Steam account from the list.",
+    "STEAM · ЭКСПЕРИМЕНТАЛЬНО": "STEAM · EXPERIMENTAL",
+    "Запуск кнопкой «Играть»": "Launch with Steam Play",
+    "Steam → Crocodile-HV → команда игры из Steam. Программа сама перезапустит Steam и запишет параметры запуска.": "Steam → Crocodile-HV → Steam's game command. The app restarts Steam and saves launch options automatically.",
+    "Steam перезапускается, параметры запуска сохраняются…": "Restarting Steam and saving launch options…",
+    "Выберите игру из библиотеки Steam.": "Select a game installed through Steam.",
+    "Проверка настроек Steam…": "Checking Steam settings…",
+    "Включить для Steam": "Enable for Steam",
+    "Вернуть обычный запуск": "Restore normal launch",
+    "Запуск из Steam": "Steam launch",
     "Восстановление Windows": "Windows repair",
     "Три отдельных исправления. Прогресс и результат отображаются в журнале программы.": "Three separate repairs. Progress and results appear in the application log.",
     "Если установщик репака не запускается или возникают ошибки WMI, попробуйте Fix WMI. Программа проверит и восстановит компоненты WMI.": "If a repack installer does not start or reports WMI errors, try Fix WMI. The app will check and repair WMI components.",
@@ -886,7 +901,7 @@
     ["Резервная копия:", "Backup:"],
     ["Удалено компонентов:", "Components removed:"],
     ["Системный модуль недоступен", "System module is unavailable"],
-    ["Crocodile Gena Studio 5.6.0 инициализирован", "Crocodile Gena Studio 5.6.0 initialized"],
+    ["Crocodile Gena Studio 5.6.1 инициализирован", "Crocodile Gena Studio 5.6.1 initialized"],
     ["Доступна версия", "Version available:"],
     ["Осталось", "Remaining"],
     ["локальная копия", "local copy"]

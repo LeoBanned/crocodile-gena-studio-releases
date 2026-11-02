@@ -1,4 +1,18 @@
 /* Module 05 follows the same surface and accent tokens as the rest of the app. */
+#view-hypervisor .vbs-component h4 { color:var(--text); }
+#view-hypervisor .vbs-component p { color:var(--muted); }
+#view-hypervisor .vbs-component.unknown > span { color:var(--muted); border-color:var(--line); background:var(--panel-soft); }
+.hv-steam-panel { display:flex; gap:24px; align-items:center; justify-content:space-between; padding:24px 27px; }
+.hv-steam-panel > div { min-width:0; }
+.hv-steam-panel h3 { margin:8px 0; font-size:18px; }
+.hv-steam-panel p { margin:6px 0; color:var(--muted); font-size:11px; line-height:1.6; }
+.hv-steam-panel code { display:block; margin-top:10px; overflow-wrap:anywhere; color:var(--muted); font-size:10px; }
+.hv-steam-actions { display:flex; flex:0 0 auto; gap:10px; flex-wrap:wrap; }
+.hv-steam-actions { max-width:46%; align-items:flex-end; }
+.hv-steam-account { display:grid; gap:6px; width:100%; color:var(--muted); font-size:10px; }
+.hv-steam-account select { width:100%; min-width:180px; max-width:420px; height:36px; padding:0 10px; border:1px solid var(--line-strong); border-radius:var(--ui-control-radius); color:var(--text); background:var(--panel-solid); }
+@media(max-width:1100px) { .hv-steam-actions { max-width:100%; } }
+@media(max-width:1100px) { .hv-steam-panel { flex-wrap:wrap; } }
 #view-hypervisor {
   --module-surface: var(--skin-panel);
   --module-inner: var(--panel-solid);

@@ -301,6 +301,7 @@
 
   function renderStatus(status) {
     const game = status?.selected_game || selectedGame();
+    refreshSteamLaunch(game?.id);
     selectedArtwork(game);
     $("#hv-admin-status").textContent = status?.admin ? "Admin" : "Через UAC";
     $("#hv-games-count").textContent = String(status?.games_count ?? state.games.length);
@@ -341,6 +342,71 @@
       appendLog("error", `Не удалось обновить модуль: ${error}`);
     }
   }
+
+  let steamStatus = null;
+  let steamRequest = 0;
+  let steamBusy = false;
+  async function refreshSteamLaunch(id) {
+    const token = ++steamRequest;
+    steamStatus = null;
+    const enable = $("#hv-steam-enable"), disable = $("#hv-steam-disable");
+    const accountSelect = $("#hv-steam-account");
+    if (!enable || !disable) return;
+    enable.disabled = disable.disabled = true;
+    $("#hv-steam-command").textContent = "";
+    $("#hv-steam-status").textContent = id ? "Проверка настроек Steam…" : "Выберите игру из библиотеки Steam.";
+    if (!id) return;
+    try {
+      const accounts = await call("steam_launch_accounts");
+      if (token !== steamRequest || state.selectedId !== id) return;
+      if (!Array.isArray(accounts) || !accounts.length) throw new Error("Не найдены аккаунты Steam.");
+      const remembered = accountSelect.dataset.loaded ? accountSelect.value : localStorage.getItem("cgs-hv-steam-account");
+      const preferred = accounts.filter(item => item.preferred);
+      const chosen = accounts.find(item => item.id === remembered) || (preferred.length === 1 ? preferred[0] : accounts.length === 1 ? accounts[0] : null);
+      accountSelect.replaceChildren(new Option("Выберите аккаунт", ""));
+      accounts.forEach(item => accountSelect.add(new Option(`${item.name} · ${item.id}`, item.id)));
+      accountSelect.dataset.loaded = "true";
+      accountSelect.value = chosen?.id || "";
+      if (!chosen) { $("#hv-steam-status").textContent = "Выберите аккаунт Steam в списке."; return; }
+      const info = await call("steam_launch_status", { id, account: chosen.id });
+      if (token !== steamRequest || state.selectedId !== id) return;
+      if (!info || typeof info.enabled !== "boolean") throw new Error("Настройка запуска Steam недоступна.");
+      steamStatus = info;
+      $("#hv-steam-status").textContent = `${info.enabled ? "Crocodile-HV включён" : info.managed ? "Параметры изменены вне программы" : "Обычный запуск Steam"} · AppID ${info.appid} · аккаунт ${info.account}`;
+      $("#hv-steam-command").textContent = info.command;
+      enable.disabled = steamBusy || state.running || info.enabled;
+      disable.disabled = steamBusy || state.running || !info.managed;
+    } catch (error) {
+      if (token === steamRequest) $("#hv-steam-status").textContent = String(error);
+    }
+  }
+  async function changeSteamLaunch(enabled) {
+    const id = state.selectedId;
+    if (!id || !steamStatus || steamBusy || state.running) return;
+    steamBusy = true;
+    setBusy(true, "Перезапуск Steam");
+    $("#hv-steam-account").disabled = true;
+    $("#hv-steam-enable").disabled = $("#hv-steam-disable").disabled = true;
+    $("#hv-steam-status").textContent = "Steam перезапускается, параметры запуска сохраняются…";
+    try {
+      const info = await call("set_steam_launch", { id, enabled, account: steamStatus.account });
+      appendLog("success", enabled ? `Запуск из Steam настроен для AppID ${info.appid}. Steam открыт снова — нажмите «Играть».` : "Прежние параметры запуска восстановлены. Steam открыт снова.");
+    } catch (error) {
+      appendLog("error", String(error));
+      if (window.cgsShowModal) await window.cgsShowModal("Запуск из Steam", String(error), { symbol: "!" });
+    } finally {
+      steamBusy = false;
+      setBusy(false, "Ожидание");
+      $("#hv-steam-account").disabled = false;
+      await refreshSteamLaunch(state.selectedId);
+    }
+  }
+  $("#hv-steam-enable")?.addEventListener("click", () => changeSteamLaunch(true));
+  $("#hv-steam-disable")?.addEventListener("click", () => changeSteamLaunch(false));
+  $("#hv-steam-account")?.addEventListener("change", event => {
+    localStorage.setItem("cgs-hv-steam-account", event.target.value);
+    refreshSteamLaunch(state.selectedId);
+  });
 
   async function addGame() {
     if (state.running) return;
@@ -397,7 +463,7 @@
   }
 
   async function launchSelected() {
-    if (state.running || state.gameRunning || !state.selectedId) return;
+    if (state.running || steamBusy || state.gameRunning || !state.selectedId) return;
     resetSteps();
     activateStep(1);
     state.launching = true;

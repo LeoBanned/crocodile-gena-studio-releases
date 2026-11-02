@@ -23,7 +23,7 @@
       <div class="titlebar-brand" data-tauri-drag-region>
         <div class="mini-mark" data-tauri-drag-region><img src="./app-icon.png" alt="" data-tauri-drag-region /></div>
         <span data-tauri-drag-region>Crocodile Gena Studio</span>
-        <span class="titlebar-version" data-tauri-drag-region>5.6.0</span>
+        <span class="titlebar-version" data-tauri-drag-region>5.6.1</span>
       </div>
       <div class="window-actions">
         <button class="window-button" id="window-minimize" aria-label="Свернуть">
@@ -124,7 +124,7 @@
         <div class="home-hero premium-panel">
           <div class="home-glow"></div>
           <div class="hero-copy">
-            <span class="hero-kicker">CROCODILE GENA STUDIO 5.6.0</span>
+            <span class="hero-kicker">CROCODILE GENA STUDIO 5.6.1</span>
             <h2>Ваша игровая<br/><span>лаборатория.</span></h2>
             <p>Единое пространство для настройки игр, управления сетевыми компонентами и будущих инструментов.</p>
           </div>
@@ -509,6 +509,11 @@
             </div>
           </section>
 
+          <section class="premium-panel hv-steam-panel">
+            <div><span class="coming-label">STEAM · ЭКСПЕРИМЕНТАЛЬНО</span><h3>Запуск кнопкой «Играть»</h3><p>Steam → Crocodile-HV → команда игры из Steam. Программа сама перезапустит Steam и запишет параметры запуска.</p><p id="hv-steam-status" role="status">Выберите игру из библиотеки Steam.</p><code id="hv-steam-command"></code></div>
+            <div class="hv-steam-actions"><label class="hv-steam-account">Аккаунт Steam<select id="hv-steam-account" aria-label="Аккаунт Steam"><option value="">Выберите аккаунт</option></select></label><button class="hv-check-button" id="hv-steam-enable" disabled>Включить для Steam</button><button class="hv-check-button" id="hv-steam-disable" disabled>Вернуть обычный запуск</button></div>
+          </section>
+
           <div class="hv-workspace">
             <section class="premium-panel hv-library-panel">
               <div class="save-browser-header hv-panel-header">
@@ -614,6 +619,11 @@
                 <p id="vbs-dse-detail">Нажмите «Сканировать», чтобы проверить Code Integrity.</p>
               </div>
               <span class="vbs-dse-badge" id="vbs-dse-badge">DSE TEST</span>
+            </section>
+
+            <section class="premium-panel vbs-components-panel">
+              <div class="vbs-components-header"><div><span class="coming-label">КОМПОНЕНТЫ VBS</span><h3>Системная защита</h3><p>Состояние VBS, целостности памяти и Credential Guard после сканирования.</p></div></div>
+              <div class="vbs-components" id="vbs-components"><p>Нажмите «Сканировать», чтобы проверить компоненты.</p></div>
             </section>
 
             <section class="premium-panel vbs-warning-panel hidden" id="vbs-warning-panel">
@@ -810,7 +820,7 @@
 
       </section>
 
-          <section class="premium-panel settings-card"><span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>О программе</h2><div class="about-row"><span>Версия</span><b>5.6.0</b></div><div class="about-row"><span>Назначение</span><b>Игровые инструменты</b></div><div class="about-row"><span>Активные модули</span><b>Online Fix · Сохранения · DLC · CrocLua · Гипервизор · Кряки · Утилиты</b></div></section>
+          <section class="premium-panel settings-card"><span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>О программе</h2><div class="about-row"><span>Версия</span><b>5.6.1</b></div><div class="about-row"><span>Назначение</span><b>Игровые инструменты</b></div><div class="about-row"><span>Активные модули</span><b>Online Fix · Сохранения · DLC · CrocLua · Гипервизор · Кряки · Утилиты</b></div></section>
           </div>
           <div class="settings-column">
           <section class="premium-panel settings-card module-visibility-card">
@@ -833,7 +843,7 @@
           <section class="premium-panel settings-card update-card">
             <span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>Обновления</h2>
             <p>Проверка новых версий через официальный репозиторий Crocodile Gena Studio.</p>
-            <div class="about-row"><span>Текущая версия</span><b id="update-current-version">5.6.0</b></div>
+            <div class="about-row"><span>Текущая версия</span><b id="update-current-version">5.6.1</b></div>
             <div class="update-actions">
               <button class="ghost-button" id="check-update-button">Проверить обновления</button>
               <span id="update-status">Проверка ещё не выполнялась</span>
