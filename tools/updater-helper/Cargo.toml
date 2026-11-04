@@ -1,0 +1,24 @@
+[package]
+name = "cgs-native-updater"
+version = "1.0.0"
+edition = "2021"
+license = "GPL-3.0-only"
+
+[[bin]]
+name = "cgs-updater"
+path = "../../src-tauri/src/update_helper_main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+panic = "abort"
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true

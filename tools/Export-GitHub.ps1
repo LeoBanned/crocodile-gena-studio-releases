@@ -36,7 +36,7 @@ function Rewrite-ExportFile([string]$Relative, [scriptblock]$Transform) {
     [IO.File]::WriteAllText($taskFile, $taskChanged, $taskUtf8)
 }
 try {
-    foreach ($taskFolder in @('ui','src-tauri/src','src-tauri/icons','src-tauri/capabilities','millenium','tools')) { Copy-ExportTree $taskFolder }
+    foreach ($taskFolder in @('ui','src-tauri/src','src-tauri/icons','src-tauri/capabilities','millenium','tools','third_party/cloudredirect','src-tauri/resources/local-cloud','src-tauri/resources/updater')) { Copy-ExportTree $taskFolder }
     foreach ($taskFile in @('package.json','package-lock.json','.gitignore','README.md','BUILD.md','LICENSE','THIRD_PARTY.md','ARCHIVE-INSTALL.md','BUILD-WINDOWS.cmd','PUBLISH.md','src-tauri/build.rs','src-tauri/Cargo.toml','src-tauri/Cargo.lock','src-tauri/tauri.conf.json','src-tauri/icon.ico')) { Copy-ExportFile $taskFile }
     foreach ($taskFile in @('SteamFix64.dll','winmm_unity.dll','EpicFix64.dll','EpicFix.ini','EOSSDK-Win64-Shipping.dll','winmm.dll')) { Copy-ExportFile "backend/core_engine/$taskFile" }
     $taskCream = if (Test-Path -LiteralPath (Join-Path $taskRoot 'CreamAPI/steam_api.dll')) { 'CreamAPI' } else { 'DLCUnlocker' }
@@ -47,7 +47,7 @@ try {
         Copy-ExportFile 'СмакиАпи/smaki.dll' 'SmokeAPI/SmokeAPI64.dll'
         Copy-ExportFile 'СмакиАпи/smaki32.dll' 'SmokeAPI/SmokeAPI86.dll'
     }
-    foreach ($taskFile in @('dlc.test.cjs','vbs.test.cjs','workspace.test.cjs','plugin-loader.ps1')) { Copy-ExportFile "tests/$taskFile" }
+    foreach ($taskFile in @('dlc.test.cjs','vbs.test.cjs','workspace.test.cjs','plugin-loader.ps1','local-cloud.cjs','local-cloud-scope.cpp','updater-e2e.cjs','updater-ui.cjs','updater-fixture.cpp','updater-fixture.rc')) { Copy-ExportFile "tests/$taskFile" }
     Copy-ExportFile 'README.en.md'
     Copy-ExportFile 'CROCLUA-DLL.md'
     Copy-ExportFile 'src-tauri/resources/hypervisor/Crocodile-HV.exe'
@@ -55,7 +55,7 @@ try {
         param($t)
         $t.Replace('src-tauri/resources/hypervisor/', "src-tauri/resources/hypervisor/*`n!src-tauri/resources/hypervisor/Crocodile-HV.exe")
     }
-    Copy-ExportFile 'docs/images/home.png'
+    Copy-ExportTree 'docs/images'
     Rewrite-ExportFile 'src-tauri/src/lib.rs' { param($t) $t.Replace('DLCUnlocker','CreamAPI') }
     Rewrite-ExportFile 'src-tauri/tauri.conf.json' { param($t) $t.Replace('DLCUnlocker','CreamAPI') }
     Rewrite-ExportFile 'src-tauri/src/smaki.rs' { param($t) $t.Replace('../../СмакиАпи/smaki.dll','../../SmokeAPI/SmokeAPI64.dll').Replace('../../СмакиАпи/smaki32.dll','../../SmokeAPI/SmokeAPI86.dll') }

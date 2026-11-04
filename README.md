@@ -10,7 +10,7 @@ Seven workspaces for Steam tools, save backups, game components and launch manag
 Built for Windows. Powered by Rust and Tauri.
 
 <p>
-  <img alt="Version 5.6.1" src="https://img.shields.io/badge/version-5.6.1-63f5c2?style=flat-square&labelColor=10141d" />
+  <img alt="Version 5.6.3" src="https://img.shields.io/badge/version-5.6.3-63f5c2?style=flat-square&labelColor=10141d" />
   <img alt="Windows 10 and 11, x64" src="https://img.shields.io/badge/Windows-10%20%2F%2011%20%C2%B7%20x64-82d9ff?style=flat-square&labelColor=10141d" />
   <img alt="Rust and Tauri 2" src="https://img.shields.io/badge/built%20with-Rust%20%2B%20Tauri%202-a987ff?style=flat-square&labelColor=10141d" />
   <img alt="Project code: GPL-3.0-only" src="https://img.shields.io/badge/project%20code-GPL--3.0--only-63f5c2?style=flat-square&labelColor=10141d" />
@@ -21,7 +21,7 @@ Built for Windows. Powered by Rust and Tauri.
 **[Report an issue](https://github.com/LeoBanned/crocodile-gena-studio-releases/issues)** &nbsp;·&nbsp;
 **[Telegram](https://t.me/crocodilehub2)**
 
-<img src="docs/images/home-en-5.6.1.png" width="100%" alt="Crocodile Gena Studio 5.6.1 — English home screen in the Graphite theme" />
+<img src="docs/images/home-en-5.6.3.png" width="100%" alt="Crocodile Gena Studio 5.6.3 — English home screen in the Graphite theme" />
 
 <sub>The current English interface · Graphite theme · Mint accent</sub>
 
@@ -95,6 +95,14 @@ Manage Lua scripts, depot manifests and their loader components in one place.
 - Check for DLL updates through GitHub.
 - Choose and pin the **standard** or **compatibility** bundle.
 - Install **Crocodile Manifest 0.5.3** for Millennium.
+- Enable **Local Cloud** for Lua games with manifest references and choose your
+  own storage folder. The embedded CloudRedirect engine runs with Steam and
+  stores the redirected save data locally. A switch restores the previous cloud
+  configuration without deleting saves; ordinary games without Lua are not
+  redirected. Steam restarts automatically when applying the setting.
+
+Local Cloud uses internal Steam interfaces; compatibility depends on the game
+and Steam build. Keep a separate backup before testing it with existing progress.
 
 The plugin adds a **Get manifest** button to supported Steam Store game pages and uses the loader selection shared with CrocLua. Provider access, API keys and quotas depend on the service.
 
@@ -160,7 +168,7 @@ A hub for companion software and related guides. External tools remain separate 
 </tr>
 </table>
 
-<sub>Previews are captured from the current 5.6.1 interface in English. Example paths, profiles and game entries are demonstration data. Click the gallery images to view them at full size.</sub>
+<sub>Previews are captured from the current 5.6.3 interface in English. Example paths, profiles and game entries are demonstration data. Click the gallery images to view them at full size.</sub>
 
 ## Make the interface yours
 
@@ -170,8 +178,16 @@ Choose Graphite, Glass, Minimal, Neon, Midnight, Obsidian, Forest, Plum, Warm, A
 
 And yes, **Gena** can keep you company in the sidebar.
 
-## New in 5.6.1
+## New in 5.6.3
 
+- **In-app updates on Windows:** download a verified release EXE, replace the
+  current executable in place, and restart automatically. Existing shortcuts
+  keep their targets. Failed startup triggers a rollback to the previous EXE.
+  The notification window shows progress, speed and estimated time remaining.
+  Cancel before replacement or postpone automatic reminders for five app
+  launches; the sixth launch reminds you again. Manual checks remain available.
+- **Local Cloud for manifest games:** choose a local save folder and enable or
+  disable the embedded CloudRedirect engine directly in CrocLua.
 - **Automatic Steam restart:** launch-option setup and restoration now handle Steam shutdown and reopening.
 - **Steam account selection:** active-account detection with a manual selector for multiple saved profiles.
 - **Three visible VBS components:** VBS, HVCI and Credential Guard, with their reported states.

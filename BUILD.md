@@ -1,6 +1,6 @@
 # Собрать Crocodile Gena Studio самостоятельно
 
-Инструкция для **Windows 10/11 x64**, версия проекта **5.6.1**.
+Инструкция для **Windows 10/11 x64**, версия проекта **5.6.3**.
 GitHub Actions, платный аккаунт GitHub, Python и установленный Steam для сборки не нужны.
 
 ## Коротко
@@ -99,10 +99,10 @@ src-tauri\target\release\crocodile-gena-studio.exe
 npm run build:setup
 ~~~
 
-Результат для версии 5.6.1:
+Результат для версии 5.6.3:
 
 ~~~text
-src-tauri\target\release\bundle\nsis\Crocodile Gena Studio_5.6.1_x64-setup.exe
+src-tauri\target\release\bundle\nsis\Crocodile Gena Studio_5.6.3_x64-setup.exe
 ~~~
 
 NSIS-установщик настроен на загрузку WebView2 при необходимости, поэтому
@@ -117,7 +117,7 @@ npm run build -- --ci
 Дополнительно появится:
 
 ~~~text
-src-tauri\target\release\bundle\msi\Crocodile Gena Studio_5.6.1_x64_en-US.msi
+src-tauri\target\release\bundle\msi\Crocodile Gena Studio_5.6.3_x64_en-US.msi
 ~~~
 
 Для MSI могут понадобиться включённые компоненты VBScript в Windows.
@@ -259,6 +259,48 @@ npm run test:native
 проверка ресурсов, эти тесты и команда сборки EXE.
 Результат ручной сборки не обязан побайтово совпадать с официальным EXE:
 версии инструментов, ключи и параметры окружения могут отличаться.
+
+## Нативное обновление программы
+
+`src-tauri/resources/updater/CgsUpdater.exe` встроен в основную программу.
+Готовый файл включён в экспорт; обычная сборка не требует отдельной пересборки
+помощника. Его исходники: `src-tauri/src/update_core.rs` и
+`src-tauri/src/update_helper_main.rs`, Cargo-пакет `tools/updater-helper`.
+
+После изменения протокола или кода помощника сначала выполните:
+
+~~~powershell
+./tools/Build-Updater.ps1
+~~~
+
+Затем соберите основную программу. Помощник использует статический CRT;
+PowerShell/BAT во время обновления не запускаются.
+
+Проверки файловой транзакции и отката:
+
+~~~powershell
+cargo test --manifest-path tools/updater-helper/Cargo.toml --release --locked
+cargo test --manifest-path src-tauri/Cargo.toml --release --lib --locked updates::
+~~~
+
+Изолированные сценарии процесса обновления находятся в `tests/updater-e2e.cjs`;
+тестовые EXE собираются из `tests/updater-fixture.cpp` и `.rc` с Windows SDK/MSVC
+и версиями 5.6.1 и 5.6.2 (`FIXTURE_PATCH=1` / `2`). Укажите папку `old.exe` и
+`new.exe` в `CGS_UPDATER_FIXTURES`, затем запустите Node.js-тест. Он работает
+только с временными тестовыми программами и не запускает Steam или игры.
+
+
+## Встроенное локальное облако CrocLua
+
+`src-tauri/resources/local-cloud/cgs_cloud_redirect.dll` включена в исходный
+экспорт и встраивается в EXE. Обычная сборка приложения не требует C++-сборки
+этого компонента. Для изменения самого движка доступны исходники в
+`third_party/cloudredirect` и `tools/Build-LocalCloud.ps1` (x64 MSVC developer
+environment, C++20 и Windows SDK; без CMake/.NET). Лицензия движка — MIT.
+
+Изменения исходников движка требуют сначала пересобрать DLL этим скриптом,
+затем собрать приложение обычным способом. Локальный режим настраивается
+через CrocLua; обычная сборка и проверки не запускают Steam или игры.
 
 ## Лицензия
 
