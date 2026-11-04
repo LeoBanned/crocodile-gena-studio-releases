@@ -1,0 +1,80 @@
+#pragma once
+#include "cloud_metadata_paths.h"
+#include "cr_api.h"
+#include "common.h"
+
+namespace CloudIntercept {
+
+// CNetPacket struct (passed as second arg to RecvPkt)
+// Layout confirmed from IDA: sub_138E59C30 (AddRef), sub_138D02530 (wrapper creator)
+//   +0:  padding (8 bytes, never read in critical path)
+//   +8:  pointer to raw packet data
+//   +16: packet data size (uint32)
+//   +20: reference count (uint32, AddRef increments; must start at 0)
+//   +24: owned data copy pointer (QWORD, must be NULL initially)
+struct CNetPacket {
+    uint64_t pad0;             // +0   padding (not accessed by RecvPkt path)
+    uint8_t* pubData;          // +8   packet data pointer
+    uint32_t cubData;          // +16  packet byte count
+    uint32_t m_cRef;           // +20  reference count, starts at 1 to prevent pool recycling (see cloud_intercept.cpp)
+    uint8_t* ownedDataCopy;    // +24  owned data copy ptr, MUST be NULL
+};
+
+// RecvPkt takes only 2 params: (thisptr, CNetPacket*)
+using RecvPktFn = int64_t(__fastcall*)(void* thisptr, CNetPacket* pkt);
+
+void Init(const std::string& steamPath, bool cloudSaveOnly = false,
+          CR_NotifyFn notifyCallback = nullptr);
+
+// Inline-detour CCMConnection::RecvPkt in steamclient64.dll via sig-scan.
+void InstallRecvPktDetour();
+
+// install inline detour on steamclient64 for manifest pinning
+void InstallManifestPinHook();
+
+// Patch GetEffectiveReleaseState to always return RELEASED.
+void InstallReleaseStateNop();
+void InstallGamesPlayedHook();
+
+// Redirect manifest endpoint URL in the payload at runtime.
+void InstallManifestEndpointOverride();
+
+// compute payload base and set up cave replacement buffer globals
+void SetSendPktAddr(void* recvPktGlobalAddr);
+
+// called from the exported CloudOnSendPkt. returns true if packet was handled.
+bool OnSendPkt(void* thisptr, const uint8_t* data, uint32_t size);
+
+// get the 32-bit account ID from the captured SteamID
+uint32_t GetAccountId();
+
+void SetAccountId(uint32_t accountId);
+
+// get the Steam installation path (with trailing backslash)
+const std::string& GetSteamPath();
+
+void AddNamespaceApp(uint32_t appId);
+void RemoveNamespaceApp(uint32_t appId);
+bool IsNamespaceApp(uint32_t appId);
+// outAdded/outRemoved may be null.
+void SetNamespaceApps(const uint32_t* appIds, uint32_t count,
+                      size_t* outAdded, size_t* outRemoved);
+
+// Install vtable hooks on CClientUnifiedServiceTransport (for third-party consumers).
+void InstallServiceMethodHook();
+bool VtableHookInstalled();
+
+// Deferred stats seeding for third-party consumers (CR_SetApps triggers it).
+void SetNeedsSeed(bool v);
+void TriggerDeferredSeed(const std::vector<uint32_t>& apps);
+
+// Drain queued playtime updates (live push into CUser map).
+// Caller MUST be on Steam's network thread (slot4/slot5 hook context).
+void DrainPlaytimeUpdates();
+
+void QueueLocalPlaytimePush(const std::vector<uint32_t>& endedApps);
+
+// signal shutdown
+void Shutdown();
+
+} // namespace CloudIntercept
