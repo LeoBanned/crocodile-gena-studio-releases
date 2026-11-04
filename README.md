@@ -21,7 +21,7 @@ Built for Windows. Powered by Rust and Tauri.
 **[Report an issue](https://github.com/LeoBanned/crocodile-gena-studio-releases/issues)** &nbsp;·&nbsp;
 **[Telegram](https://t.me/crocodilehub2)**
 
-<img src="docs/images/home.png" width="100%" alt="Crocodile Gena Studio 5.6.1 — English home screen in the Graphite theme" />
+<img src="docs/images/home-en-5.6.1.png" width="100%" alt="Crocodile Gena Studio 5.6.1 — English home screen in the Graphite theme" />
 
 <sub>The current English interface · Graphite theme · Mint accent</sub>
 
