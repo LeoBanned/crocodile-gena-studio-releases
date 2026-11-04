@@ -153,6 +153,7 @@
   }
 
   function setBusy(busy, label = "") {
+    window.cgsReportBusy?.("hypervisor", busy);
     state.running = busy;
     ["#hv-add-game", "#hv-selected-verify"].forEach((selector) => {
       const button = $(selector);

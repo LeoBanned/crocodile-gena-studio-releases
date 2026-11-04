@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="./hypervisor-artwork.css" />
   <link rel="stylesheet" href="./module-05-theme.css" />
   <link rel="stylesheet" href="./loader.css" />
+  <link rel="stylesheet" href="./local-cloud.css" />
   <script src="./personalization.js"></script>
 </head>
 <body>
@@ -23,7 +24,7 @@
       <div class="titlebar-brand" data-tauri-drag-region>
         <div class="mini-mark" data-tauri-drag-region><img src="./app-icon.png" alt="" data-tauri-drag-region /></div>
         <span data-tauri-drag-region>Crocodile Gena Studio</span>
-        <span class="titlebar-version" data-tauri-drag-region>5.6.1</span>
+        <span class="titlebar-version" data-tauri-drag-region>5.6.3</span>
       </div>
       <div class="window-actions">
         <button class="window-button" id="window-minimize" aria-label="Свернуть">
@@ -124,7 +125,7 @@
         <div class="home-hero premium-panel">
           <div class="home-glow"></div>
           <div class="hero-copy">
-            <span class="hero-kicker">CROCODILE GENA STUDIO 5.6.1</span>
+            <span class="hero-kicker">CROCODILE GENA STUDIO 5.6.3</span>
             <h2>Ваша игровая<br/><span>лаборатория.</span></h2>
             <p>Единое пространство для настройки игр, управления сетевыми компонентами и будущих инструментов.</p>
           </div>
@@ -398,6 +399,17 @@
               <span id="lua-steam-hint">Определяется автоматически из реестра</span>
             </article>
           </div>
+
+          <section class="premium-panel local-cloud-panel windows-only" id="local-cloud-panel">
+            <div class="local-cloud-heading">
+              <div><span class="coming-label">CLOUDREDIRECT · LOCAL</span><h3 id="lc-title">Локальное облако</h3></div>
+              <div class="local-cloud-actions"><button type="button" class="ghost-button local-cloud-info" id="lc-info" aria-expanded="false" aria-controls="lc-help"><svg class="local-cloud-info-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.25"/><path d="M10 9v4"/><circle class="local-cloud-info-dot" cx="10" cy="6.5" r=".75"/></svg><span id="lc-info-label">Информация</span></button><label class="local-cloud-toggle"><span id="lc-toggle-label">Включить</span><span class="switch"><input id="lc-enabled" type="checkbox" aria-labelledby="lc-title lc-toggle-label" disabled /><i></i></span></label></div>
+            </div>
+            
+            <div class="local-cloud-path"><input id="lc-folder" type="text" readonly placeholder="Выберите папку хранения" aria-label="Папка локального облака" /><button class="ghost-button" id="lc-browse">Выбрать папку</button></div>
+            <div class="local-cloud-footer"><span id="lc-status" role="status" aria-live="polite">Проверка…</span><button class="ghost-button" id="lc-refresh">Проверить</button></div>
+            <div class="local-cloud-help" id="lc-help" hidden><p id="lc-description">Сохранения игр с Lua и манифестами обрабатываются как облачные, но хранятся на вашем диске. CloudRedirect перенаправляет запросы Steam Cloud в локальную папку — без Google Drive, OneDrive и регистрации. Обычные игры Steam продолжают использовать своё облако.</p><p class="local-cloud-note" id="lc-note">После изменения режима Steam перезапустится автоматически. Сохранения сохраняются после отключения. Настроенный режим работает вместе со Steam, даже когда эта программа закрыта. Совместимость зависит от игры и версии Steam.</p></div>
+          </section>
 
           <div class="loader-update-banner windows-only hidden" id="loader-update-banner" role="status" aria-live="polite">
             <span class="loader-update-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg><i></i></span>
@@ -820,7 +832,7 @@
 
       </section>
 
-          <section class="premium-panel settings-card"><span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>О программе</h2><div class="about-row"><span>Версия</span><b>5.6.1</b></div><div class="about-row"><span>Назначение</span><b>Игровые инструменты</b></div><div class="about-row"><span>Активные модули</span><b>Online Fix · Сохранения · DLC · CrocLua · Гипервизор · Кряки · Утилиты</b></div></section>
+          <section class="premium-panel settings-card"><span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>О программе</h2><div class="about-row"><span>Версия</span><b>5.6.3</b></div><div class="about-row"><span>Назначение</span><b>Игровые инструменты</b></div><div class="about-row"><span>Активные модули</span><b>Online Fix · Сохранения · DLC · CrocLua · Гипервизор · Кряки · Утилиты</b></div></section>
           </div>
           <div class="settings-column">
           <section class="premium-panel settings-card module-visibility-card">
@@ -842,15 +854,14 @@
 
           <section class="premium-panel settings-card update-card">
             <span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>Обновления</h2>
-            <p>Проверка новых версий через официальный репозиторий Crocodile Gena Studio.</p>
-            <div class="about-row"><span>Текущая версия</span><b id="update-current-version">5.6.1</b></div>
+            <p>Скачивание и установка новой версии внутри программы. После обновления приложение перезапустится; настройки, путь и ярлыки сохранятся.</p>
+            <div class="about-row"><span>Текущая версия</span><b id="update-current-version">5.6.3</b></div>
             <div class="update-actions">
               <button class="ghost-button" id="check-update-button">Проверить обновления</button>
               <span id="update-status">Проверка ещё не выполнялась</span>
             </div>
             <div class="update-download-actions hidden" id="update-download-actions">
-              <button class="ghost-button hidden" id="download-portable-button">Скачать EXE</button>
-              <button class="ghost-button hidden" id="download-installer-button">Скачать Setup</button>
+              <button class="ghost-button hidden" id="download-portable-button">Обновить и перезапустить</button>
             </div>
           </section>
 
@@ -862,6 +873,25 @@
 
   <div class="modal-backdrop hidden" id="modal-backdrop">
     <div class="modal premium-panel"><div class="modal-symbol" id="modal-symbol">!</div><h3 id="modal-title">Подтверждение</h3><p id="modal-message"></p><div class="modal-actions"><button class="secondary-button" id="modal-cancel">Отмена</button><button class="install-button" id="modal-confirm">Продолжить</button></div></div>
+  </div>
+  <div class="modal-backdrop hidden" id="app-update-backdrop">
+    <section class="app-update-dialog premium-panel" role="dialog" aria-modal="true" aria-labelledby="app-update-title">
+      <button type="button" class="app-update-close" id="app-update-close" aria-label="Закрыть">×</button>
+      <span class="coming-label">CROCODILE GENA STUDIO</span>
+      <h3 id="app-update-title">Доступно обновление</h3>
+      <p class="app-update-intro" id="app-update-intro">Программа обновится и запустится автоматически. Настройки и ярлыки сохранятся.</p>
+      <details id="app-update-notes-wrap"><summary id="app-update-notes-label">Что нового</summary><p id="app-update-notes"></p></details>
+      <div class="app-update-progress" id="app-update-progress-wrap" role="status" aria-live="polite">
+        <div class="app-update-phase"><strong id="app-update-phase">Готово к загрузке</strong><span id="app-update-percent">0%</span></div>
+        <progress id="app-update-progress" max="100" value="0" aria-label="Прогресс обновления"></progress>
+        <p id="app-update-detail"></p>
+      </div>
+      <div class="app-update-actions">
+        <button type="button" class="secondary-button" id="app-update-defer">Отложить на 5 запусков</button>
+        <button type="button" class="secondary-button hidden" id="app-update-cancel">Отменить обновление</button>
+        <button type="button" class="install-button" id="app-update-install">Обновить и перезапустить</button>
+      </div>
+    </section>
   </div>
   <div class="modal-backdrop hidden" id="lua-detail-backdrop">
     <div class="lua-detail premium-panel">
@@ -890,6 +920,7 @@
   <script src="./i18n.js"></script>
   <script src="./app.js"></script>
   <script src="./loader.js"></script>
+  <script src="./local-cloud.js"></script>
   <script src="./hypervisor.js"></script>
   <script src="./anticheat.js"></script>
   <script src="./vbs.js"></script>

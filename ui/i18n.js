@@ -5,6 +5,10 @@
   const SUPPORTED = new Set(["ru", "en"]);
 
   const EN = {
+    "Скачивание и установка новой версии внутри программы. После обновления приложение перезапустится; настройки, путь и ярлыки сохранятся.": "Download and install new versions inside the app. It restarts after updating and keeps your settings, path and shortcuts.",
+    "Обновить и перезапустить": "Update and restart",
+    "Отменить загрузку": "Cancel download",
+    "Прогресс обновления": "Update progress",
     "Состояние VBS, целостности памяти и Credential Guard после сканирования.": "VBS, Memory Integrity and Credential Guard status after scanning.",
     "Нажмите «Сканировать», чтобы проверить компоненты.": "Click Scan to check the components.",
     "Windows не вернула состояние компонента.": "Windows did not return the component status.",
@@ -901,7 +905,7 @@
     ["Резервная копия:", "Backup:"],
     ["Удалено компонентов:", "Components removed:"],
     ["Системный модуль недоступен", "System module is unavailable"],
-    ["Crocodile Gena Studio 5.6.1 инициализирован", "Crocodile Gena Studio 5.6.1 initialized"],
+    ["Crocodile Gena Studio 5.6.3 инициализирован", "Crocodile Gena Studio 5.6.3 initialized"],
     ["Доступна версия", "Version available:"],
     ["Осталось", "Remaining"],
     ["локальная копия", "local copy"]

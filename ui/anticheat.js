@@ -36,6 +36,7 @@
   }
 
   function setBusy(scanning, label = "") {
+    window.cgsReportBusy?.("anticheat", scanning || state.removing);
     state.scanning = scanning;
     $("#ac-loading").classList.toggle("hidden", !scanning);
     $("#ac-list").classList.toggle("hidden", scanning);
@@ -113,6 +114,7 @@
     if (!backupDir) return;
 
     state.removing = true;
+    window.cgsReportBusy?.("anticheat-remove", true);
     $("#ac-scan-button").disabled = true;
     $("#ac-remove-all").disabled = true;
     render();
@@ -135,6 +137,7 @@
       if (typeof window.cgsShowModal === "function") await window.cgsShowModal("Не удалось удалить", String(error), { symbol: "!" });
     } finally {
       state.removing = false;
+      window.cgsReportBusy?.("anticheat-remove", false);
       await scan();
     }
   }

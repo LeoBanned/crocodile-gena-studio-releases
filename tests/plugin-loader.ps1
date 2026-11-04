@@ -11,7 +11,7 @@ function Assert-Test($Condition, [string]$Message) {
 }
 function Hash-Test([string]$Path) { return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash }
 
-[IO.File]::WriteAllText((Join-Path $taskTemp 'opensteamtool.toml'), "# custom`n[general]`nlog = true`n[lua]`npaths = [`n  'config/stplug-in', # old folder`n]`nother = 'keep'`n")
+[IO.File]::WriteAllText((Join-Path $taskTemp 'opensteamtool.toml'), "# custom`n[general]`nlog = true`n[lua]`npaths = [`n  'config/stplug-in', # old folder`n]`nother = 'keep'`n[cloud]`nenabled = true`nlibrary = 'cgs_cloud_redirect.dll'`n")
 [IO.File]::WriteAllText((Join-Path $taskTemp 'OpenSteamTool.dll'), 'old loader')
 [IO.Directory]::CreateDirectory((Join-Path $taskTemp 'config/stplug-in')) | Out-Null
 [IO.File]::WriteAllText((Join-Path $taskTemp 'config/stplug-in/123.lua'), 'legacy Lua')
@@ -24,6 +24,7 @@ foreach ($taskName in @('OpenSteamTool.dll', 'dwmapi.dll', 'xinput1_4.dll')) {
 }
 $taskConfig = [IO.File]::ReadAllText((Join-Path $taskTemp 'opensteamtool.toml'))
 Assert-Test ($taskConfig.Contains('config/lua') -and $taskConfig.Contains("other = 'keep'") -and $taskConfig.Contains('# custom')) 'Config settings lost'
+Assert-Test ($taskConfig.Contains("[cloud]`nenabled = true`nlibrary = 'cgs_cloud_redirect.dll'")) 'Plugin installation lost local cloud settings'
 Assert-Test (Test-Path -LiteralPath (Join-Path $taskTemp 'config/lua') -PathType Container) 'Lua folder missing'
 $taskBackups = @(Get-ChildItem -LiteralPath (Join-Path $taskTemp 'config/cgs-luatools-backups') -Directory)
 Assert-Test ($taskBackups.Count -eq 1) 'Missing backup'

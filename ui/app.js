@@ -5,6 +5,12 @@
   const invoke = tauri?.core?.invoke;
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  const activeOperations = new Set();
+  window.cgsReportBusy = (id, busy) => {
+    if (!id || id === "check-update-button") return;
+    if (busy) activeOperations.add(id); else activeOperations.delete(id);
+  };
+  window.addEventListener("cgs:busy-changed", ({ detail }) => window.cgsReportBusy(detail?.id, detail?.busy));
 
   const state = {
     gameDir: "",
@@ -131,6 +137,7 @@
     if (!invoke) return;
     try {
       const info = await invoke("platform_info");
+      window.cgsAppSession = info?.sessionId || null;
       if (!info?.os) return;
       document.body.dataset.platform = info.os;
       (info.windowsOnlyModules || []).forEach((name) => platformHiddenModules.add(name));
@@ -221,6 +228,7 @@
   }
 
   function switchView(name) {
+    if (state.updates?.installing && name !== "settings") return;
     if (!viewMeta[name]) return;
     if (hiddenModules.has(name) || platformHiddenModules.has(name)) name = "home";
     $$("[data-view-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.viewPanel === name));
@@ -1225,6 +1233,7 @@
       state.lua.loaded = true;
       if (state.lua.steamPath) localStorage.setItem("luaSteamPath", state.lua.steamPath);
       renderLuaStatus();
+      window.cgsLocalCloud?.refresh();
       luaLoadNames();
       if (document.querySelector('#view-lua.active')) window.cgsLoaderDialog?.check({steamPath:state.lua.steamPath || null});
       if (options.offerMillennium !== false && millennium?.status === "millennium_missing" && !state.lua.millenniumPrompted) {
@@ -1931,72 +1940,216 @@
     }
   }
 
+  const updateText = (ru, en) => window.cgsI18n?.language === 'en' ? en : ru;
+  const updateSnoozeKey = 'cgs-update-snooze-launches';
+  function updateSessionId() {
+    if(window.cgsAppSession) return window.cgsAppSession;
+    let id = sessionStorage.getItem('cgs-update-preview-session');
+    if(!id) { id = crypto.randomUUID(); sessionStorage.setItem('cgs-update-preview-session',id); }
+    return id;
+  }
+  function rememberUpdateSnooze(skipped) {
+    let entries;
+    try { entries = JSON.parse(localStorage.getItem('cgs-update-snooze-sessions') || '[]'); } catch (_) { entries = []; }
+    if(!Array.isArray(entries)) entries = [];
+    const id = updateSessionId();
+    entries = entries.filter(item => item?.id !== id).slice(-99);
+    entries.push({id,skipped});
+    localStorage.setItem('cgs-update-snooze-sessions',JSON.stringify(entries));
+  }
+  function consumeUpdateSnooze() {
+    try {
+      let entries;
+      try { entries = JSON.parse(localStorage.getItem('cgs-update-snooze-sessions') || '[]'); } catch (_) { entries = []; }
+      const previous = Array.isArray(entries) && entries.find(item => item?.id === updateSessionId());
+      if(previous) return !!previous.skipped;
+      const count = Number(localStorage.getItem(updateSnoozeKey));
+      if (Number.isInteger(count) && count > 0 && count <= 5) {
+        localStorage.setItem(updateSnoozeKey, String(count - 1));
+        rememberUpdateSnooze(true);
+        return true;
+      }
+      localStorage.removeItem(updateSnoozeKey);
+      rememberUpdateSnooze(false);
+    } catch (_) {}
+    return false;
+  }
   function renderUpdateDownloads(update = null) {
     state.updates.latest = update;
-    const actions = $("#update-download-actions");
-    const portable = $("#download-portable-button");
-    const installer = $("#download-installer-button");
-    portable.classList.toggle("hidden", !update?.portableUrl);
-    installer.classList.toggle("hidden", !update?.installerUrl);
-    actions.classList.toggle("hidden", !update?.portableUrl && !update?.installerUrl);
+    const button = $('#download-portable-button');
+    button.classList.toggle('hidden', !update?.available);
+    button.disabled = !update?.inAppSupported;
+    button.textContent = state.updates.installing
+      ? updateText('Ход обновления', 'Update progress')
+      : updateText('Обновить и перезапустить', 'Update and restart');
+    $('#update-download-actions').classList.toggle('hidden', !update?.available);
   }
-
-  async function openUpdateDownload(kind) {
+  function updateDialogControls() {
+    const busy = !!state.updates.installing;
+    $('#app-update-install').classList.toggle('hidden', busy);
+    $('#app-update-defer').classList.toggle('hidden', busy);
+    $('#app-update-cancel').classList.toggle('hidden', !busy);
+    $('#app-update-cancel').disabled = !!state.updates.cancelling || !!state.updates.committing;
+    $('#app-update-close').disabled = !!state.updates.committing;
+    $('#app-update-install').textContent = updateText('Обновить и перезапустить', 'Update and restart');
+    $('#app-update-defer').textContent = updateText('Отложить на 5 запусков', 'Remind me after 5 launches');
+    $('#app-update-cancel').textContent = updateText('Отменить обновление', 'Cancel update');
+    $('#app-update-close').setAttribute('aria-label', updateText('Закрыть', 'Close'));
+  }
+  function showUpdateDialog() {
     const update = state.updates.latest;
-    if (!update) return;
-    const url = kind === "portable" ? update.portableUrl : update.installerUrl;
-    await call("open_external", { url: url || update.releaseUrl });
+    if (!update?.inAppSupported) return;
+    $('#app-update-title').textContent = updateText(`Обновление до ${update.latestVersion}`, `Update to ${update.latestVersion}`);
+    $('#app-update-intro').textContent = updateText('Программа обновится и запустится автоматически. Настройки и ярлыки сохранятся.', 'The app updates and restarts automatically. Your settings and shortcuts stay in place.');
+    $('#app-update-notes-label').textContent = updateText('Что нового', 'What is new');
+    $('#app-update-notes').textContent = String(update.notes || '').trim();
+    $('#app-update-notes-wrap').hidden = !String(update.notes || '').trim();
+    if (!state.updates.installing) {
+      $('#app-update-phase').textContent = updateText('Готово к загрузке', 'Ready to download');
+      $('#app-update-detail').textContent = updateText('Можно отложить уведомление на следующие пять запусков. На шестом программа напомнит снова.', 'You can skip automatic reminders for the next five launches. The sixth launch will remind you again.');
+      $('#app-update-progress').value = 0;
+      $('#app-update-percent').textContent = '0%';
+      $('#app-update-progress-wrap').dataset.state = 'ready';
+    }
+    updateDialogControls();
+    $('#app-update-backdrop').classList.remove('hidden');
+    $('.app-shell').inert = true;
+    $('#app-update-install').focus();
   }
-
+  function updateProgress(value) {
+    const labels = {
+      preparing: updateText('Подготовка обновления…', 'Preparing update…'),
+      downloading: updateText('Скачивание обновления', 'Downloading update'),
+      retrying: updateText('Переподключение к серверу…', 'Reconnecting to the server…'),
+      verifying: updateText('Проверка целостности и версии EXE…', 'Verifying EXE integrity and version…'),
+      permission: updateText('Подтвердите запрос Windows…', 'Approve the Windows prompt…'),
+      installing: updateText('Подготовка установки…', 'Preparing installation…'),
+      restarting: updateText('Установка и перезапуск программы…', 'Installing and restarting the app…'),
+    };
+    state.updates.committing = value.phase === 'restarting';
+    const progress = $('#app-update-progress');
+    let detail = updateText('До начала замены EXE обновление можно отменить.', 'You can cancel before the EXE replacement begins.');
+    if (value.phase === 'downloading') {
+      const now = performance.now();
+      let samples = state.updates.downloadSamples || [];
+      if (samples.length && value.downloaded < samples.at(-1).bytes) samples = [];
+      samples.push({time:now,bytes:value.downloaded});
+      while (samples.length > 2 && now - samples[0].time > 3000) samples.shift();
+      state.updates.downloadSamples = samples;
+      const elapsed = (now - samples[0].time) / 1000;
+      const speed = elapsed > .05 ? (value.downloaded - samples[0].bytes) / elapsed : 0;
+      detail = `${(value.downloaded/1048576).toFixed(1)} / ${(value.total/1048576).toFixed(1)} MB`;
+      if (speed > 0) {
+        detail += ` · ${(speed/1048576).toFixed(2)} MB/s`;
+        const seconds = Math.max(1, Math.ceil((value.total-value.downloaded)/speed));
+        detail += updateText(` · осталось примерно ${seconds} с`, ` · about ${seconds}s remaining`);
+      }
+      progress.value = Math.min(100,value.percent || 0);
+      $('#app-update-percent').textContent = `${value.percent || 0}%`;
+    } else if (['verifying','permission','installing','restarting'].includes(value.phase)) {
+      progress.value = 100;
+      $('#app-update-percent').textContent = '100%';
+    } else {
+      progress.removeAttribute('value');
+      $('#app-update-percent').textContent = '…';
+      state.updates.downloadSamples = [];
+    }
+    const message = state.updates.cancelling
+      ? updateText('Отменяем обновление…', 'Cancelling update…')
+      : (labels[value.phase] || value.phase);
+    $('#app-update-phase').textContent = message;
+    $('#app-update-detail').textContent = detail;
+    $('#app-update-progress-wrap').dataset.state = 'working';
+    $('#update-status').textContent = message;
+    updateDialogControls();
+  }
+  async function cancelAppUpdate() {
+    if (!state.updates.installing || state.updates.cancelling || state.updates.committing) return;
+    state.updates.cancelling = true;
+    $('#app-update-phase').textContent = updateText('Отменяем обновление…', 'Cancelling update…');
+    updateDialogControls();
+    try { await call('cancel_update'); }
+    catch(error) { state.updates.cancelling = false; updateDialogControls(); toast(errorText(error), 'error'); }
+  }
+  function closeUpdateDialog() {
+    if (state.updates.installing) { cancelAppUpdate(); return; }
+    $('#app-update-backdrop').classList.add('hidden');
+    $('.app-shell').inert = false;
+  }
+  function deferUpdate() {
+    if (state.updates.installing) return;
+    try { localStorage.setItem(updateSnoozeKey, '5'); rememberUpdateSnooze(true); } catch (_) {}
+    state.updates.snoozedThisLaunch = true;
+    $('#app-update-backdrop').classList.add('hidden');
+    $('.app-shell').inert = false;
+    $('#update-status').textContent = updateText('Напомним об обновлении после следующих пяти запусков.', 'We will remind you after the next five launches.');
+  }
+  async function installAppUpdate() {
+    if (state.updates.installing || !state.updates.latest?.inAppSupported) return;
+    if (activeOperations.size || document.querySelector('[aria-busy="true"], [data-busy="true"]')) {
+      toast(updateText('Дождитесь завершения текущих операций перед обновлением.', 'Wait for current operations to finish before updating.'), 'info');
+      return;
+    }
+    state.updates.installing = true;
+    state.updates.cancelling = false;
+    state.updates.committing = false;
+    state.updates.downloadSamples = [];
+    $('#check-update-button').disabled = true;
+    $('#update-status').classList.remove('error');
+    renderUpdateDownloads(state.updates.latest);
+    updateProgress({phase:'preparing'});
+    try { await call('install_update', {version:state.updates.latest.latestVersion}); }
+    catch(error) {
+      const cancelled = !!state.updates.cancelling;
+      const message = errorText(error);
+      state.updates.installing = false;
+      state.updates.cancelling = false;
+      state.updates.committing = false;
+      $('#app-update-phase').textContent = cancelled ? updateText('Обновление отменено', 'Update cancelled') : updateText('Обновление не выполнено', 'Update failed');
+      $('#app-update-detail').textContent = message;
+      $('#app-update-progress-wrap').dataset.state = cancelled ? 'cancelled' : 'error';
+      $('#update-status').textContent = message;
+      $('#update-status').classList.toggle('error', !cancelled);
+      log(message, cancelled ? 'info' : 'error');
+      $('#check-update-button').disabled = false;
+      renderUpdateDownloads(state.updates.latest);
+      updateDialogControls();
+    }
+  }
   async function checkForUpdates(interactive = false) {
-    if (state.updates.checking || !invoke) return;
+    if (state.updates.checking || state.updates.installing || (!interactive && (state.updates.suppressAuto || state.updates.snoozedThisLaunch)) || !invoke) return;
     state.updates.checking = true;
-    const button = $("#check-update-button");
-    const status = $("#update-status");
-    setBusy(button, true, "Проверяем…");
-    status.classList.remove("available", "error");
-    status.textContent = "Подключение к GitHub…";
-
+    const button = $('#check-update-button');
+    const status = $('#update-status');
+    setBusy(button, true, 'Проверяем…');
+    status.classList.remove('available','error');
+    status.textContent = updateText('Подключение к GitHub…', 'Connecting to GitHub…');
     try {
-      const update = await call("check_for_update");
-      $("#update-current-version").textContent = update.currentVersion;
+      const update = await call('check_for_update');
+      $('#update-current-version').textContent = update.currentVersion;
+      renderUpdateDownloads(update.available ? update : null);
       if (!update.available) {
-        renderUpdateDownloads();
-        status.textContent = `Установлена актуальная версия ${update.currentVersion}`;
-        if (interactive) toast("У вас установлена последняя версия");
+        status.textContent = updateText(`Установлена актуальная версия ${update.currentVersion}`, `Version ${update.currentVersion} is up to date`);
+        if (interactive) toast(updateText('У вас установлена последняя версия', 'You have the latest version'));
         return;
       }
-
-      renderUpdateDownloads(update);
-      status.textContent = `Доступна версия ${update.latestVersion}`;
-      status.classList.add("available");
-      if (!interactive && state.updates.promptedVersion === update.latestVersion) return;
+      status.textContent = update.inAppSupported
+        ? updateText(`Доступна версия ${update.latestVersion}`, `Version ${update.latestVersion} is available`)
+        : updateText('В релизе нет проверяемого EXE для обновления внутри программы.', 'This release has no verified EXE for in-app updates.');
+      status.classList.add('available');
+      if (!update.inAppSupported || (!interactive && (state.updates.promptedVersion === update.latestVersion || activeOperations.size))) return;
       state.updates.promptedVersion = update.latestVersion;
-
-      const notes = String(update.notes || "").trim();
-      const shortNotes = notes.length > 700 ? `${notes.slice(0, 700).trim()}…` : notes;
-      const preferredUrl = update.portableUrl || update.installerUrl || update.releaseUrl;
-      const downloadLabel = update.portableUrl ? "Скачать EXE" : update.installerUrl ? "Скачать Setup" : "Открыть релиз";
-      const formatsHint = update.portableUrl && update.installerUrl
-        ? "\n\nВ настройках доступны два варианта: прямой EXE и установщик Setup."
-        : "";
-      const accepted = await showModal(
-        `Доступна версия ${update.latestVersion}`,
-        `${shortNotes || "Опубликована новая версия Crocodile Gena Studio."}${formatsHint}`,
-        { confirm: true, confirmText: downloadLabel, cancelText: "Позже", symbol: "↑" },
-      );
-      if (accepted) {
-        await call("open_external", { url: preferredUrl });
-      }
-    } catch (error) {
+      showUpdateDialog();
+    } catch(error) {
       const message = errorText(error);
       status.textContent = message;
-      status.classList.add("error");
-      log(`Проверка обновлений: ${message}`, "error");
-      if (interactive) toast(message, "error");
+      status.classList.add('error');
+      log(message, 'error');
+      if (interactive) toast(message,'error');
     } finally {
       state.updates.checking = false;
-      setBusy(button, false);
+      setBusy(button,false);
+      button.disabled = !!state.updates.installing;
     }
   }
 
@@ -2187,8 +2340,21 @@
       catch (error) { toast(errorText(error), "error"); }
     });
     $("#check-update-button").addEventListener("click", () => checkForUpdates(true));
-    $("#download-portable-button").addEventListener("click", () => openUpdateDownload("portable").catch((error) => toast(errorText(error), "error")));
-    $("#download-installer-button").addEventListener("click", () => openUpdateDownload("installer").catch((error) => toast(errorText(error), "error")));
+    $("#download-portable-button").addEventListener("click", showUpdateDialog);
+    $('#app-update-install').addEventListener('click', installAppUpdate);
+    $('#app-update-defer').addEventListener('click', deferUpdate);
+    $('#app-update-cancel').addEventListener('click', cancelAppUpdate);
+    $('#app-update-close').addEventListener('click', closeUpdateDialog);
+    document.addEventListener('keydown', (event) => {
+      if($('#app-update-backdrop').classList.contains('hidden')) return;
+      if(event.key === 'Escape') { event.preventDefault(); closeUpdateDialog(); }
+      if(event.key === 'Tab') {
+        const controls = [...$('#app-update-backdrop').querySelectorAll('button:not(:disabled),summary')].filter(el=>el.getClientRects().length);
+        const first=controls[0],last=controls.at(-1);
+        if(event.shiftKey && (document.activeElement===first || !controls.includes(document.activeElement))) { event.preventDefault();last?.focus(); }
+        else if(!event.shiftKey && (document.activeElement===last || !controls.includes(document.activeElement))) { event.preventDefault();first?.focus(); }
+      }
+    });
 
     const dropZone = $("#drop-zone");
     ["dragenter", "dragover"].forEach((name) => dropZone.addEventListener(name, (event) => { event.preventDefault(); dropZone.classList.add("dragover"); }));
@@ -2223,6 +2389,7 @@
   let lastDropAt = 0;
 
   async function handleFileDrop(input) {
+    if (state.updates?.installing) return;
     clearDropHighlights();
     const paths = [...new Set((input || []).filter((path) => typeof path === "string" && path.trim()))];
     if (!paths.length) return;
@@ -2245,6 +2412,7 @@
   async function boot() {
     bindEvents();
     await loadPlatformInfo();
+    state.updates.snoozedThisLaunch = !!invoke && consumeUpdateSnooze();
     applyModuleVisibility();
     applyAccent(localStorage.getItem("accent") || "mint");
     const requestedView = new URLSearchParams(window.location.search).get("view");
@@ -2273,9 +2441,22 @@
       if ($("#view-lua")?.classList.contains("active")) refreshMillenniumStatus();
       call("luatools_restore_manifests", { steamPath: state.lua.steamPath || null }).catch(() => {});
     }, 3_000);
-    log("Crocodile Gena Studio 5.6.1 инициализирован", "system");
+    log("Crocodile Gena Studio 5.6.3 инициализирован", "system");
     log(invoke ? "Все компоненты готовы к работе" : "Запустите установленное приложение", invoke ? "success" : "error");
-    if (invoke) setTimeout(() => checkForUpdates(false), 1800);
+    if (invoke) {
+      await tauri.event?.listen("cgs-update-progress", (event) => { if(state.updates.installing) updateProgress(event.payload); });
+      try {
+        const outcome = await call("update_launch_ready");
+        if (typeof outcome?.success === 'boolean') {
+          if (!outcome.success) state.updates.suppressAuto = true;
+          else { try { localStorage.removeItem(updateSnoozeKey); } catch (_) {} }
+          $("#update-status").textContent = outcome.message;
+          $("#update-status").classList.toggle("error", !outcome.success);
+          toast(outcome.message, outcome.success ? "success" : "error");
+        }
+      } catch(error) { log(errorText(error), "error"); }
+      setTimeout(() => checkForUpdates(false), 1800);
+    }
   }
 
   document.addEventListener("DOMContentLoaded", boot);

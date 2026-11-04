@@ -27,6 +27,7 @@
   }
 
   function setBusy(busy, label = "") {
+    window.cgsReportBusy?.("vbs", busy || state.changing);
     state.scanning = busy;
     ["#vbs-scan-button", "#vbs-enable-button", "#vbs-disable-button", "#vbs-test-button", "#vbs-fix-wmi", "#vbs-fix-dism", "#vbs-fix-sfc"].forEach((selector) => {
       const button = $(selector);
