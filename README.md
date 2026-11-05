@@ -19,8 +19,8 @@ Built for Windows. Powered by Rust and Tauri.
 **[Download](https://github.com/LeoBanned/crocodile-gena-studio-releases/releases/latest)** &nbsp;·&nbsp;
 **[Build from source](BUILD.md)** &nbsp;·&nbsp;
 **[Report an issue](https://github.com/LeoBanned/crocodile-gena-studio-releases/issues)** &nbsp;·&nbsp;
-**[Telegram](https://t.me/crocodilehub2)**
-**[Website](https://crocodilegenastudio.bond/)** &nbsp;·&nbsp;
+**[Telegram](https://t.me/crocodilehub2)** &nbsp;·&nbsp;
+**[Website](https://crocodilegenastudio.bond/)**
 
 <img src="docs/images/home-en-5.6.3.png" width="100%" alt="Crocodile Gena Studio 5.6.3 — English home screen in the Graphite theme" />
 
