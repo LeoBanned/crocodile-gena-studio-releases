@@ -2489,7 +2489,7 @@
       if ($("#view-lua")?.classList.contains("active")) refreshMillenniumStatus();
       call("luatools_restore_manifests", { steamPath: state.lua.steamPath || null }).catch(() => {});
     }, 3_000);
-    log("Crocodile Gena Studio 5.6.4 инициализирован", "system");
+    log("Crocodile Gena Studio 5.6.5 инициализирован", "system");
     log(invoke ? "Все компоненты готовы к работе" : "Запустите установленное приложение", invoke ? "success" : "error");
     if (invoke) {
       await tauri.event?.listen("cgs-update-progress", (event) => { if(state.updates.installing) updateProgress(event.payload); });

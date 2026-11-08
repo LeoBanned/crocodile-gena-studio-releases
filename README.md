@@ -6,11 +6,11 @@
 
 ### Your gaming laboratory.
 
-Seven workspaces for Steam tools, save backups, game components and launch management.<br/>
+Eight workspaces for Steam tools, save backups, game components and launch management.<br/>
 Built for Windows. Powered by Rust and Tauri.
 
 <p>
-  <img alt="Version 5.6.3" src="https://img.shields.io/badge/version-5.6.3-63f5c2?style=flat-square&labelColor=10141d" />
+  <img alt="Version 5.6.5" src="https://img.shields.io/badge/version-5.6.5-63f5c2?style=flat-square&labelColor=10141d" />
   <img alt="Windows 10 and 11, x64" src="https://img.shields.io/badge/Windows-10%20%2F%2011%20%C2%B7%20x64-82d9ff?style=flat-square&labelColor=10141d" />
   <img alt="Rust and Tauri 2" src="https://img.shields.io/badge/built%20with-Rust%20%2B%20Tauri%202-a987ff?style=flat-square&labelColor=10141d" />
   <img alt="Project code: GPL-3.0-only" src="https://img.shields.io/badge/project%20code-GPL--3.0--only-63f5c2?style=flat-square&labelColor=10141d" />
@@ -22,9 +22,9 @@ Built for Windows. Powered by Rust and Tauri.
 **[Telegram](https://t.me/crocodilehub2)** &nbsp;·&nbsp;
 **[Website](https://crocodilegenastudio.bond/)**
 
-<img src="docs/images/home-en-5.6.3.png" width="100%" alt="Crocodile Gena Studio 5.6.3 — English home screen in the Graphite theme" />
+<img src="docs/images/home-en-5.6.5.png" width="100%" alt="Crocodile Gena Studio 5.6.5 — English home screen in the Graphite theme" />
 
-<sub>The current English interface · Graphite theme · Mint accent</sub>
+<sub>Version 5.6.5 · English interface · Optional New Year decorations</sub>
 
 </div>
 
@@ -38,9 +38,9 @@ Scan a game folder, configure its components, back up progress and prepare its l
 | :--- | :--- | :--- |
 | Scan game directories, Steam libraries and common save locations. | Manage supported fixes, DLC configurations, manifests and launch options. | Follow operations in the log and use the backup or restore features provided by each module. |
 
-**Jump to:** [Modules](#seven-modules-one-workspace) · [Screenshots](#a-closer-look) · [What's new](#new-in-561) · [Get started](#get-started) · [Source](#source-and-licensing)
+**Jump to:** [Modules](#eight-modules-one-workspace) · [Screenshots](#a-closer-look) · [What's new](#new-in-565) · [Get started](#get-started) · [Source](#source-and-licensing)
 
-## Seven modules. One workspace.
+## Eight modules. One workspace.
 
 | Module | What you can do |
 | :--- | :--- |
@@ -51,6 +51,7 @@ Scan a game folder, configure its components, back up progress and prepare its l
 | **05 · Hypervisor** | Organize Crocodile-HV launches and shortcuts, configure experimental Steam Play integration, scan supported anti-cheat components and inspect VBS status. |
 | **06 · Cracks & Downloads** | Browse the community catalog, download archives and extract selected contents into a game directory with backups of replaced files. |
 | **07 · Utilities** | Access companion tools and their guides from a dedicated toolbox. |
+| **08 · Partners** | Discover partner communities and projects, with descriptions and direct links. The catalog refreshes without an app update. |
 
 <details>
 <summary><strong>Explore the modules in more detail</strong></summary>
@@ -119,6 +120,7 @@ Other tools in this workspace include:
 - Status display for **VBS**, **Memory Integrity / HVCI** and **Credential Guard**.
 - DSE and test-signing information.
 - Separate **Fix WMI**, **DISM RestoreHealth** and **SFC Scannow** actions.
+- An in-place protection check after adding a game. If relevant protections are active, review them and choose **Disable protections & restart** or **Later**, without leaving the workspace. This action does not enable test signing or open F7 startup options. Windows updates or policy changes can require another check later.
 
 Some actions change Windows security or boot settings and may require administrator access or a restart.
 
@@ -137,6 +139,12 @@ Downloaded archive contents are not automatically executed after extraction.
 ### 07 · Utilities
 
 A hub for companion software and related guides. External tools remain separate projects with their own requirements, behavior and licenses.
+
+### 08 · Partners
+
+Explore partner communities, including **XERO NATION**, through compact cards with descriptions, highlights and direct links. The catalog can be refreshed inside the app without installing a new version.
+
+The separate **Social Hub** brings the developer and community Telegram and Discord links together in one window, with Author and Community labels.
 
 </details>
 
@@ -161,7 +169,7 @@ A hub for companion software and related guides. External tools remain separate 
 </tr>
 <tr>
 <td><a href="docs/images/appearance-en.png"><img src="docs/images/appearance-en.png" width="100%" alt="English appearance settings" /></a></td>
-<td><a href="docs/images/home-light-en.png"><img src="docs/images/home-light-en.png" width="100%" alt="English home screen in the White theme" /></a></td>
+<td><a href="docs/images/home-light-en-5.6.5.png"><img src="docs/images/home-light-en-5.6.5.png" width="100%" alt="English home screen in the White theme" /></a></td>
 </tr>
 <tr>
 <td>Themes, accents, sidebar layout and language.</td>
@@ -169,7 +177,7 @@ A hub for companion software and related guides. External tools remain separate 
 </tr>
 </table>
 
-<sub>Previews are captured from the current 5.6.3 interface in English. Example paths, profiles and game entries are demonstration data. Click the gallery images to view them at full size.</sub>
+<sub>Home previews show version 5.6.5 in English. Other module previews illustrate their workflows; example paths, profiles and game entries are demonstration data. Click the gallery images to view them at full size.</sub>
 
 ## Make the interface yours
 
@@ -177,32 +185,29 @@ A hub for companion software and related guides. External tools remain separate 
 
 Choose Graphite, Glass, Minimal, Neon, Midnight, Obsidian, Forest, Plum, Warm, Arctic or White. Adjust typography, corner shapes, effects and sidebar layout. Reorder modules or hide the ones you do not use.
 
-And yes, **Gena** can keep you company in the sidebar.
+Choose **English or Russian on first launch**; your choice is remembered. Change it anytime in Settings.
 
-## New in 5.6.3
+And yes, **Gena** can keep you company in the sidebar — now with a festive hat. Enable or disable **New Year decorations** in **Settings → Appearance**: falling snow, a glowing garland, pine branches and hanging ornaments follow your selected theme. Motion preferences are respected.
 
-- **In-app updates on Windows:** download a verified release EXE, replace the
-  current executable in place, and restart automatically. Existing shortcuts
-  keep their targets. Failed startup triggers a rollback to the previous EXE.
-  The notification window shows progress, speed and estimated time remaining.
-  Cancel before replacement or postpone automatic reminders for five app
-  launches; the sixth launch reminds you again. Manual checks remain available.
-- **Local Cloud for manifest games:** choose a local save folder and enable or
-  disable the embedded CloudRedirect engine directly in CrocLua.
-- **Automatic Steam restart:** launch-option setup and restoration now handle Steam shutdown and reopening.
-- **Steam account selection:** active-account detection with a manual selector for multiple saved profiles.
-- **Three visible VBS components:** VBS, HVCI and Credential Guard, with their reported states.
-- **Updated bundled loader DLLs:** the main application and Crocodile Manifest use the refreshed standard bundle.
-- **More consistent themes:** corrected surfaces and colors across the Hypervisor workspace and related panels.
+## New in 5.6.5
+
+- **New Year decorations:** falling snow, pine branches, hanging ornaments, a softly shimmering garland and a festive hat for Gena. Switch the decorations off in **Settings → Appearance**. Your theme and accent stay selected.
+- **Choose your language on first launch:** English and Russian are offered once; existing language preferences are kept.
+- **Protection setup in Hypervisor:** after adding a game, the app checks the relevant protection settings. Review any active protections and choose to disable them and restart, or postpone, directly in the same workspace.
+- **Cleaner update notifications:** release notes display readable headings, lists and emphasis, with scrolling that matches the app's theme.
+
+**Also included from 5.6.4:** the Partners workspace, Social Hub, and the Local Cloud synchronization fix for games added through Lua and manifests. If the app offers a Local Cloud component update after upgrading, accept it to apply the component fix.
 
 ## Get started
 
 ### Download a release
 
 1. Open the **[Releases page](https://github.com/LeoBanned/crocodile-gena-studio-releases/releases/latest)**.
-2. Download the available package for **Windows x64**.
-3. If using a portable ZIP, extract the entire package and keep its accompanying folders together.
-4. Launch the application and choose a module from the sidebar.
+2. Download **CrocodileGenaStudio.exe** for **Windows x64**.
+3. Place it in a folder of your choice and run it.
+4. Choose your interface language on first launch, then open a module from the sidebar.
+
+Already using the app? Check for updates in **Settings** to download and restart into the new version without opening a browser.
 
 The interface language, theme and layout can be changed in **Settings**.
 
@@ -261,7 +266,7 @@ Bundled DLLs, executables and external tools retain their respective licenses. T
 
 Found a bug? Open an **[issue](https://github.com/LeoBanned/crocodile-gena-studio-releases/issues)** with your application version, Windows version, affected module, reproduction steps and relevant log output.
 
-**[Project updates & developer contact](https://t.me/crocodilehub2)** &nbsp;·&nbsp; **[Pirate Station community](https://t.me/piratestationn)**
+**[Project updates & developer contact](https://t.me/crocodilehub2)** &nbsp;·&nbsp; **[Pirate Station community](https://t.me/piratestationn)** &nbsp;·&nbsp; **[Discord](https://discord.gg/Vwp5DAnFG)**
 
 ---
 
