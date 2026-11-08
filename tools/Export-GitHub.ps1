@@ -47,7 +47,7 @@ try {
         Copy-ExportFile 'СмакиАпи/smaki.dll' 'SmokeAPI/SmokeAPI64.dll'
         Copy-ExportFile 'СмакиАпи/smaki32.dll' 'SmokeAPI/SmokeAPI86.dll'
     }
-    foreach ($taskFile in @('dlc.test.cjs','vbs.test.cjs','workspace.test.cjs','plugin-loader.ps1','local-cloud.cjs','local-cloud-scope.cpp','local-cloud-layout.cpp','partners.cjs','updater-e2e.cjs','updater-ui.cjs','onboarding.cjs','updater-fixture.cpp','updater-fixture.rc')) { Copy-ExportFile "tests/$taskFile" }
+    foreach ($taskFile in @('dlc.test.cjs','vbs.test.cjs','workspace.test.cjs','plugin-loader.ps1','local-cloud.cjs','local-cloud-scope.cpp','local-cloud-layout.cpp','partners.cjs','updater-e2e.cjs','updater-ui.cjs','onboarding.cjs','holiday.cjs','updater-fixture.cpp','updater-fixture.rc')) { Copy-ExportFile "tests/$taskFile" }
     Copy-ExportFile 'README.en.md'
     Copy-ExportFile 'CROCLUA-DLL.md'
     Copy-ExportFile 'src-tauri/resources/hypervisor/Crocodile-HV.exe'

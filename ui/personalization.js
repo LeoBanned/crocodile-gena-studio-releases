@@ -13,7 +13,7 @@
     tahoma: 'Tahoma, "Segoe UI", sans-serif',
     consolas: 'Consolas, "Cascadia Mono", monospace',
   };
-  const DEFAULTS = { theme: "graphite", sidebar: "full", scale: 100, shape: "soft", font: "system", weight: "regular", contrast: "normal", motion: true, glow: true, mascot: true, mascotPlace: "sidebar", reactions: true, order: MODULES };
+  const DEFAULTS = { theme: "graphite", sidebar: "full", scale: 100, shape: "soft", font: "system", weight: "regular", contrast: "normal", motion: true, glow: true, holiday: true, mascot: true, mascotPlace: "sidebar", reactions: true, order: MODULES };
   const root = document.documentElement;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const $ = (selector) => document.querySelector(selector);
@@ -32,6 +32,7 @@
       weight: choice(input.weight, ["light", "regular", "bold"], "regular"),
       contrast: choice(input.contrast, ["normal", "high"], "normal"),
       motion: typeof input.motion === "boolean" ? input.motion : true,
+      holiday: typeof input.holiday === "boolean" ? input.holiday : true,
       glow: typeof input.glow === "boolean" ? input.glow : true,
       mascot: typeof input.mascot === "boolean" ? input.mascot : true,
       mascotPlace: choice(input.mascotPlace, ["sidebar", "floating"], "sidebar"),
@@ -61,6 +62,7 @@
         <path class="croc-crest" d="m41 55-5-13 14 3 3-17 13 12 12-12 5 17"/>
         <path class="croc-face" d="M41 54c-2-23 27-33 43-15 5 6 6 12 6 18 9-1 24-1 32 2 10 4 9 20-1 25-12 7-45 9-67 0-14-5-17-18-13-30z"/>
         <path class="croc-jaw" d="M47 72c14 10 48 12 77 0-1 8-3 12-13 15-18 5-47 3-57-3z"/>
+        <g class="holiday-mascot-hat"><path fill="#ba3e51" d="M42 34C47 7 78 4 98 24L88 29C78 15 67 22 66 35Z"/><path fill="#f5ede0" d="M42 31Q64 26 84 33L83 41Q62 35 41 39Z"/><circle fill="#f5ede0" cx="97" cy="27" r="7"/></g>
         <g class="croc-eyes"><ellipse cx="57" cy="50" rx="9" ry="11"/><ellipse cx="78" cy="50" rx="8" ry="10"/><g class="croc-pupils"><ellipse cx="60" cy="51" rx="3" ry="5"/><ellipse cx="80" cy="51" rx="3" ry="5"/></g></g>
         <path class="croc-mouth" d="M56 72c17 8 43 8 59-1"/>
         <path class="croc-teeth" d="m75 78 4 6 4-6m15-1 3 5 4-6"/>
@@ -85,6 +87,7 @@
     root.dataset.uiContrast = settings.contrast;
     root.style.setProperty("--font", FONTS[settings.font]);
     root.dataset.uiMotion = motionEnabled() ? "on" : "off";
+    root.dataset.uiHoliday = settings.holiday ? "on" : "off";
     root.dataset.uiGlow = settings.glow ? "on" : "off";
     root.dataset.uiMascotPlace = settings.mascotPlace;
     root.style.setProperty("--ui-scale", String(settings.scale / 100));
@@ -140,7 +143,7 @@
     $("#ui-contrast").checked = settings.contrast === "high";
     $("#extra-theme-selected").textContent = THEME_LABELS[settings.theme] || "7";
     $("#extra-theme-selected").classList.toggle("selected", Boolean(THEME_LABELS[settings.theme]));
-    for (const [id, key] of [["ui-motion", "motion"], ["ui-glow", "glow"], ["ui-mascot", "mascot"], ["ui-mascot-reactions", "reactions"]]) $("#" + id).checked = settings[key];
+    for (const [id, key] of [["ui-motion", "motion"], ["ui-glow", "glow"], ["ui-holiday", "holiday"], ["ui-mascot", "mascot"], ["ui-mascot-reactions", "reactions"]]) $("#" + id).checked = settings[key];
     const widget = $("#mascot-widget");
     widget.hidden = !settings.mascot;
     widget.classList.toggle("mascot-floating", settings.mascotPlace === "floating");
@@ -264,7 +267,7 @@
     $("#ui-scale").addEventListener("input", (event) => update({ scale: Number(event.target.value) }));
     $("#ui-font").addEventListener("change", (event) => update({ font: event.target.value }));
     $("#ui-contrast").addEventListener("change", (event) => update({ contrast: event.target.checked ? "high" : "normal" }));
-    for (const [id, key] of [["ui-motion", "motion"], ["ui-glow", "glow"], ["ui-mascot", "mascot"], ["ui-mascot-reactions", "reactions"]]) $("#" + id).addEventListener("change", (event) => {
+    for (const [id, key] of [["ui-motion", "motion"], ["ui-glow", "glow"], ["ui-holiday", "holiday"], ["ui-mascot", "mascot"], ["ui-mascot-reactions", "reactions"]]) $("#" + id).addEventListener("change", (event) => {
       update({ [key]: event.target.checked });
       if (key === "reactions" || key === "mascot") settle();
     });

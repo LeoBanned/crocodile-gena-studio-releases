@@ -1,0 +1,41 @@
+.holiday-mascot-hat, .holiday-season, .holiday-snow { display: none; }
+[data-ui-holiday="on"] .holiday-mascot-hat { display: initial; }
+[data-ui-holiday="on"] .holiday-season { display: flex; }
+.holiday-setting { gap: 20px; padding: 17px 0; border-bottom: 1px solid var(--line); }
+.holiday-setting strong { display: block; font-size: 11px; }
+.holiday-setting small { display: block; margin-top: 6px; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.holiday-season { align-items: center; gap: 14px; color: var(--accent); pointer-events: none; flex-shrink: 0; }
+.holiday-season svg { width: 132px; height: 48px; overflow: visible; }
+.holiday-season .holiday-wire { fill: none; stroke: currentColor; stroke-width: 1; opacity: .32; }
+.holiday-season .holiday-bulb { fill: currentColor; }
+.holiday-season .holiday-bulb:nth-of-type(even) { fill: #d5ac67; }
+.holiday-season span { font-size: 9px; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; }
+[data-ui-theme="white"] .holiday-season { color: #317b72; }
+.holiday-snow { position: fixed; inset: 52px 0 0; width: 100%; height: calc(100% - 52px); z-index: 25; pointer-events: none; }
+[data-ui-holiday="on"][data-ui-motion="on"] .holiday-snow { display: block; }
+[data-ui-contrast="high"] .holiday-snow { display: none; }
+[data-ui-glow="on"] .holiday-bulb { filter: drop-shadow(0 0 3px currentColor); }
+@media (max-width: 1050px) { .holiday-season svg { width: 80px; } .holiday-season span { font-size: 8px; letter-spacing: .04em; } }
+@media (max-width: 720px) { .holiday-season svg { display: none; } }
+@media (prefers-reduced-motion: reduce) { .holiday-snow { display: none !important; } }
+.holiday-hero-scene { display: none; position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; border-radius: inherit; }
+[data-ui-holiday="on"] .holiday-hero-scene { display: block; }
+.holiday-pine { position: absolute; left: 0; top: 0; width: 240px; height: 116px; }
+.holiday-needles { fill: none; stroke: #498a74; stroke-width: 1.4; opacity: .75; }
+.holiday-berries { fill: #c4696d; }
+.holiday-ornaments { position: absolute; right: 20px; top: 0; width: 160px; height: 205px; overflow: visible; }
+.holiday-ornament > path:first-child { stroke: #bd9d65; stroke-width: .8; }
+.holiday-ornament rect { fill: #c5a971; }
+.holiday-ball-detail { fill: none; stroke: #f5e8c9; stroke-width: .8; opacity: .6; }
+.holiday-star { fill: none; stroke: #d8bd83; stroke-width: 1; }
+[data-ui-holiday="on"] .home-hero { border-color: rgba(var(--accent-rgb), .24); }
+[data-ui-holiday="on"] .home-hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1; border-radius: inherit; box-shadow: inset 0 1px 0 rgba(225,240,245,.12); background: radial-gradient(ellipse at 0 0,rgba(119,189,160,.09),transparent 46%); }
+[data-ui-motion="on"] .holiday-bulb { animation: holiday-shimmer 4s ease-in-out infinite alternate; }
+[data-ui-motion="on"] .holiday-bulb:nth-of-type(2n) { animation-delay: -2s; }
+[data-ui-motion="on"] .holiday-ornament { transform-origin: top center; animation: holiday-sway 7s ease-in-out infinite alternate; }
+[data-ui-motion="on"] .holiday-ornament-two { animation-delay: -4s; animation-duration: 9s; }
+.ui-background .holiday-ornament, .ui-background .holiday-bulb { animation-play-state: paused; }
+@keyframes holiday-shimmer { from { opacity: .55; } to { opacity: 1; } }
+@keyframes holiday-sway { from { transform: rotate(-1.5deg); } to { transform: rotate(1.5deg); } }
+@media (prefers-reduced-motion: reduce) { .holiday-ornament, .holiday-bulb { animation: none !important; } }
+@media (max-width: 1050px) { .holiday-pine { width: 210px; height: 102px; } .holiday-ornaments { width: 110px; height: 141px; right: 5px; } }

@@ -487,6 +487,8 @@
     "ИНТЕРФЕЙС": "INTERFACE",
     "Внешний вид": "Appearance",
     "Выберите цвет светового акцента. Настройка сохраняется локально.": "Choose the accent color. This setting is stored locally.",
+    "Новогоднее оформление": "New Year decorations",
+    "Снег и праздничные детали. Ваш стиль сохраняется.": "Snow and festive details. Your theme stays yours.",
     "Язык интерфейса": "Interface language",
     "Меняется моментально без перезапуска": "Changes instantly without restarting",
     "Русский": "Russian",
