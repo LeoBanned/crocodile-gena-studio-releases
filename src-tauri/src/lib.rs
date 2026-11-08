@@ -16,6 +16,7 @@ mod hypervisor;
 mod hypervisor;
 mod luatools;
 mod lua_loader;
+mod local_cloud;
 mod loader_github;
 #[cfg(target_os = "windows")]
 mod millennium;
@@ -34,6 +35,7 @@ mod game_artwork;
 #[cfg(target_os = "windows")]
 mod steam_hv;
 mod updates;
+mod update_core;
 #[cfg(target_os = "windows")]
 mod vbs;
 #[cfg(not(target_os = "windows"))]
@@ -53,6 +55,7 @@ use windows::{
 };
 
 const EMBEDDED_CORE_COMPONENTS: &[(&str, &[u8])] = &[
+    ("winmm.dll", include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../backend/core_engine/winmm.dll"))),
     (
         "SteamFix64.dll",
         include_bytes!(concat!(
@@ -155,6 +158,7 @@ fn open_external(url: String) -> Result<(), String> {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PlatformInfo {
+    session_id: String,
     os: &'static str,
     windows: bool,
     windows_only_modules: Vec<&'static str>,
@@ -162,7 +166,9 @@ struct PlatformInfo {
 
 #[tauri::command]
 fn platform_info() -> PlatformInfo {
+    static SESSION_ID: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     PlatformInfo {
+        session_id: SESSION_ID.get_or_init(||uuid::Uuid::new_v4().to_string()).clone(),
         os: std::env::consts::OS,
         windows: cfg!(target_os = "windows"),
         windows_only_modules: if cfg!(target_os = "windows") {
@@ -294,6 +300,9 @@ pub fn run() {
             dlc::install_dlc_unlocker,
             dlc::uninstall_dlc_unlocker,
             luatools::luatools_status,
+            local_cloud::local_cloud_status,
+            local_cloud::local_cloud_set,
+            local_cloud::local_cloud_update_component,
             luatools::luatools_update_loader,
             lua_loader::luatools_loader_info,
             loader_github::luatools_check_loader_updates,
@@ -352,6 +361,9 @@ pub fn run() {
             steam::steam_drm_info,
             updates::check_for_update,
             updates::updates_page_url,
+            updates::install_update,
+            updates::cancel_update,
+            updates::update_launch_ready,
         ])
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
@@ -368,20 +380,53 @@ fn extract_embedded(
     folder: &str,
     components: &[(&str, &[u8])],
 ) -> Option<std::path::PathBuf> {
-    let directory = app.path().app_local_data_dir().ok()?.join(folder);
+    extract_embedded_to(&app.path().app_local_data_dir().ok()?,folder,components)
+}
+
+fn extract_embedded_to(
+    base:&std::path::Path,
+    folder:&str,
+    components:&[(&str,&[u8])],
+)->Option<std::path::PathBuf>{
+    use sha2::{Digest,Sha256};
+    use std::io::Write;
+    // Content-addressed resources keep an EXE-only update self-contained and
+    // avoid replacing DLLs still loaded by a running game from an older build.
+    let mut digest=Sha256::new();
+    for (name,bytes) in components {digest.update(name.as_bytes());digest.update((bytes.len() as u64).to_le_bytes());digest.update(bytes);}
+    let fingerprint=format!("{:x}",digest.finalize());
+    let directory = base.join("embedded-components").join(format!("{folder}-{}",&fingerprint[..16]));
     std::fs::create_dir_all(&directory).ok()?;
 
     for (name, contents) in components {
         let target = directory.join(name);
-        let is_current = std::fs::metadata(&target)
-            .map(|metadata| metadata.is_file() && metadata.len() == contents.len() as u64)
+        let is_current = std::fs::read(&target)
+            .map(|bytes| bytes.as_slice()==*contents)
             .unwrap_or(false);
         if !is_current {
-            std::fs::write(&target, contents).ok()?;
+            let mut temp=tempfile::NamedTempFile::new_in(&directory).ok()?;
+            temp.write_all(contents).and_then(|_|temp.as_file().sync_all()).ok()?;
+            temp.persist(&target).ok()?;
         }
     }
 
     Some(directory)
+}
+
+#[cfg(test)]
+mod embedded_update_tests {
+    #[test]
+    fn updater_resources_follow_content_and_repair_same_size_corruption(){
+        let temp=tempfile::tempdir().unwrap();
+        let old=super::extract_embedded_to(temp.path(),"core",&[("test.dll",b"old")]).unwrap();
+        std::fs::write(old.join("test.dll"),b"bad").unwrap();
+        assert_eq!(super::extract_embedded_to(temp.path(),"core",&[("test.dll",b"old")]).unwrap(),old);
+        assert_eq!(std::fs::read(old.join("test.dll")).unwrap(),b"old");
+        let new=super::extract_embedded_to(temp.path(),"core",&[("test.dll",b"new")]).unwrap();
+        assert_ne!(new,old);
+        assert_eq!(std::fs::read(new.join("test.dll")).unwrap(),b"new");
+        assert_eq!(std::fs::read(old.join("test.dll")).unwrap(),b"old");
+    }
 }
 
 fn extract_embedded_core(app: &AppHandle) -> Option<std::path::PathBuf> {
@@ -389,6 +434,8 @@ fn extract_embedded_core(app: &AppHandle) -> Option<std::path::PathBuf> {
 }
 
 pub(crate) fn core_engine_path(app: &AppHandle) -> std::path::PathBuf {
+    #[cfg(not(debug_assertions))]
+    if let Some(directory)=extract_embedded_core(app){return directory;}
     let mut candidates = Vec::new();
     if let Ok(resource_dir) = app.path().resource_dir() {
         candidates.extend([
@@ -430,6 +477,8 @@ pub(crate) fn core_engine_path(app: &AppHandle) -> std::path::PathBuf {
 }
 
 pub(crate) fn dlc_unlocker_path(app: &AppHandle) -> std::path::PathBuf {
+    #[cfg(not(debug_assertions))]
+    if let Some(directory)=extract_embedded(app,"CreamAPI",EMBEDDED_DLC_COMPONENTS){return directory;}
     let mut candidates = Vec::new();
     if let Ok(resource_dir) = app.path().resource_dir() {
         candidates.extend([

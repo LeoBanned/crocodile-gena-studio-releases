@@ -1,6 +1,16 @@
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
+#[cfg(windows)]
+mod seamless;
+
+#[derive(Debug, Default, Deserialize)]
+struct AssetVerification {
+    #[serde(default)]
+    size: u64,
+    #[serde(default)]
+    digest: Option<String>,
+}
 
 const LATEST_RELEASE_API: &str =
     "https://api.github.com/repos/LeoBanned/crocodile-gena-studio-releases/releases/latest";
@@ -11,6 +21,8 @@ const USER_AGENT: &str = "Crocodile-Gena-Studio-Update-Checker";
 struct GithubAsset {
     name: String,
     browser_download_url: String,
+    #[serde(flatten)]
+    verification: AssetVerification,
 }
 
 #[derive(Debug, Deserialize)]
@@ -33,6 +45,7 @@ pub struct UpdateInfo {
     pub release_url: String,
     pub installer_url: Option<String>,
     pub portable_url: Option<String>,
+    pub in_app_supported: bool,
 }
 
 fn version_parts(version: &str) -> Option<Vec<u64>> {
@@ -132,6 +145,11 @@ pub async fn check_for_update() -> Result<UpdateInfo, String> {
 
 fn check_for_update_blocking() -> Result<UpdateInfo, String> {
     let current = env!("CARGO_PKG_VERSION").to_string();
+    let release = fetch_release()?;
+    release_info(&release, current)
+}
+
+fn fetch_release() -> Result<GithubRelease, String> {
     let client = Client::builder()
         .timeout(Duration::from_secs(15))
         .build()
@@ -156,6 +174,10 @@ fn check_for_update_blocking() -> Result<UpdateInfo, String> {
     let release: GithubRelease = response
         .json()
         .map_err(|error| format!("GitHub вернул некорректный ответ: {error}"))?;
+    Ok(release)
+}
+
+fn release_info(release: &GithubRelease, current: String) -> Result<UpdateInfo, String> {
     let latest = release
         .tag_name
         .trim()
@@ -181,7 +203,64 @@ fn check_for_update_blocking() -> Result<UpdateInfo, String> {
         portable_url: portable_url(&release),
         current_version: current,
         latest_version: latest,
+        in_app_supported: cfg!(windows)
+            && release
+                .assets
+                .iter()
+                .any(|a| canonical_asset(&a.name) && asset_hash(a).is_ok()),
     })
+}
+
+fn canonical_asset(name: &str) -> bool {
+    name.eq_ignore_ascii_case("CrocodileGenaStudio.exe")
+        || name.eq_ignore_ascii_case("crocodile-gena-studio.exe")
+}
+fn asset_hash(asset: &GithubAsset) -> Result<String, String> {
+    if !canonical_asset(&asset.name)
+        || !(1024 * 1024..=256 * 1024 * 1024).contains(&asset.verification.size)
+    {
+        return Err("В релизе отсутствует подходящий EXE для обновления".into());
+    }
+    let hash = asset
+        .verification
+        .digest
+        .as_deref()
+        .and_then(|v| v.strip_prefix("sha256:"))
+        .filter(|v| v.len() == 64 && v.bytes().all(|b| b.is_ascii_hexdigit()))
+        .ok_or("GitHub не предоставил SHA-256 для EXE. Повторно загрузите файл в релиз.")?;
+    Ok(hash.to_ascii_lowercase())
+}
+
+#[tauri::command]
+pub async fn install_update(app: tauri::AppHandle, version: String) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        return seamless::install(app, version).await;
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (app, version);
+        Err("Обновление внутри программы пока доступно только в Windows.".into())
+    }
+}
+#[tauri::command]
+pub fn cancel_update() {
+    #[cfg(windows)]
+    seamless::cancel();
+}
+#[tauri::command]
+pub fn update_launch_ready(
+    app: tauri::AppHandle,
+) -> Result<Option<crate::update_core::Outcome>, String> {
+    #[cfg(windows)]
+    {
+        return seamless::startup(app);
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Ok(None)
+    }
 }
 
 #[tauri::command]
@@ -219,10 +298,12 @@ mod tests {
                 GithubAsset {
                     name: "portable.exe".into(),
                     browser_download_url: "https://example.test/portable.exe".into(),
+                    verification: AssetVerification::default(),
                 },
                 GithubAsset {
                     name: "Crocodile Gena Studio_4.0.1_x64-setup.exe".into(),
                     browser_download_url: "https://example.test/setup.exe".into(),
+                    verification: AssetVerification::default(),
                 },
             ],
         };
@@ -247,10 +328,12 @@ mod tests {
                 GithubAsset {
                     name: "alternate.exe".into(),
                     browser_download_url: "https://example.test/alternate.exe".into(),
+                    verification: AssetVerification::default(),
                 },
                 GithubAsset {
                     name: "crocodile-gena-studio.exe".into(),
                     browser_download_url: "https://example.test/crocodile-gena-studio.exe".into(),
+                    verification: AssetVerification::default(),
                 },
             ],
         };

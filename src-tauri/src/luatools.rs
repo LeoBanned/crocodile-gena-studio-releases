@@ -645,7 +645,7 @@ fn patch_lua(content: &str, auto_update: bool, appid: &str) -> String {
 
 /// Ссылки setManifestid учитываются и в закомментированном виде: режим автообновления
 /// специально комментирует их, но соответствующие manifest-файлы остаются частью пакета.
-fn parse_manifest_refs(content: &str) -> BTreeSet<(String, String)> {
+pub(crate) fn parse_manifest_refs(content: &str) -> BTreeSet<(String, String)> {
     let mut refs = BTreeSet::new();
     for line in content.lines() {
         let lower = line.to_ascii_lowercase();

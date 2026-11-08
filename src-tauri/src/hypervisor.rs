@@ -805,7 +805,7 @@ fn is_admin() -> bool {
         .is_ok_and(|status| status.success())
 }
 
-fn process_name_running(name: &str) -> Result<bool, String> {
+pub(crate) fn process_name_running(name: &str) -> Result<bool, String> {
     let output = Command::new(system_tool("tasklist.exe"))
         .args(["/FI", &format!("IMAGENAME eq {name}"), "/FO", "CSV", "/NH"])
         .creation_flags(CREATE_NO_WINDOW)

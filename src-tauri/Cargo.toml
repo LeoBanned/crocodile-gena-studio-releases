@@ -1,6 +1,6 @@
 [package]
 name = "crocodile-gena-studio"
-version = "5.6.1"
+version = "5.6.4"
 license = "GPL-3.0-only"
 description = "CrocodileGena Studio desktop application"
 authors = ["CrocodileGena Studio"]
@@ -26,6 +26,7 @@ zip = { version = "2", default-features = false, features = ["deflate", "aes-cry
 unrar = "0.5.8"
 tempfile = "3"
 uuid = { version = "1", features = ["v4"] }
+tokio = { version = "1", features = ["rt", "time"] }
 
 [target.'cfg(windows)'.dependencies]
 arboard = { version = "3", default-features = false }

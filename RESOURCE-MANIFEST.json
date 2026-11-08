@@ -1,0 +1,147 @@
+[
+  {
+    "path": "backend/core_engine/EOSSDK-Win64-Shipping.dll",
+    "bytes": 14641664,
+    "sha256": "2e4814de835eda014fc2f4f533c93b1c510dc518ca1bb00e870c626cbea51cf8"
+  },
+  {
+    "path": "backend/core_engine/EpicFix64.dll",
+    "bytes": 640512,
+    "sha256": "daadcd0c892dd11be41162b604730763e66658fe4c3726d7d908cfeea5cc11a9"
+  },
+  {
+    "path": "backend/core_engine/SteamFix64.dll",
+    "bytes": 1416192,
+    "sha256": "bb44a42ccadd9c5ed6dd7b8baf35059497d894c4de19a63f8907d48b68ae047b"
+  },
+  {
+    "path": "backend/core_engine/winmm_unity.dll",
+    "bytes": 22016,
+    "sha256": "8c6649fb8f73ee2af7eb6b32b134e44ed5c506cc6d843b250efb515615d3548a"
+  },
+  {
+    "path": "backend/core_engine/winmm.dll",
+    "bytes": 502272,
+    "sha256": "61d071e40fb1136da66bf12213062a47eccadd7556171b97381fbc937e978b0d"
+  },
+  {
+    "path": "CreamAPI/steam_api.dll",
+    "bytes": 682856,
+    "sha256": "23e91e44de1adbd0544a578ab80e46c968f9394e5b419240034a55a59b131675"
+  },
+  {
+    "path": "CreamAPI/steam_api64.dll",
+    "bytes": 732520,
+    "sha256": "d00a9b72e696cf5c88a5b4bbc4d7d308f9bac51a8c4712d6b26cfd863938a25f"
+  },
+  {
+    "path": "millenium/millennium/bin/millennium.crashhandler64.exe",
+    "bytes": 668016,
+    "sha256": "e33a1c16a3450633bcfe7da7d3905e6b53f94e141f1ff00432611d6ad82e43d5"
+  },
+  {
+    "path": "millenium/millennium/bin/millennium.luavm64.exe",
+    "bytes": 2958176,
+    "sha256": "421921f55984f74c0cb3404ab1d3e3884f46c74f7b0b959bd653eec4cd0b13bf"
+  },
+  {
+    "path": "millenium/millennium/lib/millennium.dll",
+    "bytes": 3886928,
+    "sha256": "f251374996f780b8adea64fce83940508894adf4bedbd52ef35923e6ae9b938f"
+  },
+  {
+    "path": "millenium/millennium/lib/millennium.hhx64.dll",
+    "bytes": 1887576,
+    "sha256": "ed1106e02971ad9e3d03c361ffb0a71319e4ea4823f8823d3b696c9f18b5815a"
+  },
+  {
+    "path": "millenium/wsock32.dll",
+    "bytes": 128840,
+    "sha256": "2895372877ecd8bdfd838bd4e04c9f24909e9e79cb2509c9fe3d18d195e69d97"
+  },
+  {
+    "path": "SmokeAPI/SmokeAPI64.dll",
+    "bytes": 4204032,
+    "sha256": "3891cd70b8e06cad474b9ea5b6d7c3d19b9948c41df2495e3cf02d2a256498ef"
+  },
+  {
+    "path": "SmokeAPI/SmokeAPI86.dll",
+    "bytes": 3526144,
+    "sha256": "145aadfffde5140991995d76dca8f2423e9d7f9dbb66bc21565cee59746f027b"
+  },
+  {
+    "path": "src-tauri/resources/hypervisor/Crocodile-HV.exe",
+    "bytes": 559104,
+    "sha256": "7db9fa47982edc83bba35ce8b23cd2a88ea6b69f9cc263a0ba573592bd9a73f8"
+  },
+  {
+    "path": "src-tauri/resources/local-cloud/cgs_cloud_redirect.dll",
+    "bytes": 2025472,
+    "sha256": "a6f0df903ff52781700b3d67aa37d4feafcf6ee749e6149c3cf0e17ae012a725"
+  },
+  {
+    "path": "src-tauri/resources/updater/CgsUpdater.exe",
+    "bytes": 384512,
+    "sha256": "8ab51ef09e61addcc593c04c8e5477b3ca6b5c4abeb9ec756c359f99bdac61dd"
+  },
+  {
+    "path": "src-tauri/src/assets/crocodile-manifest/backend/loader/compatibility/dwmapi.dll",
+    "bytes": 134656,
+    "sha256": "e86f95bef98c2ce8f0e1c83faa18bb62e9b2c540e9f82aa194c3f04d1a8146f2"
+  },
+  {
+    "path": "src-tauri/src/assets/crocodile-manifest/backend/loader/compatibility/OpenSteamTool.dll",
+    "bytes": 1758720,
+    "sha256": "0bc5cb7734ae7b4f7cb1150006a4bcba570ec1db0df6fd4293ed8a2cb8a2a899"
+  },
+  {
+    "path": "src-tauri/src/assets/crocodile-manifest/backend/loader/compatibility/xinput1_4.dll",
+    "bytes": 133632,
+    "sha256": "5c55bb96c66064dc42677d0984ca4c8d3187ea6daed73fdea9c809ceaa6517de"
+  },
+  {
+    "path": "src-tauri/src/assets/crocodile-manifest/backend/loader/dwmapi.dll",
+    "bytes": 112128,
+    "sha256": "81d11523a5ae35a374cc797ca3d3db924169064510acfa9940f61c609431d6b3"
+  },
+  {
+    "path": "src-tauri/src/assets/crocodile-manifest/backend/loader/OpenSteamTool.dll",
+    "bytes": 1580544,
+    "sha256": "3bced3b2a5363f58c9e7c07d4795d64252c832a56f7c67e78e14989da440516e"
+  },
+  {
+    "path": "src-tauri/src/assets/crocodile-manifest/backend/loader/xinput1_4.dll",
+    "bytes": 123392,
+    "sha256": "287cbea6b1139bf5a3b5239a66bed670bb17b9afe8bd4f6a68ef1c5ceada8142"
+  },
+  {
+    "path": "src-tauri/src/assets/dwmapi.dll",
+    "bytes": 112128,
+    "sha256": "81d11523a5ae35a374cc797ca3d3db924169064510acfa9940f61c609431d6b3"
+  },
+  {
+    "path": "src-tauri/src/assets/loader-v2/dwmapi.dll",
+    "bytes": 134656,
+    "sha256": "e86f95bef98c2ce8f0e1c83faa18bb62e9b2c540e9f82aa194c3f04d1a8146f2"
+  },
+  {
+    "path": "src-tauri/src/assets/loader-v2/OpenSteamTool.dll",
+    "bytes": 1758720,
+    "sha256": "0bc5cb7734ae7b4f7cb1150006a4bcba570ec1db0df6fd4293ed8a2cb8a2a899"
+  },
+  {
+    "path": "src-tauri/src/assets/loader-v2/xinput1_4.dll",
+    "bytes": 133632,
+    "sha256": "5c55bb96c66064dc42677d0984ca4c8d3187ea6daed73fdea9c809ceaa6517de"
+  },
+  {
+    "path": "src-tauri/src/assets/OpenSteamTool.dll",
+    "bytes": 1580544,
+    "sha256": "3bced3b2a5363f58c9e7c07d4795d64252c832a56f7c67e78e14989da440516e"
+  },
+  {
+    "path": "src-tauri/src/assets/xinput1_4.dll",
+    "bytes": 123392,
+    "sha256": "287cbea6b1139bf5a3b5239a66bed670bb17b9afe8bd4f6a68ef1c5ceada8142"
+  }
+]

@@ -6,6 +6,7 @@
 #include "stats_store.h"
 #include "app_state.h"
 #include "protobuf.h"
+#include "message_layout.h"
 #include "parental_bypass.h"
 #include "steam_kv_injector.h"
 #include "sc_resolver.h"
@@ -111,7 +112,8 @@ static constexpr size_t SC_BAS_STOLEN_BYTES = 15;   // 5+5+1+4 bytes of prologue
 static constexpr uint32_t CPROTOBUFMSG_OFF_DESC   = 0x08;  // typed-body descriptor vtable*
 static constexpr uint32_t CPROTOBUFMSG_OFF_CONN   = 0x1C;  // uint32_t connection handle
 static constexpr uint32_t CPROTOBUFMSG_OFF_EMSG   = 0x20;  // uint32_t EMsg | PROTO_FLAG
-static constexpr uint32_t CPROTOBUFMSG_OFF_BODY   = 0x30;  // protobuf body object*
+static uint32_t CPROTOBUFMSG_OFF_BODY = 0x30; // resolved before hooks are installed
+static uint32_t CPROTOBUFMSG_OFF_HEADER = 0x28;
 
 // g_pJobCur (qword_1397E02C0): current CJob coroutine. CJobID at CJob+32.
 // Only valid on BMainLoop/job thread (yield primitives assert g_pJobCur != NULL).
@@ -1593,6 +1595,31 @@ static void ApplyLastPlayedUpdate(const std::vector<uint8_t>& respBody) {
 }
 
 uint32_t GetAccountId() {
+    // A failed private CUser/engine scan must not leave local cloud without an
+    // identity. Steam publishes its active user in HKCU. Bind it to THIS Steam
+    // process, never to a remembered login or an arbitrary userdata directory.
+    // Read on each call so logout/account switching cannot reuse the old ID.
+    if (!g_steamIdFromHeader.load(std::memory_order_acquire)) {
+        DWORD pid = 0, pidAfter = 0, account = 0, size = sizeof(DWORD);
+        const wchar_t* key = L"Software\\Valve\\Steam\\ActiveProcess";
+        if (RegGetValueW(HKEY_CURRENT_USER, key, L"pid", RRF_RT_REG_DWORD,
+                         nullptr, &pid, &size) == ERROR_SUCCESS && pid == GetCurrentProcessId()) {
+            size = sizeof(DWORD);
+            if (RegGetValueW(HKEY_CURRENT_USER, key, L"ActiveUser", RRF_RT_REG_DWORD,
+                             nullptr, &account, &size) != ERROR_SUCCESS) return 0;
+            size = sizeof(DWORD);
+            if (RegGetValueW(HKEY_CURRENT_USER, key, L"pid", RRF_RT_REG_DWORD,
+                             nullptr, &pidAfter, &size) != ERROR_SUCCESS || pidAfter != pid) return 0;
+            if (!account) { g_steamId.store(0); return 0; }
+            const uint64_t full = uint64_t(account) | (1ULL << 32) | (1ULL << 52) | (1ULL << 56);
+            if (g_steamId.exchange(full) != full) {
+                LOG("[NS] Active account resolved from Steam process registry (accountId=%u)", account);
+                HttpServer::SetAccountId(account);
+                StatsStore::ResetForAccountSwitch(account);
+            }
+            return account;
+        }
+    }
     uint64_t sid = g_steamId.load();
     if (sid != 0) return (uint32_t)(sid & 0xFFFFFFFF);
 
@@ -1971,7 +1998,7 @@ static bool __fastcall ServiceMethodHook(void* thisptr, const char* methodName,
         strcmp(methodName, "Parental.GetSignedParentalSettings#1") == 0) {
         bool result = g_originalSlot5(thisptr, methodName, request, response, flags);
         if (result && response) {
-            void* respBody = *(void**)((uintptr_t)response + 48);
+            void* respBody = *(void**)((uintptr_t)response + CPROTOBUFMSG_OFF_BODY);
             if (respBody) {
                 auto respBytes = SerializeBodyToBytes(respBody);
                 auto respFields = PB::Parse(respBytes.data(), respBytes.size());
@@ -2001,7 +2028,7 @@ static bool __fastcall ServiceMethodHook(void* thisptr, const char* methodName,
             ? MetadataSync::schemaFetch.load(std::memory_order_relaxed)
             : MetadataSync::SchemaFetchEnabled())) {
         if (request && response) {
-            void* reqBody = *(void**)((uintptr_t)request + 48);
+            void* reqBody = *(void**)((uintptr_t)request + CPROTOBUFMSG_OFF_BODY);
             if (reqBody) {
                 auto reqBytes = SerializeBodyToBytes(reqBody);
                 auto reqFields = PB::Parse(reqBytes.data(), reqBytes.size());
@@ -2011,7 +2038,7 @@ static bool __fastcall ServiceMethodHook(void* thisptr, const char* methodName,
                 LOG("[Stats] slot5 GetUserStats seen: app=%u namespace=%d", appId, IsNamespaceApp(appId) ? 1 : 0);
                 if (appId != 0 && IsNamespaceApp(appId)) {
                     auto res = StatsHandlers::HandleGetUserStats(appId, reqFields);
-                    void* respBody = *(void**)((uintptr_t)response + 48);
+                    void* respBody = *(void**)((uintptr_t)response + CPROTOBUFMSG_OFF_BODY);
                     if (respBody && res.body.Size() > 0 &&
                         ParseBytesToBody(respBody, res.body.Data().data(), res.body.Size())) {
                         if (flags) *flags = 0;
@@ -2020,7 +2047,7 @@ static bool __fastcall ServiceMethodHook(void* thisptr, const char* methodName,
                         return true;
                     }
                     LOG("[Stats] GetUserStats app=%u NOT handled (respBody=%p bodySize=%zu) -> passthrough",
-                        appId, *(void**)((uintptr_t)response + 48), res.body.Size());
+                        appId, *(void**)((uintptr_t)response + CPROTOBUFMSG_OFF_BODY), res.body.Size());
                 }
             } else {
                 LOG("[Stats] slot5 GetUserStats: null reqBody -> passthrough");
@@ -2037,12 +2064,12 @@ static bool __fastcall ServiceMethodHook(void* thisptr, const char* methodName,
         bool result = g_originalSlot5(thisptr, methodName, request, response, flags);
         LOG("[Stats] slot5 GetLastPlayedTimes seen: serverResult=%d", result ? 1 : 0);
         if (result && response) {
-            void* respBody = *(void**)((uintptr_t)response + 48);
+            void* respBody = *(void**)((uintptr_t)response + CPROTOBUFMSG_OFF_BODY);
             if (respBody) {
                 // Parse the request to honor min_last_played.
                 std::vector<PB::Field> reqFields;
                 if (request) {
-                    void* reqBody = *(void**)((uintptr_t)request + 48);
+                    void* reqBody = *(void**)((uintptr_t)request + CPROTOBUFMSG_OFF_BODY);
                     if (reqBody) {
                         auto reqBytes = SerializeBodyToBytes(reqBody);
                         reqFields = PB::Parse(reqBytes.data(), reqBytes.size());
@@ -2110,7 +2137,7 @@ static bool __fastcall ServiceMethodHook(void* thisptr, const char* methodName,
     }
 
     // Extract the request body from CProtoBufMsg+48
-    void* reqBody = *(void**)((uintptr_t)request + 48);
+    void* reqBody = *(void**)((uintptr_t)request + CPROTOBUFMSG_OFF_BODY);
     if (!reqBody) {
         LOG("[VtHook] %s: request body is NULL, passing through", methodName);
         return g_originalSlot5(thisptr, methodName, request, response, flags);
@@ -2153,7 +2180,7 @@ static bool __fastcall ServiceMethodHook(void* thisptr, const char* methodName,
             bool spyResult = g_originalSlot5(thisptr, methodName, request, response, flags);
             // Inspect the response body only on success: a failed call may leave the
             // body slot without a constructed message.
-            void* spyRespBody = spyResult ? *(void**)((uintptr_t)response + 48) : nullptr;
+            void* spyRespBody = spyResult ? *(void**)((uintptr_t)response + CPROTOBUFMSG_OFF_BODY) : nullptr;
             if (spyRespBody) {
                 auto respBytes = SerializeBodyToBytes(spyRespBody);
                 LOG("[SPY] %s app=%u native response (%zu bytes, result=%d):",
@@ -2179,14 +2206,14 @@ static bool __fastcall ServiceMethodHook(void* thisptr, const char* methodName,
 #endif
 
     // Capture SteamID from the request header. Detects account switches.
-    if (!g_steamIdFromHeader.load()) {
-        void* reqHeader = *(void**)((uintptr_t)request + 40);
+    { // Re-read authoritative headers to detect an account switch.
+        void* reqHeader = *(void**)((uintptr_t)request + CPROTOBUFMSG_OFF_HEADER);
         if (reqHeader) {
             auto hdrBytes = SerializeBodyToBytes(reqHeader);
             if (!hdrBytes.empty()) {
                 auto hdrFields = PB::Parse(hdrBytes.data(), hdrBytes.size());
                 auto* sidField = PB::FindField(hdrFields, HDR_STEAMID);
-                if (sidField) {
+                if (sidField && sidField->varintVal != 0) {
                     uint64_t newSid = sidField->varintVal;
                     uint64_t prevSid = g_steamId.exchange(newSid);
                     bool firstCapture = !g_steamIdFromHeader.exchange(true);
@@ -2246,14 +2273,14 @@ static bool __fastcall ServiceMethodHook(void* thisptr, const char* methodName,
 
     // Validate response header BEFORE writing body to avoid corrupting the
     // response protobuf object on a failure path.
-    void* respHeader = *(void**)((uintptr_t)response + 40);
+    void* respHeader = *(void**)((uintptr_t)response + CPROTOBUFMSG_OFF_HEADER);
     if (!respHeader) {
         LOG("[VtHook] %s: respHeader is NULL, cannot deliver response", methodName);
         return g_originalSlot5(thisptr, methodName, request, response, flags);
     }
 
     // Write the response body into the response CProtoBufMsg
-    void* respBody = *(void**)((uintptr_t)response + 48);
+    void* respBody = *(void**)((uintptr_t)response + CPROTOBUFMSG_OFF_BODY);
     if (!respBody) {
         LOG("[VtHook] %s: response body object is NULL, cannot write response!", methodName);
         return g_originalSlot5(thisptr, methodName, request, response, flags);
@@ -2338,7 +2365,7 @@ static bool __fastcall NotificationWrapperHook(void* thisptr, const char* method
 
     if (ParentalBypass::IsParentalNotification(methodName) && g_parentalBypassPlaytime.load()) {
         if (request) {
-            void* bodyObj = *(void**)((uintptr_t)request + 48);
+            void* bodyObj = *(void**)((uintptr_t)request + CPROTOBUFMSG_OFF_BODY);
             if (bodyObj && strcmp(methodName, ParentalBypass::NOTIFY_SETTINGS_CHANGE) == 0) {
                 auto bodyBytes = SerializeBodyToBytes(bodyObj);
                 auto notifFields = PB::Parse(bodyBytes.data(), bodyBytes.size());
@@ -2377,7 +2404,7 @@ static bool __fastcall NotificationWrapperHook(void* thisptr, const char* method
     }
 
     // Extract body from CProtoBufMsg+48
-    void* bodyObj = *(void**)((uintptr_t)request + 48);
+    void* bodyObj = *(void**)((uintptr_t)request + CPROTOBUFMSG_OFF_BODY);
     uint32_t realAppId = CheckNotificationNamespaceApp(methodName, bodyObj);
 
     if (realAppId == 0) {
@@ -2839,6 +2866,15 @@ static void InstallServiceMethodHookLocked() {
     g_originalSlot5 = currentSlot5;
     LOG("[VtHook] Original slot 5: %p (RVA=0x%llX)",
         (void*)currentSlot5, (uint64_t)((uintptr_t)currentSlot5 - g_steamClientBase));
+
+    CgsMessageLayout::Layout layout;
+    if (!CgsMessageLayout::Resolve(reinterpret_cast<const uint8_t*>(currentSlot5), 256, layout)) {
+        RefuseVtableHook("Unrecognized Steam protobuf wrapper layout; cloud hooks were not installed");
+        return;
+    }
+    CPROTOBUFMSG_OFF_HEADER = layout.header;
+    CPROTOBUFMSG_OFF_BODY = layout.body;
+    LOG("[VtHook] Resolved protobuf wrapper: header=0x%X body=0x%X", layout.header, layout.body);
 
     // Read slot 7 (notification direct)
     NotificationSlot7Fn currentSlot7 = nullptr;
@@ -6449,7 +6485,7 @@ bool OnSendPkt(void* thisptr, const uint8_t* data, uint32_t size) {
     // Capture SteamID + session from packet header. Detects account switches.
     {
         auto* sidField = PB::FindField(pkt.header, HDR_STEAMID);
-        if (sidField) {
+        if (sidField && sidField->varintVal != 0) {
             uint64_t newSid = sidField->varintVal;
             uint64_t prevSid = g_steamId.exchange(newSid);
             bool firstCapture = !g_steamIdFromHeader.exchange(true);

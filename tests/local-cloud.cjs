@@ -19,10 +19,16 @@ const {chromium}=require('playwright');
     await page.addInitScript(()=>{
       localStorage.setItem('cgs-language','en');
       window.calls=[];window.pick=null;
-      window.cloud={enabled:false,managed:false,folder:null,eligibleApps:['10'],loaderSupported:true,issue:null};
+      window.cloud={enabled:false,managed:true,folder:null,eligibleApps:['10'],loaderSupported:true,componentUpdateAvailable:true,issue:null};
       window.__TAURI__={event:{listen:async()=>()=>{}},core:{invoke:async(name,args)=>{
         window.calls.push({name,args});
         if(name==='local_cloud_status')return structuredClone(window.cloud);
+        if(name==='local_cloud_update_component'){
+          if(window.pauseCloudUpdate) await new Promise(resolve=>window.resumeCloudUpdate=resolve);
+          if(window.cloudError)throw new Error(window.cloudError);
+          window.cloud={...window.cloud,componentUpdateAvailable:false};
+          return structuredClone(window.cloud);
+        }
         if(name==='local_cloud_set'){
           if(window.cloudError)throw new Error(window.cloudError);
           window.cloud={...window.cloud,enabled:args.enabled,folder:args.folder,managed:args.enabled};
@@ -43,8 +49,48 @@ const {chromium}=require('playwright');
       }}};
     });
     await page.goto(`http://127.0.0.1:${server.address().port}/`);
+    const notice=page.locator('#lc-update-dialog');
+    await notice.waitFor({state:'visible'});
+    assert.match(await notice.textContent(),/Local Cloud DLL update required/);
+    await page.evaluate(()=>window.cgsI18n.setLanguage('ru'));
+    assert.match(await page.locator('#lc-update-title').textContent(),/Нужно обновить DLL/);
+    await page.evaluate(()=>window.cgsI18n.setLanguage('en'));
+    const dialogThemes=[];
+    for(const theme of ['graphite','white','ocean']) {
+      await page.evaluate(theme=>window.cgsPersonalization.set({theme}),theme);
+      dialogThemes.push(await notice.evaluate(e=>getComputedStyle(e).background));
+    }
+    assert.notEqual(dialogThemes[0],dialogThemes[1]);
+    await page.evaluate(()=>window.cgsPersonalization.set({theme:'graphite'}));
+    await notice.screenshot({path:path.join(process.env.CGS_TEST_OUTPUT||require('node:os').tmpdir(),'cgs-cloud-dll-update-en.png')});
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(()=>document.getElementById('lc-update-dialog').contains(document.activeElement)),true);
+    assert.equal(await page.evaluate(()=>calls.filter(c=>c.name==='local_cloud_update_component').length),0);
+    await page.keyboard.press('Escape');
+    await notice.waitFor({state:'hidden'});
     await page.locator('.nav-item[data-view="lua"]').click();
     await page.waitForFunction(()=>!document.getElementById('lc-enabled').disabled);
+    assert.equal(await notice.isVisible(),false); // dismissal lasts for this launch
+    await page.locator('#lc-refresh').click();
+    await notice.waitFor({state:'visible'});
+    await page.evaluate(()=>window.cloudError='Test: close the game first');
+    await page.locator('#lc-update-install').click();
+    await page.waitForFunction(()=>document.getElementById('lc-update-status').textContent.includes('Test:'));
+    assert.equal(await notice.isVisible(),true); // can retry after a failure
+    await page.evaluate(()=>{window.cloudError=null;window.pauseCloudUpdate=true;});
+    await page.locator('#lc-update-install').click();
+    await page.waitForFunction(()=>typeof window.resumeCloudUpdate==='function');
+    assert.equal(await page.locator('#lc-update-later').isDisabled(),true);
+    await page.keyboard.press('Escape');
+    assert.equal(await notice.isVisible(),true); // cannot dismiss mid replacement
+    await page.evaluate(()=>window.resumeCloudUpdate());
+    await page.waitForFunction(()=>document.getElementById('lc-update-status').textContent.includes('DLL updated'));
+    assert.equal(await page.locator('#lc-enabled').isChecked(),false); // update never enables cloud
+    assert.equal(await page.evaluate(()=>calls.filter(c=>c.name==='local_cloud_set').length),0);
+    await page.locator('#lc-update-later').click();
+    await page.locator('#lc-refresh').click();
+    await page.waitForFunction(()=>!document.getElementById('lc-refresh').disabled);
+    assert.equal(await notice.isVisible(),false); // current DLL: no notice
     await page.locator('.local-cloud-toggle .switch').click(); // cancelled folder picker
     await page.waitForFunction(()=>!document.getElementById('lc-enabled').checked);
     assert.equal(await page.evaluate(()=>calls.filter(c=>c.name==='local_cloud_set').length),0);
@@ -73,6 +119,8 @@ const {chromium}=require('playwright');
     await page.evaluate(()=>window.cgsI18n.setLanguage('ru'));
     assert.equal(await page.locator('#lc-title').textContent(),'Локальное облако');
     assert.equal(errors.length,0,errors.join('\n'));
-    console.log('Local cloud UI: cancel, enable, failed disable, disable, folder retention, themes and language passed. Mock IPC only.');
+    await page.reload();
+    await notice.waitFor({state:'visible'}); // later means remind again on next launch
+    console.log('Local cloud UI: startup DLL notice, dismissal, manual reopen, failure/retry, busy Escape protection, update without enabling, current DLL silence; toggle/folder/themes/language passed. Mock IPC only.');
   } finally {await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

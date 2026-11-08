@@ -3,7 +3,7 @@
 Upstream: https://github.com/crghofficial/cloudredirect
 
 Pinned source: `4e81e492e4678c1d907fbeaef2625846f6afaad8` (upstream 2.6.6 source).
-License: MIT, preserved in LICENSE. This is a modified build, `2.6.6-cgs-local.1`.
+License: MIT, preserved in LICENSE. This is a modified build, `2.6.6-cgs-local.2`.
 
 CGS changes:
 
@@ -41,3 +41,14 @@ conflicting destination files. Originals remain in the old location.
 This uses undocumented Steam interfaces. A successful configuration operation
 does not establish that a particular Steam build/game has synchronized; verify
 a save/load and a Steam restart using a test save before relying on it.
+
+Compatibility repair (local.2): wrapper header/body offsets are derived from the
+Steam transport forwarding code before hooks are installed. Unknown layouts are
+rejected. The active-account fallback reads Steam's per-process registry identity,
+not remembered accounts or userdata directory names. Headers are re-read to detect
+account switches. Save data and the manifest-only scope are unchanged.
+
+The application checks for an outdated managed DLL on startup and offers a
+component-only update. The update uses the embedded binary, backs up the previous
+DLL/state, preserves the cloud toggle/provider configuration, and restarts Steam
+only if it was running. Externally modified DLLs are not silently replaced.

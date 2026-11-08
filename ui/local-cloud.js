@@ -6,6 +6,62 @@
   const english = () => window.cgsI18n?.language === 'en';
   const t = (ru, en) => english() ? en : ru;
   const steamPath = () => $('lua-steam-path')?.value.trim() || localStorage.getItem('luaSteamPath') || null;
+  const updateDialog = $('lc-update-dialog');
+  const notified = new Set();
+  let noticeQueued = false, updateBusy = false, updateDone = false, updatePath = null, previousFocus = null;
+  function renderUpdateDialog() {
+    text('lc-update-title', 'Нужно обновить DLL локального облака', 'Local Cloud DLL update required');
+    text('lc-update-description', 'В программу встроен исправленный CloudRedirect. Обновите установленную DLL, чтобы синхронизация сохранений игр с Lua и манифестами работала корректно, в том числе после выхода и повторного запуска игры.', 'This app includes a repaired CloudRedirect component. Update the installed DLL for correct save synchronization in Lua and manifest games, including after exiting and reopening a game.');
+    text('lc-update-note', 'Если Steam открыт, он перезапустится автоматически. Перед обновлением закройте игры. Прежняя DLL сохраняется в резервной копии; папка сохранений и выбранный режим останутся прежними. Скачивать файлы не требуется.', 'Steam will restart automatically if it is running. Close your games first. The previous DLL is backed up; your save folder and enabled/disabled setting are kept. No download is required.');
+    text('lc-update-later', updateDone ? 'Закрыть' : 'Позже', updateDone ? 'Close' : 'Later');
+    text('lc-update-install', updateBusy ? 'Обновляем…' : 'Обновить DLL', updateBusy ? 'Updating…' : 'Update DLL');
+    $('lc-update-later').disabled = updateBusy;
+    $('lc-update-install').disabled = updateBusy;
+    $('lc-update-install').hidden = updateDone;
+    $('lc-update-progress').hidden = !updateBusy;
+    updateDialog.setAttribute('aria-busy', String(updateBusy));
+  }
+  function notifyUpdate(force = false) {
+    const key = (result?.steamPath || result?.folder || 'configured-cloud').toLowerCase();
+    if (!result?.componentUpdateAvailable || !result?.loaderSupported || busy || updateDialog.open || noticeQueued || (!force && notified.has(key))) return;
+    noticeQueued = true;
+    const openWhenReady = () => {
+      if (!result?.componentUpdateAvailable || busy) { noticeQueued = false; return; }
+      if (document.querySelector('.modal-backdrop:not(.hidden), dialog[open]')) {
+        setTimeout(openWhenReady, 400); return;
+      }
+      noticeQueued = false; notified.add(key); updateDone = false; updatePath = result.steamPath || steamPath();
+      previousFocus = document.activeElement;
+      $('lc-update-status').textContent = '';
+      renderUpdateDialog(); updateDialog.showModal(); $('lc-update-install').focus();
+    };
+    openWhenReady();
+  }
+  updateDialog.addEventListener('cancel', event => { if (updateBusy) event.preventDefault(); });
+  updateDialog.addEventListener('keydown', event => {
+    if (event.key !== 'Tab') return;
+    const controls = [...updateDialog.querySelectorAll('button:not(:disabled):not([hidden])')];
+    const index = controls.indexOf(document.activeElement);
+    event.preventDefault();
+    if (controls.length) controls[(index + (event.shiftKey ? -1 : 1) + controls.length) % controls.length].focus();
+  });
+  updateDialog.addEventListener('close', () => { if (previousFocus?.isConnected) previousFocus.focus(); });
+  $('lc-update-later').addEventListener('click', () => { if (!updateBusy) updateDialog.close(); });
+  $('lc-update-install').addEventListener('click', async () => {
+    if (busy || updateBusy) return;
+    busy = true; updateBusy = true; ++sequence; render(); renderUpdateDialog();
+    const status = $('lc-update-status');
+    status.dataset.kind = 'info';
+    status.textContent = t('Закрываем Steam, сохраняем резервную копию и обновляем DLL…', 'Closing Steam, backing up the previous DLL and installing the update…');
+    try {
+      result = await invoke('local_cloud_update_component', {steamPath:updatePath});
+      if (result.componentUpdateAvailable) throw new Error(t('DLL не обновлена. Повторите операцию.', 'The DLL was not updated. Please retry.'));
+      loaded = true; updateDone = true;
+      status.textContent = t('DLL обновлена. Если Steam был открыт, он запущен снова. Локальное облако готово к работе.', 'DLL updated. Steam has been restarted if it was running. The Local Cloud component is ready.');
+      statusMessage();
+    } catch(error) { status.textContent = String(error); status.dataset.kind = 'error'; }
+    finally { busy = false; updateBusy = false; render(); renderUpdateDialog(); if (updateDone) $('lc-update-later').focus(); }
+  });
   function text(id, ru, en) { $(id).textContent = t(ru, en); }
   function render() {
     text('lc-title', 'Локальное облако', 'Local Cloud');
@@ -31,13 +87,13 @@
       ? t(`Локальный режим включён · игр с манифестами: ${count}.`, `Local mode enabled · manifest games: ${count}.`)
       : t('Локальный режим выключен. Выберите папку и включите переключатель.', 'Local mode is off. Choose a folder and enable the switch.'));
   }
-  async function refresh() {
+  async function refresh(notify = false) {
     if (!invoke || busy) return;
     const ticket = ++sequence;
     try {
       const data = await invoke('local_cloud_status', {steamPath:steamPath()});
       if (ticket !== sequence || busy) return;
-      result = data; loaded = true; picked = ''; render(); statusMessage();
+      result = data; loaded = true; picked = ''; render(); statusMessage(); notifyUpdate(notify === true);
     } catch (error) { if(ticket === sequence) { loaded = false; render(); message(String(error), true); } }
   }
   async function apply(enabled, folder) {
@@ -74,17 +130,17 @@
     if (result?.enabled) await apply(true, folder);
     else { picked = folder; render(); message(t('Папка выбрана. Включите локальное облако.', 'Folder selected. Enable local cloud to apply it.')); }
   });
-  $('lc-refresh').addEventListener('click', refresh);
+  $('lc-refresh').addEventListener('click', () => refresh(true));
   $('lc-info').addEventListener('click', () => {
     const expanded = $('lc-info').getAttribute('aria-expanded') !== 'true';
     $('lc-info').setAttribute('aria-expanded', String(expanded));
     $('lc-help').hidden = !expanded;
   });
   $('lua-steam-path').addEventListener('change', refresh);
-  window.addEventListener('cgs:language-changed', () => { render(); if(!busy) statusMessage(); });
+  window.addEventListener('cgs:language-changed', () => { render(); renderUpdateDialog(); if(!busy) statusMessage(); });
   const observer = new MutationObserver(() => { if($('view-lua').classList.contains('active')) refresh(); });
   observer.observe($('view-lua'), {attributes:true,attributeFilter:['class']});
   window.cgsLocalCloud = {refresh};
   render();
-  if ($('view-lua').classList.contains('active')) refresh();
+  refresh(); // Check the installed component at startup, even on the Home screen.
 })();

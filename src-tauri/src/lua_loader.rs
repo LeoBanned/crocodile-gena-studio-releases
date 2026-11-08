@@ -198,7 +198,7 @@ fn matches_selection(steam: &Path, selection: &Selection) -> Result<bool, String
     }
     Ok(current)
 }
-fn acquire_file_lock(steam: &Path) -> Result<fs::File, String> {
+pub(crate) fn acquire_file_lock(steam: &Path) -> Result<fs::File, String> {
     reject_link(&steam.join("config"))?;
     fs::create_dir_all(steam.join("config")).map_err(|e| e.to_string())?;
     let path = steam.join("config/cgs-luatools-loader.lock");
