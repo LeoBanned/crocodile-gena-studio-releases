@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "partners": [
+    {
+      "id": "xero-nation",
+      "name": "XERO NATION",
+      "category": { "ru": "Игровое и tech-сообщество", "en": "Gaming & tech community" },
+      "tagline": { "ru": "Больше возможностей. Больше своего комьюнити.", "en": "More possibilities. Your next community." },
+      "description": {
+        "ru": "Сообщество для тех, кто увлечён играми и технологиями. Инструменты Steam, бот для генерации манифестов, полезные ресурсы и гайды — в одном Discord-сервере.",
+        "en": "A community for people who love gaming and technology. Steam tools, a manifest generator bot, useful resources and practical guides — together in one Discord server."
+      },
+      "features": [
+        { "ru": "Инструменты Steam и генератор манифестов", "en": "Steam tools & manifest generator" },
+        { "ru": "Игровые фиксы, ресурсы и утилиты", "en": "Game fixes, resources & utilities" },
+        { "ru": "Гайды и обмен опытом", "en": "Guides & shared knowledge" },
+        { "ru": "Поддержка, события и розыгрыши", "en": "Support, events & giveaways" }
+      ],
+      "tags": ["Discord", "Gaming", "Tools", "Community"],
+      "links": [
+        { "label": { "ru": "Присоединиться к Discord", "en": "Join the Discord" }, "url": "https://discord.gg/nationxero" }
+      ],
+      "logoUrl": "https://cdn.discordapp.com/icons/1360158665230782614/d1260c4e81b8434a10bdffdf81bcb8c1.png?size=512",
+      "bannerUrl": "https://cdn.discordapp.com/banners/1360158665230782614/a_456ee23b410ae4f8c824bd32eeec9f80.png?size=2048",
+      "featured": true,
+      "enabled": true,
+      "order": 10
+    }
+  ]
+}

@@ -23,7 +23,7 @@ function harness(options = {}) {
     }
     return nodes.get(selector);
   };
-  const modules = ['fix', 'saves', 'dlc', 'lua', 'hypervisor', 'files', 'utilities'];
+  const modules = ['fix', 'saves', 'dlc', 'lua', 'hypervisor', 'files', 'utilities', 'partners'];
   const nav = [...modules, 'home', 'settings'].map(name => { const e = node(`nav-${name}`); e.dataset.view = name; return e; });
   const tiles = modules.map(name => { const e = node(`tile-${name}`); e.dataset.openView = name; return e; });
   const toggles = modules.map(name => { const e = node(`toggle-${name}`); e.dataset.moduleToggle = name; return e; });
@@ -121,6 +121,14 @@ test('Home and Settings remain reachable and invalid preferences are ignored', (
   assert.equal(h.node('[data-view-panel].active').dataset.viewPanel, 'home');
   const malformed = harness({ stored: 'not json' }); malformed.applyModuleVisibility();
   assert.equal(malformed.node('toggle-lua').checked, true);
+});
+test('Partners can be hidden from both navigation and home without affecting other modules', () => {
+  const h = harness({view:'partners'});
+  h.setModuleVisible('partners',false);
+  assert(h.node('nav-partners').classList.contains('module-hidden'));
+  assert(h.node('tile-partners').classList.contains('module-hidden'));
+  assert.equal(h.node('[data-view-panel].active').dataset.viewPanel,'home');
+  assert(!h.node('nav-lua').classList.contains('module-hidden'));
 });
 
 test('dragging on Home does not reopen a hidden Online Fix module', async () => {

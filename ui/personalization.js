@@ -2,8 +2,8 @@
   "use strict";
 
   const STORAGE = "cgs-personalization-v1";
-  const MODULES = ["fix", "saves", "dlc", "lua", "hypervisor", "files", "utilities"];
-  const LABELS = { home: "Главная", fix: "Online Fix", saves: "Сохранения", dlc: "DLC Unlocker", lua: "CrocLua", hypervisor: "Гипервизор", files: "Кряки", utilities: "Утилиты", settings: "Настройки" };
+  const MODULES = ["fix", "saves", "dlc", "lua", "hypervisor", "files", "utilities", "partners"];
+  const LABELS = { home: "Главная", fix: "Online Fix", saves: "Сохранения", dlc: "DLC Unlocker", lua: "CrocLua", hypervisor: "Гипервизор", files: "Кряки", utilities: "Утилиты", partners: "Партнёры", settings: "Настройки" };
   const THEMES = ["graphite", "glass", "minimal", "neon", "midnight", "obsidian", "forest", "plum", "warm", "arctic", "white"];
   const THEME_LABELS = { midnight: "Полночь", obsidian: "Обсидиан", forest: "Лес", plum: "Слива", warm: "Тёплый", arctic: "Север", white: "Белый" };
   const FONTS = {

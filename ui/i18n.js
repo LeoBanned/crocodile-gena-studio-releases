@@ -5,6 +5,21 @@
   const SUPPORTED = new Set(["ru", "en"]);
 
   const EN = {
+    "Соцсети": "Social hub",
+    "Открыть соцсети": "Open social hub",
+    "Будем на связи": "Stay connected",
+    "Новости программы, общение и наше сообщество — в одном месте.": "App updates, conversations and our community — all in one place.",
+    "Автор": "Author",
+    "Комьюнити": "Community",
+    "Telegram комьюнити": "Community Telegram",
+    "Наш Discord": "Our Discord",
+    "Не удалось открыть ссылку. Попробуйте ещё раз.": "Could not open the link. Please try again.",
+    "Партнёры": "Partners",
+    "МОДУЛЬ 08": "MODULE 08",
+    "Модуль 08": "Module 08",
+    "08 · Партнёры": "08 · Partners",
+    "Online Fix · Сохранения · DLC · CrocLua · Гипервизор · Кряки · Утилиты · Партнёры": "Online Fix · Saves · DLC · CrocLua · Hypervisor · Cracks · Utilities · Partners",
+    "Сообщества и проекты, с которыми мы сотрудничаем": "Communities and projects we collaborate with",
     "Скачивание и установка новой версии внутри программы. После обновления приложение перезапустится; настройки, путь и ярлыки сохранятся.": "Download and install new versions inside the app. It restarts after updating and keeps your settings, path and shortcuts.",
     "Обновить и перезапустить": "Update and restart",
     "Отменить загрузку": "Cancel download",
@@ -922,7 +937,7 @@
       const stored = localStorage.getItem(STORAGE_KEY);
       if (SUPPORTED.has(stored)) return stored;
     } catch (_) {}
-    return "ru";
+    return "en";
   }
 
   function translateBody(source) {

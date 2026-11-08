@@ -1,4 +1,4 @@
-﻿# Packaging only. Source files and the installed application are not modified.
+# Packaging only. Source files and the installed application are not modified.
 # Renames/sanitization below are mechanical transformations of copied files.
 param([string]$SourceRoot = (Split-Path $PSScriptRoot -Parent))
 $ErrorActionPreference = 'Stop'
@@ -37,7 +37,7 @@ function Rewrite-ExportFile([string]$Relative, [scriptblock]$Transform) {
 }
 try {
     foreach ($taskFolder in @('ui','src-tauri/src','src-tauri/icons','src-tauri/capabilities','millenium','tools','third_party/cloudredirect','src-tauri/resources/local-cloud','src-tauri/resources/updater')) { Copy-ExportTree $taskFolder }
-    foreach ($taskFile in @('package.json','package-lock.json','.gitignore','README.md','BUILD.md','LICENSE','THIRD_PARTY.md','ARCHIVE-INSTALL.md','BUILD-WINDOWS.cmd','PUBLISH.md','src-tauri/build.rs','src-tauri/Cargo.toml','src-tauri/Cargo.lock','src-tauri/tauri.conf.json','src-tauri/icon.ico')) { Copy-ExportFile $taskFile }
+    foreach ($taskFile in @('package.json','package-lock.json','.gitignore','README.md','BUILD.md','LICENSE','ARCHIVE-INSTALL.md','BUILD-WINDOWS.cmd','PUBLISH.md','src-tauri/build.rs','src-tauri/Cargo.toml','src-tauri/Cargo.lock','src-tauri/tauri.conf.json','src-tauri/icon.ico')) { Copy-ExportFile $taskFile }
     foreach ($taskFile in @('SteamFix64.dll','winmm_unity.dll','EpicFix64.dll','EpicFix.ini','EOSSDK-Win64-Shipping.dll','winmm.dll')) { Copy-ExportFile "backend/core_engine/$taskFile" }
     $taskCream = if (Test-Path -LiteralPath (Join-Path $taskRoot 'CreamAPI/steam_api.dll')) { 'CreamAPI' } else { 'DLCUnlocker' }
     foreach ($taskFile in @('steam_api.dll','steam_api64.dll')) { Copy-ExportFile "$taskCream/$taskFile" "CreamAPI/$taskFile" }
@@ -47,7 +47,7 @@ try {
         Copy-ExportFile 'СмакиАпи/smaki.dll' 'SmokeAPI/SmokeAPI64.dll'
         Copy-ExportFile 'СмакиАпи/smaki32.dll' 'SmokeAPI/SmokeAPI86.dll'
     }
-    foreach ($taskFile in @('dlc.test.cjs','vbs.test.cjs','workspace.test.cjs','plugin-loader.ps1','local-cloud.cjs','local-cloud-scope.cpp','local-cloud-layout.cpp','updater-e2e.cjs','updater-ui.cjs','updater-fixture.cpp','updater-fixture.rc')) { Copy-ExportFile "tests/$taskFile" }
+    foreach ($taskFile in @('dlc.test.cjs','vbs.test.cjs','workspace.test.cjs','plugin-loader.ps1','local-cloud.cjs','local-cloud-scope.cpp','local-cloud-layout.cpp','partners.cjs','updater-e2e.cjs','updater-ui.cjs','updater-fixture.cpp','updater-fixture.rc')) { Copy-ExportFile "tests/$taskFile" }
     Copy-ExportFile 'README.en.md'
     Copy-ExportFile 'CROCLUA-DLL.md'
     Copy-ExportFile 'src-tauri/resources/hypervisor/Crocodile-HV.exe'

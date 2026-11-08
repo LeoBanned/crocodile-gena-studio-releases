@@ -7,6 +7,7 @@ mod dlc;
 mod dlc_catalog;
 mod engine;
 mod files;
+mod partners;
 mod archive_install;
 mod hubcap;
 #[cfg(target_os = "windows")]
@@ -347,6 +348,7 @@ pub fn run() {
             vbs::vbs_set_test_mode,
             vbs::vbs_restart,
             files::files_catalog,
+            partners::partners_catalog,
             files::files_download,
             files::files_cancel_download,
             files::files_reveal,

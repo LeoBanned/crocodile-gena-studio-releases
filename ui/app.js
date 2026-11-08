@@ -98,11 +98,12 @@
     hypervisor: ["МОДУЛЬ 05", "Гипервизор"],
     files: ["МОДУЛЬ 06", "Кряки"],
     utilities: ["МОДУЛЬ 07", "Утилиты"],
+    partners: ["МОДУЛЬ 08", "Партнёры"],
     saves: ["МОДУЛЬ 02", "Менеджер сохранений"],
     settings: ["ПРИЛОЖЕНИЕ", "Настройки"],
   };
 
-  const moduleNames = ["fix", "saves", "dlc", "lua", "hypervisor", "files", "utilities"];
+  const moduleNames = ["fix", "saves", "dlc", "lua", "hypervisor", "files", "utilities", "partners"];
   let hiddenModules = new Set();
   const platformHiddenModules = new Set();
   try {
@@ -2311,14 +2312,6 @@
     });
 
     $("#clear-log").addEventListener("click", () => { $("#activity-log").replaceChildren(); log("Журнал очищен", "system"); });
-    $("#open-personal-channel").addEventListener("click", async () => {
-      try { await call("open_external", { url: "https://t.me/crocodilehub2" }); }
-      catch (error) { toast(errorText(error), "error"); }
-    });
-    $("#open-community-channel").addEventListener("click", async () => {
-      try { await call("open_external", { url: "https://t.me/piratestationn" }); }
-      catch (error) { toast(errorText(error), "error"); }
-    });
     $("#window-minimize").addEventListener("click", () => call("minimize_window").catch(() => {}));
     $("#window-maximize").addEventListener("click", () => call("toggle_maximize_window").catch(() => {}));
     $("#window-close").addEventListener("click", () => call("close_window").catch(() => {}));
