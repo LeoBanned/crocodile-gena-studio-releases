@@ -445,6 +445,7 @@ pub(super) fn disable(
     mode: BootMode,
     allow_uefi: bool,
 ) -> Result<VbsChangeResult, String> {
+    let protections_only = matches!(mode, BootMode::ProtectionsOnly);
     let _guard = lock()?;
     reset_log(app)?;
     if !is_admin() {
@@ -461,10 +462,10 @@ pub(super) fn disable(
         return Err("WMI не отвечает. Сначала выполните Fix WMI".into());
     }
     let probe = system_probe()?;
-    if !probe.hypervisor_present && !probe.virtualization_firmware_enabled {
+    if !protections_only && !probe.hypervisor_present && !probe.virtualization_firmware_enabled {
         return Err("Включите VT-x/SVM в BIOS/UEFI".into());
     }
-    let xcr = xcr0()?;
+    let xcr = if protections_only { 0 } else { xcr0()? };
     if registry_enabled(&format!(r"{DG}\Scenarios\WindowsHello"), "Enabled") && env.hello_credential
     {
         return Err("Windows Hello защищён VBS. Сначала удалите PIN/биометрию в Параметры → Учётные записи → Варианты входа".into());
@@ -485,7 +486,7 @@ pub(super) fn disable(
         return Err("Отключите Secure Boot в BIOS/UEFI перед включением тестового режима".into());
     }
     let test = probe.secure_boot == "false";
-    if !test && env.bitlocker < 0 {
+    if !protections_only && !test && env.bitlocker < 0 {
         return Err(
             "Не удалось определить BitLocker. Проверьте его состояние перед подготовкой загрузки"
                 .into(),
@@ -510,12 +511,16 @@ pub(super) fn disable(
     let result = (|| -> Result<(), String> {
         emit(
             app,
-            "VBS 2.0: проверены AVX, WMI, виртуализация, Windows Hello и Secure Boot",
+            if protections_only {
+                "Отключение защит: проверены WMI, Windows Hello и состояние VBS"
+            } else {
+                "VBS 2.0: проверены AVX, WMI, виртуализация, Windows Hello и Secure Boot"
+            },
         );
-        if test && configured_test_signing() != Some(true) {
+        if !protections_only && test && configured_test_signing() != Some(true) {
             changed += boot_change(app, &mut j, "{current}", "testsigning", Some("on"))? as usize;
         }
-        if xcr > 7 && bcd_get("{current}", "xsaveremovefeature")?.is_none() {
+        if !protections_only && xcr > 7 && bcd_get("{current}", "xsaveremovefeature")?.is_none() {
             changed += boot_change(
                 app,
                 &mut j,
@@ -535,19 +540,21 @@ pub(super) fn disable(
                 changed += reg_change(app, &mut j, key, name, None)? as usize;
             }
         }
-        let flt = run_command("fltmc.exe", &[])?;
-        if String::from_utf8_lossy(&flt.stdout)
-            .to_uppercase()
-            .contains("FACEIT")
-        {
-            for name in ["FACEIT", "FACEITService"] {
-                disable_service(app, &mut j, name)?;
+        if !protections_only {
+            let flt = run_command("fltmc.exe", &[])?;
+            if String::from_utf8_lossy(&flt.stdout)
+                .to_uppercase()
+                .contains("FACEIT")
+            {
+                for name in ["FACEIT", "FACEITService"] {
+                    disable_service(app, &mut j, name)?;
+                    changed += 1;
+                }
+            }
+            if service_running("MacType") {
+                disable_service(app, &mut j, "MacType")?;
                 changed += 1;
             }
-        }
-        if service_running("MacType") {
-            disable_service(app, &mut j, "MacType")?;
-            changed += 1;
         }
         for scenario in ["HypervisorEnforcedCodeIntegrity", "CredentialGuard"]
             .into_iter()
@@ -599,7 +606,7 @@ pub(super) fn disable(
                 Some(1),
             )? as usize;
         }
-        if kva_required()? {
+        if !protections_only && kva_required()? {
             changed +=
                 reg_change(app, &mut j, MEMORY, "FeatureSettingsOverride", Some(2))? as usize;
             changed +=
@@ -623,7 +630,7 @@ pub(super) fn disable(
             changed +=
                 boot_change(app, &mut j, "{current}", "vsmlaunchtype", Some("off"))? as usize;
         }
-        if !test && probe.dse_mode != 0 {
+        if !protections_only && !test && probe.dse_mode != 0 {
             if env.bitlocker == 1 {
                 // Journal first. Only one reboot is suspended; never decrypt the volume.
                 j.bitlocker_suspended = true;
@@ -681,7 +688,9 @@ pub(super) fn disable(
     Ok(VbsChangeResult {
         success: failed.is_empty(),
         message: if failed.is_empty() {
-            if test {
+            if protections_only {
+                "Защиты VBS подготовлены к отключению. Перезагрузите Windows".into()
+            } else if test {
                 "VBS 2.0: параметры подготовлены; Test Signing применяется после перезагрузки"
                     .into()
             } else {

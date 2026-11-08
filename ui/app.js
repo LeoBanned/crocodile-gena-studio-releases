@@ -1997,13 +1997,56 @@
     $('#app-update-cancel').textContent = updateText('Отменить обновление', 'Cancel update');
     $('#app-update-close').setAttribute('aria-label', updateText('Закрыть', 'Close'));
   }
+  // Render release text with DOM nodes only; remote HTML is never interpreted.
+  function renderUpdateNotes(container, notes) {
+    container.replaceChildren();
+    const inline = (parent, text) => {
+      for (const part of text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)) {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          const strong = document.createElement('strong');
+          strong.textContent = part.slice(2, -2);
+          parent.append(strong);
+        } else if (part.startsWith('`') && part.endsWith('`')) {
+          const code = document.createElement('code');
+          code.textContent = part.slice(1, -1);
+          parent.append(code);
+        } else parent.append(document.createTextNode(part));
+      }
+    };
+    let list = null;
+    let paragraph = null;
+    for (const line of String(notes || '').replace(/\r/g, '').split('\n')) {
+      const text = line.trim();
+      if (!text) { list = null; paragraph = null; continue; }
+      const heading = text.match(/^#{1,6}\s+(.+)$/);
+      const item = text.match(/^(?:[-*+] |\d+\. )(.+)$/);
+      if (heading) {
+        list = null; paragraph = null;
+        const title = document.createElement('h4');
+        inline(title, heading[1]);
+        container.append(title);
+      } else if (item) {
+        paragraph = null;
+        if (!list) { list = document.createElement('ul'); container.append(list); }
+        const entry = document.createElement('li');
+        inline(entry, item[1]); list.append(entry);
+      } else {
+        list = null;
+        if (!paragraph) { paragraph = document.createElement('p'); container.append(paragraph); }
+        else paragraph.append(document.createTextNode(' '));
+        inline(paragraph, text);
+      }
+    }
+    container.scrollTop = 0;
+  }
+
   function showUpdateDialog() {
     const update = state.updates.latest;
     if (!update?.inAppSupported) return;
     $('#app-update-title').textContent = updateText(`Обновление до ${update.latestVersion}`, `Update to ${update.latestVersion}`);
     $('#app-update-intro').textContent = updateText('Программа обновится и запустится автоматически. Настройки и ярлыки сохранятся.', 'The app updates and restarts automatically. Your settings and shortcuts stay in place.');
     $('#app-update-notes-label').textContent = updateText('Что нового', 'What is new');
-    $('#app-update-notes').textContent = String(update.notes || '').trim();
+    renderUpdateNotes($('#app-update-notes'), update.notes);
     $('#app-update-notes-wrap').hidden = !String(update.notes || '').trim();
     if (!state.updates.installing) {
       $('#app-update-phase').textContent = updateText('Готово к загрузке', 'Ready to download');
@@ -2118,6 +2161,13 @@
     }
   }
   async function checkForUpdates(interactive = false) {
+    if (!interactive) {
+      await window.cgsLanguageReady;
+      if (document.querySelector('dialog[open]')) {
+        setTimeout(() => checkForUpdates(false), 1500);
+        return;
+      }
+    }
     if (state.updates.checking || state.updates.installing || (!interactive && (state.updates.suppressAuto || state.updates.snoozedThisLaunch)) || !invoke) return;
     state.updates.checking = true;
     const button = $('#check-update-button');
@@ -2139,6 +2189,10 @@
         : updateText('В релизе нет проверяемого EXE для обновления внутри программы.', 'This release has no verified EXE for in-app updates.');
       status.classList.add('available');
       if (!update.inAppSupported || (!interactive && (state.updates.promptedVersion === update.latestVersion || activeOperations.size))) return;
+      if (!interactive && document.querySelector('dialog[open]')) {
+        setTimeout(() => checkForUpdates(false), 1500);
+        return;
+      }
       state.updates.promptedVersion = update.latestVersion;
       showUpdateDialog();
     } catch(error) {

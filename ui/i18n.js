@@ -969,7 +969,7 @@
   }
 
   function processAttribute(element, name) {
-    if (!element.hasAttribute(name)) return;
+    if (!element.hasAttribute(name) || element.closest("[data-i18n-skip]")) return;
     const current = element.getAttribute(name) || "";
     let records = attributeRecords.get(element);
     if (!records) {
@@ -992,7 +992,7 @@
       const textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
         acceptNode(node) {
           const parent = node.parentElement;
-          return parent && !parent.closest("script,style,code,pre") ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+          return parent && !parent.closest("script,style,code,pre,[data-i18n-skip]") ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
         }
       });
       while (textWalker.nextNode()) processText(textWalker.currentNode);
@@ -1021,9 +1021,10 @@
   }
 
   function setLanguage(next) {
-    if (!SUPPORTED.has(next) || next === language) return;
+    if (!SUPPORTED.has(next)) return;
+    try { localStorage.setItem(STORAGE_KEY, next); } catch (_) {}
+    if (next === language) return;
     language = next;
-    try { localStorage.setItem(STORAGE_KEY, language); } catch (_) {}
     refresh();
     window.dispatchEvent(new CustomEvent("cgs:language-changed", { detail: { language, locale: locale() } }));
   }

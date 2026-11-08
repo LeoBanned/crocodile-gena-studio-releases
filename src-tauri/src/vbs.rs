@@ -99,6 +99,7 @@ struct VbsSnapshot {
 enum BootMode {
     AdvancedOptions,
     TestSigning,
+    ProtectionsOnly,
 }
 
 #[tauri::command]
@@ -118,6 +119,18 @@ pub(crate) async fn vbs_disable(
     })
     .await
     .map_err(|error| format!("Отключение VBS было прервано: {error}"))?
+}
+
+#[tauri::command]
+pub(crate) async fn hv_disable_protections(
+    app: AppHandle,
+    allow_uefi: Option<bool>,
+) -> Result<VbsChangeResult, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        native::disable(&app, BootMode::ProtectionsOnly, allow_uefi.unwrap_or(false))
+    })
+    .await
+    .map_err(|error| format!("Отключение защит было прервано: {error}"))?
 }
 
 #[tauri::command]

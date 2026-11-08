@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="./local-cloud.css" />
   <link rel="stylesheet" href="./partners.css" />
   <link rel="stylesheet" href="./social-hub.css" />
+  <link rel="stylesheet" href="./onboarding.css" />
   <script src="./personalization.js"></script>
 </head>
 <body>
@@ -889,7 +890,7 @@
       <span class="coming-label">CROCODILE GENA STUDIO</span>
       <h3 id="app-update-title">Доступно обновление</h3>
       <p class="app-update-intro" id="app-update-intro">Программа обновится и запустится автоматически. Настройки и ярлыки сохранятся.</p>
-      <details id="app-update-notes-wrap"><summary id="app-update-notes-label">Что нового</summary><p id="app-update-notes"></p></details>
+      <details id="app-update-notes-wrap"><summary id="app-update-notes-label">Что нового</summary><div id="app-update-notes" tabindex="0" role="region" aria-labelledby="app-update-notes-label"></div></details>
       <div class="app-update-progress" id="app-update-progress-wrap" role="status" aria-live="polite">
         <div class="app-update-phase"><strong id="app-update-phase">Готово к загрузке</strong><span id="app-update-percent">0%</span></div>
         <progress id="app-update-progress" max="100" value="0" aria-label="Прогресс обновления"></progress>
@@ -962,7 +963,32 @@
     <p class="social-hub-status" id="social-hub-status" role="status" aria-live="polite"></p>
   </dialog>
   <div class="toast-stack" id="toast-stack"></div>
+  <dialog id="first-language-dialog" class="cgs-setup-dialog" aria-labelledby="first-language-title" aria-describedby="first-language-description" data-i18n-skip>
+    <span class="coming-label">CROCODILE GENA STUDIO</span>
+    <h2 id="first-language-title">Choose your language<br>Выберите язык</h2>
+    <p id="first-language-description">Choose once. You can change it later in Settings.<br>Выберите один раз. Позже язык можно изменить в настройках.</p>
+    <div class="setup-language-options">
+      <button type="button" data-first-language="en"><b>EN</b><span><strong>English</strong><small>Use the app in English</small></span></button>
+      <button type="button" data-first-language="ru"><b>RU</b><span><strong>Русский</strong><small>Интерфейс на русском</small></span></button>
+    </div>
+    <p id="first-language-error" class="setup-status" role="status"></p>
+  </dialog>
+  <dialog id="hv-protection-dialog" class="cgs-setup-dialog" aria-labelledby="hv-protection-title" aria-describedby="hv-protection-description">
+    <div class="setup-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6zM12 8v5M12 16h.01"/></svg></div>
+    <span class="coming-label">CROCODILE-HV</span>
+    <h2 id="hv-protection-title"></h2>
+    <p id="hv-protection-description"></p>
+    <ul id="hv-protection-list" class="setup-components"></ul>
+    <p id="hv-protection-once" class="setup-note"></p>
+    <p id="hv-protection-restart-note"></p>
+    <p id="hv-protection-warnings" class="setup-status"></p>
+    <label id="hv-protection-consent-wrap" class="setup-consent" hidden><input type="checkbox" id="hv-protection-consent"><span id="hv-protection-consent-text"></span></label>
+    <p id="hv-protection-status" class="setup-status" role="status" aria-live="polite"></p>
+    <pre id="hv-protection-progress" class="setup-progress" hidden></pre>
+    <div class="setup-actions"><button type="button" id="hv-protection-later" class="secondary-button"></button><button type="button" id="hv-protection-accept" class="install-button"></button></div>
+  </dialog>
   <script src="./i18n.js"></script>
+  <script src="./onboarding.js"></script>
   <script src="./app.js"></script>
   <script src="./loader.js"></script>
   <script src="./local-cloud.js"></script>

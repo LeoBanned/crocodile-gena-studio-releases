@@ -21,7 +21,7 @@ const {chromium}=require('playwright');
     calls.push({name,args});
     if(name==='install_update')return new Promise((resolve,reject)=>{window.rejectInstall=reject});
     if(name==='cancel_update'){window.rejectInstall(new Error('Cancelled by test'));return null;}
-    if(name==='check_for_update')return{available:window.available,currentVersion:'5.6.3',latestVersion:'5.6.4',inAppSupported:true,notes:'Test release'};
+    if(name==='check_for_update')return{available:window.available,currentVersion:'5.6.3',latestVersion:'5.6.4',inAppSupported:true,notes:'## English\n\n- **Partners:** new section.\n- Local cloud fixes.\n\n### CloudRedirect\n\n**Update Local Cloud.**\n\n<img src=x onerror=alert(1)>\n\n' + ('- Additional release detail.\n'.repeat(15))};
     if(name==='update_launch_ready'){window.startupReady=true;return null;}
     if(name==='platform_info')return{os:'windows',windows:true,windowsOnlyModules:[],sessionId:localStorage.getItem('updater-test-session') || 'first-native-process'};
     if(name==='list_games')return{games:[],selected_id:null};
@@ -39,6 +39,16 @@ const {chromium}=require('playwright');
   await page.evaluate(()=>window.available=true);
   await page.locator('#check-update-button').click();
   await page.locator('#app-update-backdrop').waitFor({state:'visible'});
+  await page.locator('#app-update-notes-label').click();
+  assert.equal(await page.locator('#app-update-notes h4').first().textContent(),'English');
+  assert.equal(await page.locator('#app-update-notes strong').first().textContent(),'Partners:');
+  assert.equal(await page.locator('#app-update-notes img').count(),0,'Remote HTML must stay inert');
+  assert.match(await page.locator('#app-update-notes').textContent(),/<img src=x/);
+  assert.equal(await page.locator('#app-update-notes').evaluate(e=>getComputedStyle(e).scrollbarWidth),'thin');
+  await page.locator('#app-update-notes').evaluate(e=>e.scrollTop=80);
+  assert.ok(await page.locator('#app-update-notes').evaluate(e=>e.scrollTop)>0);
+  await page.waitForTimeout(300);
+  if(process.env.CGS_TEST_OUTPUT)await page.locator('.app-update-dialog').screenshot({path:path.join(process.env.CGS_TEST_OUTPUT,'updater-notes-en.png')});
   assert.equal(await page.locator('#check-update-button').isDisabled(),false);
   await page.evaluate(()=>window.dispatchEvent(new CustomEvent('cgs:busy-changed',{detail:{id:'archive',busy:true}})));
   await page.locator('#app-update-install').click();

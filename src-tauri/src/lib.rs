@@ -344,6 +344,7 @@ pub fn run() {
             vbs::vbs_scan,
             vbs::vbs_repair,
             vbs::vbs_disable,
+            vbs::hv_disable_protections,
             vbs::vbs_restore,
             vbs::vbs_set_test_mode,
             vbs::vbs_restart,

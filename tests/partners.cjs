@@ -38,6 +38,7 @@ const {chromium}=require('playwright');
       }}};
     },seed);
     await page.goto(`http://127.0.0.1:${server.address().port}/`);
+    await page.locator('[data-first-language="en"]').click();
     assert.equal(await page.evaluate(()=>window.cgsI18n.language),'en');
     assert.equal(await page.locator('.social-links button').count(),1);
     await page.locator('#open-social-hub').click();

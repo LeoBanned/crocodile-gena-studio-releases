@@ -420,6 +420,7 @@
       applyLibrary(library);
       await refreshAll(true);
       appendLog("success", "Crocodile-HV установлен в папку игры; ярлык создан на рабочем столе.");
+      await window.cgsHvProtectionCheck?.();
     } catch (error) {
       appendLog("error", String(error));
     } finally {
@@ -566,6 +567,7 @@
       catch (error) { appendLog("warning", `События запуска недоступны: ${error}`); }
     }
     await refreshAll(true);
+    await window.cgsHvProtectionResume?.();
   }
 
   boot();
