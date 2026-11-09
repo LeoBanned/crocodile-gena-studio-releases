@@ -10,7 +10,7 @@ Eight workspaces for Steam tools, save backups, game components and launch manag
 Built for Windows. Powered by Rust and Tauri.
 
 <p>
-  <img alt="Version 5.6.5" src="https://img.shields.io/badge/version-5.6.5-63f5c2?style=flat-square&labelColor=10141d" />
+  <img alt="Version 5.6.6" src="https://img.shields.io/badge/version-5.6.6-63f5c2?style=flat-square&labelColor=10141d" />
   <img alt="Windows 10 and 11, x64" src="https://img.shields.io/badge/Windows-10%20%2F%2011%20%C2%B7%20x64-82d9ff?style=flat-square&labelColor=10141d" />
   <img alt="Rust and Tauri 2" src="https://img.shields.io/badge/built%20with-Rust%20%2B%20Tauri%202-a987ff?style=flat-square&labelColor=10141d" />
   <img alt="Project code: GPL-3.0-only" src="https://img.shields.io/badge/project%20code-GPL--3.0--only-63f5c2?style=flat-square&labelColor=10141d" />
@@ -24,7 +24,7 @@ Built for Windows. Powered by Rust and Tauri.
 
 <img src="docs/images/home-en-5.6.5.png" width="100%" alt="Crocodile Gena Studio 5.6.5 — English home screen in the Graphite theme" />
 
-<sub>Version 5.6.5 · English interface · Optional New Year decorations</sub>
+<sub>Screenshot from v5.6.5 · English interface · Optional New Year decorations</sub>
 
 </div>
 
@@ -38,7 +38,7 @@ Scan a game folder, configure its components, back up progress and prepare its l
 | :--- | :--- | :--- |
 | Scan game directories, Steam libraries and common save locations. | Manage supported fixes, DLC configurations, manifests and launch options. | Follow operations in the log and use the backup or restore features provided by each module. |
 
-**Jump to:** [Modules](#eight-modules-one-workspace) · [Screenshots](#a-closer-look) · [What's new](#new-in-565) · [Get started](#get-started) · [Source](#source-and-licensing)
+**Jump to:** [Modules](#eight-modules-one-workspace) · [Screenshots](#a-closer-look) · [What's new](#new-in-566) · [Get started](#get-started) · [Source](#source-and-licensing)
 
 ## Eight modules. One workspace.
 
@@ -110,7 +110,7 @@ The plugin adds a **Get manifest** button to supported Steam Store game pages an
 
 ### 05 · Hypervisor, Anti-cheats & VBS
 
-Add a game executable to deploy the bundled **Crocodile-HV** launcher and create a desktop shortcut with the game's name and icon.
+Add a game executable to deploy the bundled **Crocodile-HV 2.0.0** launcher and create a desktop shortcut with the game's name and icon. For an existing game, select it and click **Verify** in Module 05 to update the launcher in its folder. The app backs up the previous launcher.
 
 The **experimental Steam Play integration** supports account selection, automatic Steam shutdown, launch-option changes and reopening the client. Previous launch options are saved for restoration. This mode forwards Steam's original game command; it may differ from the executable selected for a desktop shortcut.
 
@@ -188,6 +188,11 @@ Choose Graphite, Glass, Minimal, Neon, Midnight, Obsidian, Forest, Plum, Warm, A
 Choose **English or Russian on first launch**; your choice is remembered. Change it anytime in Settings.
 
 And yes, **Gena** can keep you company in the sidebar — now with a festive hat. Enable or disable **New Year decorations** in **Settings → Appearance**: falling snow, a glowing garland, pine branches and hanging ornaments follow your selected theme. Motion preferences are respected.
+
+## New in 5.6.6
+
+- **Crocodile-HV 2.0.0:** Module 05 includes the updated launcher. Its executable is named `Crocodile-HV.exe`, and Windows file properties show the Crocodile-HV name and description.
+- **Existing games:** click **Verify** in Module 05 to replace the launcher in the game folder and keep a backup of the previous file.
 
 ## New in 5.6.5
 

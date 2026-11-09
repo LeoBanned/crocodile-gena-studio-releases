@@ -71,8 +71,8 @@
   },
   {
     "path": "src-tauri/resources/hypervisor/Crocodile-HV.exe",
-    "bytes": 559104,
-    "sha256": "7db9fa47982edc83bba35ce8b23cd2a88ea6b69f9cc263a0ba573592bd9a73f8"
+    "bytes": 648192,
+    "sha256": "6677a856aea1b35254813db6f7f4cea17b8549f8c4cf3310e2c197cd5a2d23d1"
   },
   {
     "path": "src-tauri/resources/local-cloud/cgs_cloud_redirect.dll",
