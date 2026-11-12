@@ -227,11 +227,11 @@ fn loader_dlls_are_current(steam: &Path) -> Result<bool, String> {
 
 #[cfg(test)]
 fn update_loader_for(steam: &Path) -> OperationResult {
-    crate::lua_loader::update(steam, None)
+    crate::lua_loader::update(steam, None, false)
 }
 
 /// Explicit manual action only: startup and ordinary status refreshes never replace DLLs.
-fn update_loader_blocking_with_variant(steam_path: Option<String>, variant: Option<String>) -> OperationResult {
+fn update_loader_blocking_with_variant(steam_path: Option<String>, variant: Option<String>, online: bool) -> OperationResult {
     // Never fall back to another Steam installation after an invalid explicit selection.
     let steam = match steam_path.filter(|path| !path.trim().is_empty()) {
         Some(path) => {
@@ -243,23 +243,23 @@ fn update_loader_blocking_with_variant(steam_path: Option<String>, variant: Opti
     let Some(steam) = steam else {
         return OperationResult::error("Папка Steam не найдена", vec![]);
     };
-    crate::lua_loader::update(&steam, variant.as_deref())
+    crate::lua_loader::update(&steam, variant.as_deref(), online)
 }
 
 #[cfg(test)]
 fn update_loader_blocking(steam_path: Option<String>) -> OperationResult {
-    update_loader_blocking_with_variant(steam_path, None)
+    update_loader_blocking_with_variant(steam_path, None, false)
 }
 
 #[tauri::command]
-pub async fn luatools_update_loader(steam_path: Option<String>, variant: Option<String>) -> OperationResult {
+pub async fn luatools_update_loader(steam_path: Option<String>, variant: Option<String>, online: Option<bool>) -> OperationResult {
     #[cfg(not(target_os = "windows"))]
     {
-        let _ = (steam_path, variant);
+        let _ = (steam_path, variant, online);
         return OperationResult::error("Обновление этих DLL доступно только в Windows", vec![]);
     }
     #[cfg(target_os = "windows")]
-    match tauri::async_runtime::spawn_blocking(move || update_loader_blocking_with_variant(steam_path, variant)).await {
+    match tauri::async_runtime::spawn_blocking(move || update_loader_blocking_with_variant(steam_path, variant, online.unwrap_or(false))).await {
         Ok(result) => result,
         Err(error) => OperationResult::error(format!("Обновление DLL прервано: {error}"), vec![]),
     }

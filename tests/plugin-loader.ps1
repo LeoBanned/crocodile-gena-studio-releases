@@ -117,4 +117,22 @@ Assert-Test ([IO.File]::GetLastWriteTimeUtc($taskProxy) -eq $taskProxyTime) 'Mat
 $taskFailed = $false
 try { & $taskInstaller -SteamPath $taskAlternate -ResourcePath $taskResources } catch { $taskFailed = $true }
 Assert-Test $taskFailed 'Corrupt selection silently reset to version one'
+# A newer verified local package must remain active when the plugin imports a game.
+$taskOnline = Join-Path $taskFresh 'config/cgs-luatools-online'
+[IO.Directory]::CreateDirectory($taskOnline) | Out-Null
+$taskOnlineHashes = [ordered]@{}
+foreach ($taskName in @('OpenSteamTool.dll','dwmapi.dll','xinput1_4.dll')) {
+    $taskBytes = [IO.File]::ReadAllBytes((Join-Path $taskResources $taskName))
+    $taskFile = Join-Path $taskOnline $taskName
+    [IO.File]::WriteAllBytes($taskFile, [byte[]]($taskBytes + [byte]1))
+    $taskOnlineHashes[$taskName] = (Hash-Test $taskFile).ToLowerInvariant()
+}
+$taskRevision = [int]([IO.File]::ReadAllText((Join-Path $taskResources 'revision.txt')).Trim()) + 1
+$taskOnlineManifest = @{revision=$taskRevision;sha256=('0' * 64);files=$taskOnlineHashes} | ConvertTo-Json
+[IO.File]::WriteAllText((Join-Path $taskOnline 'latest.json'), $taskOnlineManifest)
+& $taskInstaller -SteamPath $taskFresh -ResourcePath $taskResources
+Assert-Test ((Hash-Test (Join-Path $taskFresh 'OpenSteamTool.dll')).ToLowerInvariant() -eq $taskOnlineHashes['OpenSteamTool.dll']) 'Plugin did not use the newer cached DLL'
+[IO.File]::Delete((Join-Path $taskFresh 'dwmapi.dll'))
+& $taskInstaller -SteamPath $taskFresh -ResourcePath $taskResources
+Assert-Test ((Hash-Test (Join-Path $taskFresh 'dwmapi.dll')).ToLowerInvariant() -eq $taskOnlineHashes['dwmapi.dll']) 'Plugin did not repair from the cached DLL'
 Write-Host "PASS: offline DLL installation, both layouts, automatic upgrades, repair, config preservation, backups, idempotence, rollback and corrupt selection. Temporary test folder: $taskTemp"

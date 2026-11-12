@@ -17,6 +17,7 @@ mod hypervisor;
 mod hypervisor;
 mod luatools;
 mod lua_loader;
+mod loader_updates;
 mod local_cloud;
 #[cfg(target_os = "windows")]
 mod millennium;
@@ -305,7 +306,6 @@ pub fn run() {
             local_cloud::local_cloud_update_component,
             luatools::luatools_update_loader,
             lua_loader::luatools_loader_info,
-            lua_loader::luatools_check_loader_updates,
             luatools::luatools_restore_manifests,
             luatools::luatools_detect_steam,
             luatools::luatools_pick_files,

@@ -1263,15 +1263,45 @@
 
   let luaLoaderUpdating = false;
 
+  async function refreshLuaDllInfo(steamPath) {
+    $("#lua-dll-steam-path").textContent = steamPath || "Steam не найден";
+    $("#lua-dll-proxy").textContent = "dwmapi.dll";
+    const rows = $$("[data-dll-name]");
+    for (const row of rows) { row.textContent = ""; row.dataset.status = ""; }
+    try {
+      const info = await call("luatools_loader_info", { steamPath });
+      $("#lua-dll-steam-path").textContent = info.steamPath || steamPath || "Steam не найден";
+      $("#lua-dll-proxy").textContent = info.selectedVariant === "compatibility" ? "bin/dwmapi.dll" : "dwmapi.dll";
+      for (const row of rows) {
+        const state = info.files?.[row.dataset.dllName] || "";
+        row.dataset.status = state;
+        row.textContent = ({ current: "Совпадает", changed: "Отличается", missing: "Нет файла" })[state] || "";
+      }
+      if (info.issue && !$("#lua-dll-status").textContent) $("#lua-dll-status").textContent = info.issue;
+    } catch (_) {
+      // The update command reports an invalid Steam path when invoked.
+    }
+  }
+
   async function luaUpdateDlls() {
     if (luaLoaderUpdating || luaInstalling) return;
     luaLoaderUpdating = true;
-    const button = $("#lua-update-dll-button");
-    setBusy(button, true, "Устанавливаем DLL…");
+    const button = $("#lua-dll-install");
+    const status = $("#lua-dll-status");
+    setBusy(button, true, "Проверяем обновление DLL…");
+    status.className = "loader-status";
+    status.textContent = "Проверяем обновление DLL…";
     try {
-      const result = await call("luatools_update_loader", { steamPath: state.lua.steamPath || null });
-      if (result && consumeResult(result)) await luaRefresh({ offerMillennium: false });
+      const result = await call("luatools_update_loader", { steamPath: state.lua.steamPath || null, online: true });
+      status.textContent = result.message;
+      status.classList.add(result.success ? "success" : "error");
+      if (consumeResult(result)) {
+        await refreshLuaDllInfo(state.lua.steamPath || null);
+        await luaRefresh({ offerMillennium: false });
+      }
     } catch (error) {
+      status.textContent = errorText(error);
+      status.classList.add("error");
       toast(errorText(error), "error");
     } finally {
       luaLoaderUpdating = false;
@@ -2319,12 +2349,13 @@
     const dllDialog = $("#lua-dll-dialog");
     $("#lua-update-dll-button").addEventListener("click", () => {
       if (luaLoaderUpdating || luaInstalling || dllDialog.open) return;
-      dllDialog.returnValue = "";
+      const status = $("#lua-dll-status");
+      status.textContent = "";
+      status.className = "loader-status";
       dllDialog.showModal();
+      refreshLuaDllInfo(state.lua.steamPath || null);
     });
-    dllDialog.addEventListener("close", () => {
-      if (dllDialog.returnValue === "install") luaUpdateDlls();
-    });
+    $("#lua-dll-install").addEventListener("click", luaUpdateDlls);
     dllDialog.addEventListener("click", (event) => {
       if (event.target === dllDialog) dllDialog.close();
     });

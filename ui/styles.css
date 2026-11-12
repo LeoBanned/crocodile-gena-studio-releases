@@ -604,36 +604,6 @@ body { font-size: 16px; }
 .lua-steam-row input { flex: 1; min-width: 0; height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(4,6,9,.4); outline: 0; color: #cfd6df; font: 11px/1.3 "Cascadia Code", Consolas, monospace; }
 .lua-steam-row input:focus { border-color: rgba(var(--accent-rgb), .32); }
 .lua-steam-card > span { color: #5e6876; font-size: 9.5px; }
-dialog.lua-dll-dialog {
-  width: min(480px, calc(100vw - 40px));
-  padding: 0;
-  color: var(--text);
-  border: 1px solid rgba(var(--accent-rgb), .25);
-  border-radius: var(--ui-panel-radius);
-  background: var(--panel-solid);
-}
-.lua-dll-dialog::backdrop { background: rgba(0, 0, 0, .64); backdrop-filter: blur(3px); }
-.lua-dll-dialog form { position: relative; display: grid; gap: 14px; padding: 26px; }
-.lua-dll-dialog h3 { margin: 0; padding-right: 30px; font-size: 21px; }
-.lua-dll-dialog p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
-.lua-dll-dialog .primary-button { justify-self: end; margin-top: 6px; }
-.lua-dll-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--muted);
-  font-size: 22px;
-  cursor: pointer;
-}
-.lua-dll-close:hover { background: var(--panel-soft); color: var(--text); }
 .millennium-panel { display: flex; align-items: center; gap: 17px; padding: 20px 24px; border-color: rgba(var(--accent-rgb), .12); background: linear-gradient(110deg, rgba(var(--accent-rgb), .055), rgba(13,16,24,.9) 52%); }
 .millennium-plugin-icon { width: 48px; height: 48px; display: grid; place-items: center; flex: none; border: 1px solid rgba(var(--accent-rgb), .2); border-radius: 14px; background: rgba(var(--accent-rgb), .09); box-shadow: inset 0 1px rgba(255,255,255,.05), 0 10px 26px rgba(var(--accent-rgb), .08); font-size: 23px; line-height: 1; }
 .millennium-plugin-copy { flex: 1; min-width: 0; }

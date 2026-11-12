@@ -6,7 +6,7 @@ use std::{
 };
 
 const PLUGIN_FOLDER_NAME: &str = "crocodile-manifest";
-const BUNDLED_PLUGIN_VERSION: &str = "0.5.4";
+const BUNDLED_PLUGIN_VERSION: &str = "0.5.5";
 
 const EMBEDDED_MILLENNIUM_FILES: &[(&str, &[u8])] = &[
     ("wsock32.dll", include_bytes!("../../millenium/wsock32.dll")),
@@ -39,6 +39,7 @@ const EMBEDDED_PLUGIN_FILES: &[(&str, &[u8])] = &[
     ("backend/loader/compatibility/OpenSteamTool.dll", include_bytes!("assets/loader-v2/OpenSteamTool.dll")),
     ("backend/loader/compatibility/dwmapi.dll", include_bytes!("assets/loader-v2/dwmapi.dll")),
     ("backend/loader/compatibility/xinput1_4.dll", include_bytes!("assets/loader-v2/xinput1_4.dll")),
+    ("backend/loader/revision.txt", include_bytes!("assets/loader-revision.txt")),
     ("backend/loader/opensteamtool.toml", include_bytes!("assets/opensteamtool.toml")),
     (
         "backend/main.lua",
@@ -289,7 +290,7 @@ pub(crate) fn update_installed_for_loader(steam: &Path) -> Result<(), String> {
         let parts: Vec<u32> = version.split('.').map(str::parse).collect::<Result<_, _>>()
             .map_err(|_| "Неизвестная версия установленного плагина. Проверьте поддержку закрепления DLL вручную.".to_string())?;
         if parts.len() != 3 { return Err("Неизвестная версия установленного плагина. Проверьте его вручную.".into()); }
-        if parts.as_slice() > [0, 5, 4].as_slice() { return Ok(()); } // Never downgrade a later plugin.
+        if parts.as_slice() > [0, 5, 5].as_slice() { return Ok(()); } // Never downgrade a later plugin.
     }
     if installed_version.as_deref() == Some(BUNDLED_PLUGIN_VERSION)
         && EMBEDDED_PLUGIN_FILES.iter().all(|(name, bytes)| fs::read(plugin.join(name)).ok().as_deref() == Some(*bytes)) {

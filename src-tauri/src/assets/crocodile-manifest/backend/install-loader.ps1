@@ -139,11 +139,27 @@ if ($null -eq $taskPrevious) {
         $taskVariant = 'compatibility'
     }
 }
+$taskActiveResources = $taskResources
+$taskOnline = Join-Path $taskConfigDir 'cgs-luatools-online'
+$taskOnlineManifest = Read-OptionalBytes (Join-Path $taskOnline 'latest.json')
+$taskOnlineHashes = $null
+if ($null -ne $taskOnlineManifest) {
+    $taskOnlineInfo = $taskUtf8.GetString($taskOnlineManifest) | ConvertFrom-Json
+    if ($taskOnlineInfo.revision -gt [uint32]([IO.File]::ReadAllText((Join-Path $taskResources 'revision.txt')).Trim())) {
+        if (@($taskOnlineInfo.files.PSObject.Properties).Count -ne 3) { throw 'Invalid cached DLL package.' }
+        $taskOnlineHashes = $taskOnlineInfo.files
+        $taskActiveResources = $taskOnline
+    }
+}
 $taskDllBytes = [ordered]@{}
 $taskHashes = [ordered]@{}
 foreach ($taskName in @('OpenSteamTool.dll','dwmapi.dll','xinput1_4.dll')) {
     $taskTargetName = if ($taskVariant -eq 'compatibility' -and $taskName -eq 'dwmapi.dll') { 'bin/dwmapi.dll' } else { $taskName }
-    $taskBytes = [IO.File]::ReadAllBytes((Join-Path $taskResources $taskName))
+    $taskBytes = Read-OptionalBytes (Join-Path $taskActiveResources $taskName)
+    if ($null -eq $taskBytes -or $taskBytes.Length -gt 16MB -or
+        ($null -ne $taskOnlineHashes -and (Hash-Bytes $taskBytes) -cne $taskOnlineHashes.$taskName)) {
+        throw "Invalid cached or bundled DLL: $taskName"
+    }
     if ($taskBytes.Length -lt 1024 -or $taskBytes[0] -ne 77 -or $taskBytes[1] -ne 90) {
         throw "Invalid bundled DLL: $taskName"
     }
