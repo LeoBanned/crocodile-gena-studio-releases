@@ -1,9 +1,9 @@
 {
-  "revision": 1,
-  "sha256": "89e1e634a0cd657a8b2ceb68a6b112581adfe1a6300a757e89a50288f7936454",
-  "files": {
-    "OpenSteamTool.dll": "09a8e2cc3aa9798a1bdc432410c8411a768c1e4330de21a2014bb591071cfe3c",
-    "dwmapi.dll": "e6e36908757a168a530674a7523dbc3db519af355a350135eda67ebc93b08c64",
-    "xinput1_4.dll": "35966a7a59f5e0bd8c36c588c6e1a11aa88bd6cab226b2e3d25603a177143d2e"
-  }
+    "revision":  2,
+    "sha256":  "6c01e5bb5bfb5b2254c79288d334ad39a4d75ab196b415a40dc36b6b186bfab2",
+    "files":  {
+                  "OpenSteamTool.dll":  "215b49bc45ee9c95cb8977858ba160572462109fd28fd3c7c3bd3121dbf93421",
+                  "dwmapi.dll":  "9bc6195e353b0f0450c073c389f7c81b62742ad9dcf9d190fdaad735b6383eef",
+                  "xinput1_4.dll":  "c2d2232a168863060556efc5568ff800a4629bf1883b4982a95bb4b68b3471c7"
+              }
 }
