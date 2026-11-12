@@ -127,57 +127,53 @@ if ($null -ne $taskOldSelection) {
     catch { throw 'Invalid loader selection. Automatic replacement refused. Choose a version in CrocLua.' }
     Validate-Selection $taskSelection
 }
-$taskVariant = if ($null -ne $taskSelection) { $taskSelection.variant } else { 'standard' }
-if ($null -eq $taskSelection) {
-    if (Same-Bytes (Read-OptionalBytes (Join-Path $taskSteam 'OpenSteamTool.dll')) ([IO.File]::ReadAllBytes((Join-Path $taskResources 'compatibility/OpenSteamTool.dll')))) { $taskVariant = 'compatibility' }
-}
-$taskVariantResources = if ($taskVariant -eq 'compatibility') { Join-Path $taskResources 'compatibility' } else { $taskResources }
-if ($null -eq $taskSelection) {
-    $taskSchema = 2
-    # Do not silently move a legacy, already installed compatibility bundle.
-    if ($taskVariant -eq 'compatibility' -and -not [IO.File]::Exists((Join-Path $taskSteam 'bin/dwmapi.dll')) -and
-        (Same-Bytes (Read-OptionalBytes (Join-Path $taskSteam 'dwmapi.dll')) ([IO.File]::ReadAllBytes((Join-Path $taskVariantResources 'dwmapi.dll'))))) { $taskSchema = 1 }
-    $taskHashes = [ordered]@{}
-    foreach ($taskName in @('OpenSteamTool.dll','dwmapi.dll','xinput1_4.dll')) {
-        $taskTargetName = if ($taskSchema -eq 2 -and $taskVariant -eq 'compatibility' -and $taskName -eq 'dwmapi.dll') { 'bin/dwmapi.dll' } else { $taskName }
-        $taskHashes[$taskTargetName] = Hash-Bytes ([IO.File]::ReadAllBytes((Join-Path $taskVariantResources $taskName)))
-    }
-    $taskSelection = [pscustomobject]@{schema=$taskSchema;variant=$taskVariant;hashes=[pscustomobject]$taskHashes}
-    Validate-Selection $taskSelection
-}
-$taskCurrent = $true
-foreach ($taskProperty in $taskSelection.hashes.PSObject.Properties) {
-    $taskInstalled = Read-OptionalBytes (Join-Path $taskSteam $taskProperty.Name)
-    if ($null -eq $taskInstalled -or (Hash-Bytes $taskInstalled) -cne $taskProperty.Value) { $taskCurrent = $false }
-}
-$taskDllBytes = @{}
-if (-not $taskCurrent) {
-    # The cache key is SHA-256 of Rust's canonical compact Selection JSON.
-    [string[]]$taskKeys = @($taskSelection.hashes.PSObject.Properties.Name)
-    [Array]::Sort($taskKeys, [StringComparer]::Ordinal)
-    $taskOrderedHashes = [ordered]@{}
-    foreach ($taskKey in $taskKeys) { $taskOrderedHashes[$taskKey] = $taskSelection.hashes.$taskKey }
-    $taskCanonical = [ordered]@{schema=[int]$taskSelection.schema;variant=[string]$taskVariant;hashes=$taskOrderedHashes}
-    $taskCacheKey = Hash-Bytes ($taskUtf8.GetBytes(($taskCanonical | ConvertTo-Json -Depth 4 -Compress)))
-    $taskCache = Join-Path $taskSteam ('config/cgs-luatools-loader-cache/' + $taskVariant + '/' + $taskCacheKey)
-    foreach ($taskProperty in $taskSelection.hashes.PSObject.Properties) {
-        $taskName = $taskProperty.Name
-        $taskBaseName = [IO.Path]::GetFileName($taskName)
-        $taskBytes = Read-OptionalBytes (Join-Path $taskVariantResources $taskBaseName)
-        if ($null -eq $taskBytes -or (Hash-Bytes $taskBytes) -cne $taskProperty.Value) {
-            $taskBytes = Read-OptionalBytes (Join-Path $taskCache $taskBaseName)
-        }
-        if ($null -eq $taskBytes -or (Hash-Bytes $taskBytes) -cne $taskProperty.Value) {
-            throw 'Pinned DLLs are missing or damaged and the exact bundle is unavailable. Automatic replacement refused. Update DLLs explicitly in CrocLua.'
-        }
-        if ($taskBytes.Length -lt 1024 -or $taskBytes[0] -ne 77 -or $taskBytes[1] -ne 90) { throw 'Invalid DLL data. Installation refused.' }
-        $taskDllBytes[$taskName] = $taskBytes
-        $taskParent = Split-Path -Parent (Join-Path $taskSteam $taskName)
-        if ((Test-Path -LiteralPath $taskParent) -and ((Get-Item -LiteralPath $taskParent -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Loader destination is a link.' }
-        [IO.Directory]::CreateDirectory($taskParent) | Out-Null
+$taskPrevious = $taskSelection
+$taskVariant = if ($null -ne $taskPrevious) { $taskPrevious.variant } else { 'standard' }
+if ($null -eq $taskPrevious) {
+    $taskLegacyMain = Read-OptionalBytes (Join-Path $taskResources 'compatibility/OpenSteamTool.dll')
+    $taskLegacyProxy = Read-OptionalBytes (Join-Path $taskResources 'compatibility/dwmapi.dll')
+    $taskInstalledProxy = Read-OptionalBytes (Join-Path $taskSteam 'bin/dwmapi.dll')
+    if (($null -ne $taskLegacyMain -and (Same-Bytes (Read-OptionalBytes (Join-Path $taskSteam 'OpenSteamTool.dll')) $taskLegacyMain)) -or
+        ($null -ne $taskInstalledProxy -and ((Same-Bytes $taskInstalledProxy $taskLegacyProxy) -or
+            (Same-Bytes $taskInstalledProxy (Read-OptionalBytes (Join-Path $taskResources 'dwmapi.dll')))))) {
+        $taskVariant = 'compatibility'
     }
 }
-$taskSelectionBytes = if ($null -ne $taskOldSelection) { $taskOldSelection } else { $taskUtf8.GetBytes(($taskSelection | ConvertTo-Json -Depth 4)) }
+$taskDllBytes = [ordered]@{}
+$taskHashes = [ordered]@{}
+foreach ($taskName in @('OpenSteamTool.dll','dwmapi.dll','xinput1_4.dll')) {
+    $taskTargetName = if ($taskVariant -eq 'compatibility' -and $taskName -eq 'dwmapi.dll') { 'bin/dwmapi.dll' } else { $taskName }
+    $taskBytes = [IO.File]::ReadAllBytes((Join-Path $taskResources $taskName))
+    if ($taskBytes.Length -lt 1024 -or $taskBytes[0] -ne 77 -or $taskBytes[1] -ne 90) {
+        throw "Invalid bundled DLL: $taskName"
+    }
+    $taskDllBytes[$taskTargetName] = $taskBytes
+    $taskHashes[$taskTargetName] = Hash-Bytes $taskBytes
+}
+$taskSelection = [pscustomobject]@{schema=2;variant=$taskVariant;hashes=[pscustomobject]$taskHashes}
+$taskSelectionBytes = $taskOldSelection
+if ($null -eq $taskPrevious -or $taskPrevious.schema -ne $taskSelection.schema -or
+    @($taskHashes.Keys | Where-Object { $taskPrevious.hashes.$_ -cne $taskHashes[$_] }).Count -gt 0) {
+    $taskSelectionBytes = $taskUtf8.GetBytes(($taskSelection | ConvertTo-Json -Depth 4))
+}
+
+# Remove a previous proxy only if its installed bytes still match the old selection.
+if ($null -ne $taskPrevious) {
+    foreach ($taskProperty in $taskPrevious.hashes.PSObject.Properties) {
+        if ($taskHashes.Contains($taskProperty.Name)) { continue }
+        $taskInstalled = Read-OptionalBytes (Join-Path $taskSteam $taskProperty.Name)
+        if ($null -eq $taskInstalled) { continue }
+        if ((Hash-Bytes $taskInstalled) -cne $taskProperty.Value) {
+            throw "Previous proxy was modified externally: $($taskProperty.Name)"
+        }
+        $taskDllBytes[$taskProperty.Name] = $null
+    }
+} elseif ($taskVariant -eq 'compatibility') {
+    $taskLegacyRoot = Read-OptionalBytes (Join-Path $taskSteam 'dwmapi.dll')
+    if ($null -ne $taskLegacyRoot -and (Same-Bytes $taskLegacyRoot $taskLegacyProxy)) {
+        $taskDllBytes['dwmapi.dll'] = $null
+    }
+}
 
 $taskConfigPath = Join-Path $taskSteam 'opensteamtool.toml'
 $taskOldConfig = Read-OptionalBytes $taskConfigPath
@@ -185,17 +181,14 @@ $taskUtf8 = New-Object Text.UTF8Encoding($false, $true)
 $taskConfigText = if ($null -ne $taskOldConfig) { $taskUtf8.GetString($taskOldConfig).TrimStart([char]0xfeff) } else { '' }
 $taskConfigBytes = $taskUtf8.GetBytes((Configure-Lua $taskConfigText))
 $taskChanges = @()
-foreach ($taskName in (@($taskSelection.hashes.PSObject.Properties.Name) + @('opensteamtool.toml', 'config/cgs-luatools-loader.json'))) {
-    if ($taskCurrent -and $taskName -like '*.dll') { continue }
+foreach ($taskName in (@($taskDllBytes.Keys) + @('opensteamtool.toml', 'config/cgs-luatools-loader.json'))) {
     $taskTarget = Join-Path $taskSteam $taskName
     $taskOriginal = Read-OptionalBytes $taskTarget
     $taskBytes = if ($taskName -eq 'opensteamtool.toml') { $taskConfigBytes }
         elseif ($taskName -eq 'config/cgs-luatools-loader.json') { $taskSelectionBytes }
         else { $taskDllBytes[$taskName] }
-    if ($taskName -like '*.dll' -and ($taskBytes.Length -lt 1024 -or $taskBytes[0] -ne 77 -or $taskBytes[1] -ne 90)) {
-        throw "Invalid bundled DLL: $taskName"
-    }
     if (-not (Same-Bytes $taskOriginal $taskBytes)) {
+        [IO.Directory]::CreateDirectory((Split-Path -Parent $taskTarget)) | Out-Null
         $taskChanges += [pscustomobject]@{ Name=$taskName; Target=$taskTarget; Original=$taskOriginal; Bytes=$taskBytes }
     }
 }
@@ -215,7 +208,8 @@ if ($taskChanges.Count -gt 0) {
             if (-not (Same-Bytes (Read-OptionalBytes $taskChange.Target) $taskChange.Original)) {
                 throw "File changed during installation: $($taskChange.Name)"
             }
-            Write-Atomic $taskChange.Target $taskChange.Bytes
+            if ($null -eq $taskChange.Bytes) { [IO.File]::Delete($taskChange.Target) }
+            else { Write-Atomic $taskChange.Target $taskChange.Bytes }
             $taskCommitted += $taskChange
         }
     } catch {

@@ -102,22 +102,22 @@
   {
     "path": "src-tauri/src/assets/crocodile-manifest/backend/loader/dwmapi.dll",
     "bytes": 112128,
-    "sha256": "81d11523a5ae35a374cc797ca3d3db924169064510acfa9940f61c609431d6b3"
+    "sha256": "e6e36908757a168a530674a7523dbc3db519af355a350135eda67ebc93b08c64"
   },
   {
     "path": "src-tauri/src/assets/crocodile-manifest/backend/loader/OpenSteamTool.dll",
-    "bytes": 1580544,
-    "sha256": "3bced3b2a5363f58c9e7c07d4795d64252c832a56f7c67e78e14989da440516e"
+    "bytes": 1584128,
+    "sha256": "09a8e2cc3aa9798a1bdc432410c8411a768c1e4330de21a2014bb591071cfe3c"
   },
   {
     "path": "src-tauri/src/assets/crocodile-manifest/backend/loader/xinput1_4.dll",
     "bytes": 123392,
-    "sha256": "287cbea6b1139bf5a3b5239a66bed670bb17b9afe8bd4f6a68ef1c5ceada8142"
+    "sha256": "35966a7a59f5e0bd8c36c588c6e1a11aa88bd6cab226b2e3d25603a177143d2e"
   },
   {
     "path": "src-tauri/src/assets/dwmapi.dll",
     "bytes": 112128,
-    "sha256": "81d11523a5ae35a374cc797ca3d3db924169064510acfa9940f61c609431d6b3"
+    "sha256": "e6e36908757a168a530674a7523dbc3db519af355a350135eda67ebc93b08c64"
   },
   {
     "path": "src-tauri/src/assets/loader-v2/dwmapi.dll",
@@ -136,12 +136,12 @@
   },
   {
     "path": "src-tauri/src/assets/OpenSteamTool.dll",
-    "bytes": 1580544,
-    "sha256": "3bced3b2a5363f58c9e7c07d4795d64252c832a56f7c67e78e14989da440516e"
+    "bytes": 1584128,
+    "sha256": "09a8e2cc3aa9798a1bdc432410c8411a768c1e4330de21a2014bb591071cfe3c"
   },
   {
     "path": "src-tauri/src/assets/xinput1_4.dll",
     "bytes": 123392,
-    "sha256": "287cbea6b1139bf5a3b5239a66bed670bb17b9afe8bd4f6a68ef1c5ceada8142"
+    "sha256": "35966a7a59f5e0bd8c36c588c6e1a11aa88bd6cab226b2e3d25603a177143d2e"
   }
 ]

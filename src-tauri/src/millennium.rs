@@ -6,7 +6,7 @@ use std::{
 };
 
 const PLUGIN_FOLDER_NAME: &str = "crocodile-manifest";
-const BUNDLED_PLUGIN_VERSION: &str = "0.5.3";
+const BUNDLED_PLUGIN_VERSION: &str = "0.5.4";
 
 const EMBEDDED_MILLENNIUM_FILES: &[(&str, &[u8])] = &[
     ("wsock32.dll", include_bytes!("../../millenium/wsock32.dll")),
@@ -41,10 +41,6 @@ const EMBEDDED_PLUGIN_FILES: &[(&str, &[u8])] = &[
     ("backend/loader/compatibility/xinput1_4.dll", include_bytes!("assets/loader-v2/xinput1_4.dll")),
     ("backend/loader/opensteamtool.toml", include_bytes!("assets/opensteamtool.toml")),
     (
-        "plugin.json",
-        include_bytes!("assets/crocodile-manifest/plugin.json"),
-    ),
-    (
         "backend/main.lua",
         include_bytes!("assets/crocodile-manifest/backend/main.lua"),
     ),
@@ -55,6 +51,10 @@ const EMBEDDED_PLUGIN_FILES: &[(&str, &[u8])] = &[
     (
         ".millennium/Dist/webkit.js",
         include_bytes!("assets/crocodile-manifest/.millennium/Dist/webkit.js"),
+    ),
+    (
+        "plugin.json",
+        include_bytes!("assets/crocodile-manifest/plugin.json"),
     ),
 ];
 
@@ -193,11 +193,19 @@ pub fn millennium_install_plugin(steam_path: Option<String>) -> OperationResult 
         );
     }
 
-    if let Err(message) = crate::luatools::ensure_opensteamtool_installed(&steam) {
+    if let Err(message) = crate::lua_loader::ensure(&steam) {
         return OperationResult::error(message, vec![]);
     }
 
-    let target_root = plugin_dir(&steam);
+    install_plugin_files(&steam)
+}
+
+fn install_plugin_files(steam: &Path) -> OperationResult {
+    let _lock = match crate::lua_loader::acquire_file_lock(steam) {
+        Ok(lock) => lock,
+        Err(error) => return OperationResult::error(error, vec![]),
+    };
+    let target_root = plugin_dir(steam);
     let previous_version = installed_plugin_version(&target_root);
     let mut logs = Vec::new();
     let mut changed = 0_u32;
@@ -269,7 +277,7 @@ pub fn millennium_remove_plugin(steam_path: Option<String>) -> OperationResult {
     }
 }
 
-/// Only after an explicit DLL selection: old installers do not understand pinning.
+/// Refresh an installed plugin and its bundled resources without touching the live loader.
 pub(crate) fn update_installed_for_loader(steam: &Path) -> Result<(), String> {
     let plugin = plugin_dir(steam);
     if !plugin.join("plugin.json").is_file() { return Ok(()); }
@@ -281,11 +289,13 @@ pub(crate) fn update_installed_for_loader(steam: &Path) -> Result<(), String> {
         let parts: Vec<u32> = version.split('.').map(str::parse).collect::<Result<_, _>>()
             .map_err(|_| "Неизвестная версия установленного плагина. Проверьте поддержку закрепления DLL вручную.".to_string())?;
         if parts.len() != 3 { return Err("Неизвестная версия установленного плагина. Проверьте его вручную.".into()); }
-        if parts.as_slice() > [0, 5, 2].as_slice() { return Ok(()); } // Never downgrade a later plugin.
+        if parts.as_slice() > [0, 5, 4].as_slice() { return Ok(()); } // Never downgrade a later plugin.
     }
     if installed_version.as_deref() == Some(BUNDLED_PLUGIN_VERSION)
-        && fs::read(plugin.join("backend/install-loader.ps1")).ok().as_deref() == Some(EMBEDDED_PLUGIN_FILES[0].1) { return Ok(()); }
-    let result = millennium_install_plugin(Some(steam.display().to_string()));
+        && EMBEDDED_PLUGIN_FILES.iter().all(|(name, bytes)| fs::read(plugin.join(name)).ok().as_deref() == Some(*bytes)) {
+        return Ok(());
+    }
+    let result = install_plugin_files(steam);
     if result.success { Ok(()) } else { Err(result.message) }
 }
 

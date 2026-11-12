@@ -10,7 +10,7 @@ Eight workspaces for Steam tools, save backups, game components and launch manag
 Built for Windows. Powered by Rust and Tauri.
 
 <p>
-  <img alt="Version 5.6.6" src="https://img.shields.io/badge/version-5.6.6-63f5c2?style=flat-square&labelColor=10141d" />
+  <img alt="Version 5.6.7" src="https://img.shields.io/badge/version-5.6.7-63f5c2?style=flat-square&labelColor=10141d" />
   <img alt="Windows 10 and 11, x64" src="https://img.shields.io/badge/Windows-10%20%2F%2011%20%C2%B7%20x64-82d9ff?style=flat-square&labelColor=10141d" />
   <img alt="Rust and Tauri 2" src="https://img.shields.io/badge/built%20with-Rust%20%2B%20Tauri%202-a987ff?style=flat-square&labelColor=10141d" />
   <img alt="Project code: GPL-3.0-only" src="https://img.shields.io/badge/project%20code-GPL--3.0--only-63f5c2?style=flat-square&labelColor=10141d" />
@@ -94,9 +94,9 @@ Manage Lua scripts, depot manifests and their loader components in one place.
 - Search supported manifest services: **Ryuu** and **HubCap**.
 - Import local **Lua**, **manifest** and **ZIP** files.
 - Place files into the relevant Steam folders.
-- Check for DLL updates through GitHub.
-- Choose and pin the **standard** or **compatibility** bundle.
-- Install **Crocodile Manifest 0.5.3** for Millennium.
+- Install and repair DLLs from the files bundled with the app.
+- Keep the existing Steam DLL layout when applying bundled updates.
+- Install **Crocodile Manifest 0.5.4** for Millennium.
 - Enable **Local Cloud** for Lua games with manifest references and choose your
   own storage folder. The embedded CloudRedirect engine runs with Steam and
   stores the redirected save data locally. A switch restores the previous cloud
@@ -188,6 +188,11 @@ Choose Graphite, Glass, Minimal, Neon, Midnight, Obsidian, Forest, Plum, Warm, A
 Choose **English or Russian on first launch**; your choice is remembered. Change it anytime in Settings.
 
 And yes, **Gena** can keep you company in the sidebar — now with a festive hat. Enable or disable **New Year decorations** in **Settings → Appearance**: falling snow, a glowing garland, pine branches and hanging ornaments follow your selected theme. Motion preferences are respected.
+
+## New in 5.6.7
+
+- CrocLua and Crocodile Manifest use the DLLs bundled with the app. Adding a game installs missing files and replaces different ones.
+- The compact **Install DLLs** dialog provides manual repair if a game does not appear in Steam after importing a manifest.
 
 ## New in 5.6.6
 

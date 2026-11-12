@@ -1236,7 +1236,6 @@
       renderLuaStatus();
       window.cgsLocalCloud?.refresh();
       luaLoadNames();
-      if (document.querySelector('#view-lua.active')) window.cgsLoaderDialog?.check({steamPath:state.lua.steamPath || null});
       if (options.offerMillennium !== false && millennium?.status === "millennium_missing" && !state.lua.millenniumPrompted) {
         state.lua.millenniumPrompted = true;
         await offerMillenniumInstall();
@@ -1268,17 +1267,15 @@
     if (luaLoaderUpdating || luaInstalling) return;
     luaLoaderUpdating = true;
     const button = $("#lua-update-dll-button");
-    setBusy(button, true, "Выбираем…");
+    setBusy(button, true, "Устанавливаем DLL…");
     try {
-      const result = await window.cgsLoaderDialog.open({ steamPath: state.lua.steamPath || null });
+      const result = await call("luatools_update_loader", { steamPath: state.lua.steamPath || null });
       if (result && consumeResult(result)) await luaRefresh({ offerMillennium: false });
     } catch (error) {
       toast(errorText(error), "error");
     } finally {
       luaLoaderUpdating = false;
       setBusy(button, false);
-      // Keep a Russian source label for live translation after busy HTML is restored.
-      if (button) { button.textContent = "Обновить DLL"; button.focus({preventScroll:true}); }
     }
   }
 
@@ -2319,7 +2316,18 @@
     $("#lua-browse-button").addEventListener("click", luaBrowseFiles);
     $("#lua-drop-zone").addEventListener("dblclick", luaBrowseFiles);
     $("#lua-refresh-button").addEventListener("click", luaRefresh);
-    $("#lua-update-dll-button").addEventListener("click", luaUpdateDlls);
+    const dllDialog = $("#lua-dll-dialog");
+    $("#lua-update-dll-button").addEventListener("click", () => {
+      if (luaLoaderUpdating || luaInstalling || dllDialog.open) return;
+      dllDialog.returnValue = "";
+      dllDialog.showModal();
+    });
+    dllDialog.addEventListener("close", () => {
+      if (dllDialog.returnValue === "install") luaUpdateDlls();
+    });
+    dllDialog.addEventListener("click", (event) => {
+      if (event.target === dllDialog) dllDialog.close();
+    });
     $("#lua-restart-button").addEventListener("click", luaRestartSteam);
     $("#millennium-site-button").addEventListener("click", downloadMillenniumInstaller);
     $("#millennium-install-button").addEventListener("click", installMillenniumPlugin);
@@ -2489,7 +2497,7 @@
       if ($("#view-lua")?.classList.contains("active")) refreshMillenniumStatus();
       call("luatools_restore_manifests", { steamPath: state.lua.steamPath || null }).catch(() => {});
     }, 3_000);
-    log("Crocodile Gena Studio 5.6.6 инициализирован", "system");
+    log("Crocodile Gena Studio 5.6.7 инициализирован", "system");
     log(invoke ? "Все компоненты готовы к работе" : "Запустите установленное приложение", invoke ? "success" : "error");
     if (invoke) {
       await tauri.event?.listen("cgs-update-progress", (event) => { if(state.updates.installing) updateProgress(event.payload); });

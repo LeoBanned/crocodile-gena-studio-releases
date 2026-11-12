@@ -18,7 +18,6 @@ mod hypervisor;
 mod luatools;
 mod lua_loader;
 mod local_cloud;
-mod loader_github;
 #[cfg(target_os = "windows")]
 mod millennium;
 #[cfg(not(target_os = "windows"))]
@@ -306,7 +305,7 @@ pub fn run() {
             local_cloud::local_cloud_update_component,
             luatools::luatools_update_loader,
             lua_loader::luatools_loader_info,
-            loader_github::luatools_check_loader_updates,
+            lua_loader::luatools_check_loader_updates,
             luatools::luatools_restore_manifests,
             luatools::luatools_detect_steam,
             luatools::luatools_pick_files,
@@ -372,6 +371,14 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_focus();
             }
+            #[cfg(target_os = "windows")]
+            tauri::async_runtime::spawn_blocking(|| {
+                if let Some(steam) = luatools::resolve_steam_path(None) {
+                    if let Err(error) = millennium::update_installed_for_loader(&steam) {
+                        eprintln!("Crocodile Manifest: {error}");
+                    }
+                }
+            });
             Ok(())
         })
         .run(tauri::generate_context!())

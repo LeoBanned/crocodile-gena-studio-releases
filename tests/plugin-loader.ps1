@@ -89,31 +89,32 @@ foreach ($taskName in @('OpenSteamTool.dll','dwmapi.dll','xinput1_4.dll')) {
 $taskPinPath = Join-Path $taskAlternate 'config/cgs-luatools-loader.json'
 $taskPin = [IO.File]::ReadAllText($taskPinPath) | ConvertFrom-Json
 Assert-Test ($taskPin.variant -ceq 'compatibility') 'Existing alternative version was not pinned'
-$taskOriginalTimes = @{}
-foreach ($taskName in @('OpenSteamTool.dll','dwmapi.dll','xinput1_4.dll')) { $taskOriginalTimes[$taskName] = [IO.File]::GetLastWriteTimeUtc((Join-Path $taskAlternate $taskName)) }
-& $taskInstaller -SteamPath $taskAlternate -ResourcePath $taskResources
-foreach ($taskName in @('OpenSteamTool.dll','dwmapi.dll','xinput1_4.dll')) {
-    Assert-Test ((Hash-Test (Join-Path $taskAlternate $taskName)) -eq (Hash-Test (Join-Path $taskResources ('compatibility\' + $taskName)))) 'Version two switched'
-    Assert-Test ([IO.File]::GetLastWriteTimeUtc((Join-Path $taskAlternate $taskName)) -eq $taskOriginalTimes[$taskName]) 'Pinned DLL rewritten'
+Assert-Test ($taskPin.schema -eq 2) 'Old compatibility layout was not migrated'
+Assert-Test (-not [IO.File]::Exists((Join-Path $taskAlternate 'dwmapi.dll'))) 'Old compatibility proxy was left in the Steam root'
+$taskTargets = [ordered]@{
+    'OpenSteamTool.dll' = 'OpenSteamTool.dll'
+    'dwmapi.dll' = 'bin/dwmapi.dll'
+    'xinput1_4.dll' = 'xinput1_4.dll'
 }
-[IO.File]::Delete((Join-Path $taskAlternate 'xinput1_4.dll'))
-& $taskInstaller -SteamPath $taskAlternate -ResourcePath $taskResources
-Assert-Test ((Hash-Test (Join-Path $taskAlternate 'xinput1_4.dll')) -eq (Hash-Test (Join-Path $taskResources 'compatibility\xinput1_4.dll'))) 'Repair used the wrong bundle'
+foreach ($taskName in $taskTargets.Keys) {
+    Assert-Test ((Hash-Test (Join-Path $taskAlternate $taskTargets[$taskName])) -eq (Hash-Test (Join-Path $taskResources $taskName))) "Wrong compatibility DLL: $taskName"
+}
 
-# Preserve a selected older release after a later plugin ships different DLL bytes.
-foreach ($taskName in @('OpenSteamTool.dll','dwmapi.dll','xinput1_4.dll')) {
-    [IO.File]::WriteAllText((Join-Path $taskAlternate $taskName), ('older pinned release ' + $taskName))
-    $taskPin.hashes.$taskName = (Hash-Test (Join-Path $taskAlternate $taskName)).ToLowerInvariant()
-}
+# Simulate an older pinned installation with one changed DLL and one missing DLL.
+$taskOldMain = Join-Path $taskAlternate 'OpenSteamTool.dll'
+[IO.File]::WriteAllText($taskOldMain, 'older pinned release')
+$taskPin.hashes.'OpenSteamTool.dll' = (Hash-Test $taskOldMain).ToLowerInvariant()
 [IO.File]::WriteAllText($taskPinPath, ($taskPin | ConvertTo-Json -Depth 4), (New-Object Text.UTF8Encoding($false)))
+[IO.File]::Delete((Join-Path $taskAlternate 'xinput1_4.dll'))
+$taskProxy = Join-Path $taskAlternate 'bin/dwmapi.dll'
+$taskProxyTime = [IO.File]::GetLastWriteTimeUtc($taskProxy)
 & $taskInstaller -SteamPath $taskAlternate -ResourcePath $taskResources
-Assert-Test ([IO.File]::ReadAllText((Join-Path $taskAlternate 'OpenSteamTool.dll')).StartsWith('older pinned')) 'Pinned older release replaced'
-[IO.File]::Delete((Join-Path $taskAlternate 'dwmapi.dll'))
-$taskFailed = $false
-try { & $taskInstaller -SteamPath $taskAlternate -ResourcePath $taskResources } catch { $taskFailed = $true }
-Assert-Test $taskFailed 'Missing old pinned DLL silently replaced by a different release'
+Assert-Test ((Hash-Test $taskOldMain) -eq (Hash-Test (Join-Path $taskResources 'OpenSteamTool.dll'))) 'Old pinned DLL was not upgraded'
+Assert-Test ((Hash-Test (Join-Path $taskAlternate 'xinput1_4.dll')) -eq (Hash-Test (Join-Path $taskResources 'xinput1_4.dll'))) 'Missing DLL was not restored'
+Assert-Test ([IO.File]::GetLastWriteTimeUtc($taskProxy) -eq $taskProxyTime) 'Matching DLL was rewritten'
+
 [IO.File]::WriteAllText($taskPinPath, '{bad json')
 $taskFailed = $false
 try { & $taskInstaller -SteamPath $taskAlternate -ResourcePath $taskResources } catch { $taskFailed = $true }
 Assert-Test $taskFailed 'Corrupt selection silently reset to version one'
-Write-Host "PASS: both DLL bundles, automatic detection, pinned versions, repair, future-release protection, config preservation, backups, idempotence, rollback and corrupt selection. Temporary test folder: $taskTemp"
+Write-Host "PASS: offline DLL installation, both layouts, automatic upgrades, repair, config preservation, backups, idempotence, rollback and corrupt selection. Temporary test folder: $taskTemp"

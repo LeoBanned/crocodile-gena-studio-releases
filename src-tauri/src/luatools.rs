@@ -214,7 +214,10 @@ fn legacy_stplugin_dir(steam: &Path) -> PathBuf {
 }
 
 pub(crate) fn ensure_opensteamtool_installed(steam: &Path) -> Result<(), String> {
-    crate::lua_loader::ensure(steam)
+    crate::lua_loader::ensure(steam)?;
+    #[cfg(target_os = "windows")]
+    crate::millennium::update_installed_for_loader(steam)?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -240,8 +243,7 @@ fn update_loader_blocking_with_variant(steam_path: Option<String>, variant: Opti
     let Some(steam) = steam else {
         return OperationResult::error("Папка Steam не найдена", vec![]);
     };
-    let variant = match variant { Some(variant) => variant, None => crate::lua_loader::selected_variant(&steam).unwrap_or_else(|_| "standard".into()) };
-    crate::loader_github::update(&steam, &variant)
+    crate::lua_loader::update(&steam, variant.as_deref())
 }
 
 #[cfg(test)]

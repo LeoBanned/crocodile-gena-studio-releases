@@ -1,6 +1,5 @@
 //! Shared pinned DLL selection. Schema 2 records exact relative destinations, including bin/dwmapi.dll.
 use crate::{
-    loader_github::{self, Bundle},
     luatools,
     models::OperationResult,
 };
@@ -20,7 +19,7 @@ pub(crate) const STANDARD: &[(&str, &[u8])] = &[
     ("dwmapi.dll", include_bytes!("assets/dwmapi.dll")),
     ("xinput1_4.dll", include_bytes!("assets/xinput1_4.dll")),
 ];
-const COMPATIBILITY: &[(&str, &[u8])] = &[
+const LEGACY_COMPATIBILITY: &[(&str, &[u8])] = &[
     (
         "OpenSteamTool.dll",
         include_bytes!("assets/loader-v2/OpenSteamTool.dll"),
@@ -31,6 +30,13 @@ const COMPATIBILITY: &[(&str, &[u8])] = &[
         include_bytes!("assets/loader-v2/xinput1_4.dll"),
     ),
 ];
+const MAX_DLL: u64 = 16 * 1024 * 1024;
+
+struct Bundle {
+    variant: String,
+    files: BTreeMap<String, Vec<u8>>,
+}
+
 const SELECTION: &str = "config/cgs-luatools-loader.json";
 static INSTALL_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
@@ -53,8 +59,7 @@ pub struct LoaderInfo {
 
 fn resources(variant: &str) -> Result<&'static [(&'static str, &'static [u8])], String> {
     match variant {
-        "standard" => Ok(STANDARD),
-        "compatibility" => Ok(COMPATIBILITY),
+        "standard" | "compatibility" => Ok(STANDARD),
         _ => Err("Неизвестная версия загрузчика".into()),
     }
 }
@@ -138,7 +143,7 @@ pub(crate) fn read_optional(path: &Path) -> Result<Option<Vec<u8>>, String> {
     if let Some(parent) = path.parent() {
         reject_link(parent)?;
     }
-    if fs::metadata(path).is_ok_and(|m| m.len() > loader_github::MAX_DLL as u64) {
+    if fs::metadata(path).is_ok_and(|m| m.len() > MAX_DLL) {
         return Err(format!("Слишком большой файл: {}", path.display()));
     }
     match fs::read(path) {
@@ -155,7 +160,7 @@ fn parse_selection(bytes: &[u8]) -> Result<Selection, String> {
         return Err("Слишком большой файл выбора DLL".into());
     }
     let value: Selection = serde_json::from_slice(bytes)
-        .map_err(|_| "Файл выбора DLL повреждён. Выберите комплект заново через «Обновить DLL».")?;
+        .map_err(|_| "Файл выбора DLL повреждён. Нажмите «Установить DLL».")?;
     validate_layout(&value.variant, value.schema, &value.hashes)?;
     if value.hashes.values().any(|h| {
         h.len() != 64
@@ -174,14 +179,11 @@ fn read_selection(steam: &Path) -> Result<Option<Selection>, String> {
         .transpose()
 }
 fn detect_variant(steam: &Path) -> Result<&'static str, String> {
-    if let Some(bytes) = read_optional(&steam.join("OpenSteamTool.dll"))? {
-        return Ok(if bytes == COMPATIBILITY[0].1 {
-            "compatibility"
-        } else {
-            "standard"
-        });
-    }
-    if read_optional(&steam.join("bin/dwmapi.dll"))?.is_some_and(|b| b == COMPATIBILITY[1].1) {
+    if read_optional(&steam.join("bin/dwmapi.dll"))?
+        .is_some_and(|bytes| bytes == STANDARD[1].1 || bytes == LEGACY_COMPATIBILITY[1].1)
+        || read_optional(&steam.join("OpenSteamTool.dll"))?
+            .is_some_and(|bytes| bytes == LEGACY_COMPATIBILITY[0].1)
+    {
         return Ok("compatibility");
     }
     Ok("standard")
@@ -214,65 +216,10 @@ pub(crate) fn acquire_file_lock(steam: &Path) -> Result<fs::File, String> {
         .open(path)
         .map_err(|_| "Загрузчик занят другой операцией или плагином. Повторите позже.".into())
 }
-fn cache_dir(steam: &Path, selection: &Selection) -> Result<PathBuf, String> {
-    Ok(steam
-        .join("config/cgs-luatools-loader-cache")
-        .join(&selection.variant)
-        .join(hash(
-            &serde_json::to_vec(selection).map_err(|e| e.to_string())?,
-        )))
-}
-fn store_bundle(steam: &Path, selection: &Selection, bundle: &Bundle) -> Result<(), String> {
-    let path = cache_dir(steam, selection)?;
-    let mut parent = steam.to_path_buf();
-    for component in path.strip_prefix(steam).unwrap().components() {
-        parent.push(component);
-        reject_link(&parent)?;
-        fs::create_dir_all(&parent).map_err(|e| e.to_string())?;
-    }
-    for (target, bytes) in &bundle.files {
-        let file = path.join(Path::new(target).file_name().unwrap());
-        reject_link(&file)?;
-        if read_optional(&file)?.as_deref() != Some(bytes) {
-            fs::write(file, bytes).map_err(|e| e.to_string())?;
-        }
-    }
-    Ok(())
-}
-fn pinned_bundle(steam: &Path, selection: &Selection) -> Result<Bundle, String> {
-    let embedded = embedded_bundle(&selection.variant, selection.schema)?;
-    let expected = Selection {
-        schema: selection.schema,
-        variant: selection.variant.clone(),
-        hashes: embedded
-            .files
-            .iter()
-            .map(|(p, b)| (p.clone(), hash(b)))
-            .collect(),
-    };
-    if expected == *selection {
-        return Ok(embedded);
-    }
-    let path = cache_dir(steam, selection)?;
-    reject_link(&path)?;
-    let mut files = BTreeMap::new();
-    for (target, expected) in &selection.hashes {
-        let file = path.join(Path::new(target).file_name().unwrap());
-        let bytes=read_optional(&file)?.ok_or("Закреплённый комплект повреждён и отсутствует в кэше. Автозамена запрещена. Выберите комплект через «Обновить DLL».")?;
-        if hash(&bytes) != *expected {
-            return Err("Кэш закреплённых DLL повреждён. Автозамена запрещена.".into());
-        }
-        files.insert(target.clone(), bytes);
-    }
-    Ok(Bundle {
-        variant: selection.variant.clone(),
-        files,
-    })
-}
 fn apply_selection(
     steam: &Path,
     selection: Selection,
-    bundle: Option<Bundle>,
+    bundle: Bundle,
     manual: bool,
 ) -> Result<bool, String> {
     validate_layout(&selection.variant, selection.schema, &selection.hashes)?;
@@ -288,24 +235,6 @@ fn apply_selection(
             content.trim_start_matches('\u{feff}'),
         )?)
     };
-    let bundle = if let Some(b) = bundle {
-        Some(b)
-    } else if !current {
-        Some(pinned_bundle(steam, &selection)?)
-    } else {
-        None
-    };
-    if let Some(bundle) = &bundle {
-        let hashes: BTreeMap<_, _> = bundle
-            .files
-            .iter()
-            .map(|(p, b)| (p.clone(), hash(b)))
-            .collect();
-        if hashes != selection.hashes {
-            return Err("Комплект не соответствует закреплённой версии".into());
-        }
-        store_bundle(steam, &selection, bundle)?;
-    }
     let mut owned = BTreeMap::new();
     if let Some(old) = previous {
         owned = old.hashes;
@@ -313,7 +242,7 @@ fn apply_selection(
         // Adopt only known files from earlier app builds, never arbitrary third-party proxies.
         for name in ["dwmapi.dll", "version.dll", "bin/dwmapi.dll"] {
             if let Some(bytes) = read_optional(&steam.join(name))? {
-                if [STANDARD, COMPATIBILITY]
+                if [STANDARD, LEGACY_COMPATIBILITY]
                     .iter()
                     .any(|set| set.iter().any(|(_, b)| **b == bytes))
                 {
@@ -324,7 +253,7 @@ fn apply_selection(
     }
     let mut changes: BTreeMap<String, Option<Vec<u8>>> = BTreeMap::new();
     if !current {
-        for (path, bytes) in &bundle.as_ref().unwrap().files {
+        for (path, bytes) in &bundle.files {
             changes.insert(path.clone(), Some(bytes.clone()));
         }
     }
@@ -373,14 +302,9 @@ pub(crate) fn ensure(steam: &Path) -> Result<(), String> {
         .lock()
         .map_err(|_| "Перезапустите программу после ошибки DLL")?;
     let _file = acquire_file_lock(steam)?;
-    let saved = read_selection(steam)?;
-    if let Some(selection) = saved {
-        apply_selection(steam, selection, None, false).map(|_| ())
-    } else {
-        let variant = detect_variant(steam)?;
-        let bundle = embedded_bundle(variant, 2)?;
-        apply_selection(steam, bundle_selection(&bundle)?, Some(bundle), false).map(|_| ())
-    }
+    let variant = selected_variant(steam)?;
+    let bundle = embedded_bundle(&variant, 2)?;
+    apply_selection(steam, bundle_selection(&bundle)?, bundle, false).map(|_| ())
 }
 fn install(steam: &Path, bundle: Bundle) -> OperationResult {
     if !steam.join("steam.exe").is_file() {
@@ -394,7 +318,7 @@ fn install(steam: &Path, bundle: Bundle) -> OperationResult {
             .lock()
             .map_err(|_| "Перезапустите программу после ошибки DLL")?;
         let _file = acquire_file_lock(steam)?;
-        apply_selection(steam, bundle_selection(&bundle)?, Some(bundle), true)
+        apply_selection(steam, bundle_selection(&bundle)?, bundle, true)
     })();
     #[cfg(windows)]
     if result.is_ok() {
@@ -414,14 +338,14 @@ fn install(steam: &Path, bundle: Bundle) -> OperationResult {
         Err(error) => OperationResult::error(error, vec![]),
     }
 }
-pub(crate) fn install_downloaded(steam: &Path, bundle: Bundle) -> OperationResult {
+#[cfg(test)]
+fn install_downloaded(steam: &Path, bundle: Bundle) -> OperationResult {
     install(steam, bundle)
 }
-#[cfg(test)]
 pub(crate) fn update(steam: &Path, variant: Option<&str>) -> OperationResult {
     let variant = match variant {
         Some(value) => value.to_string(),
-        None => match selected_variant(steam) {
+        None => match selected_variant(steam).or_else(|_| detect_variant(steam).map(str::to_owned)) {
             Ok(v) => v,
             Err(e) => return OperationResult::error(e, vec![]),
         },
@@ -452,7 +376,7 @@ pub fn luatools_loader_info(steam_path: Option<String>) -> Result<LoaderInfo, St
         .as_ref()
         .map(|s| s.variant.clone())
         .unwrap_or(detect_variant(&steam)?.into());
-    let expected = saved.clone().unwrap_or(bundled_selection(&variant)?);
+    let expected = bundled_selection(&variant)?;
     let current = match matches_selection(&steam, &expected) {
         Ok(v) => v,
         Err(e) => {
@@ -467,6 +391,46 @@ pub fn luatools_loader_info(steam_path: Option<String>) -> Result<LoaderInfo, St
         current,
         issue,
     })
+}
+
+#[tauri::command]
+pub async fn luatools_check_loader_updates(steam_path: Option<String>) -> Result<serde_json::Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let steam = resolve(steam_path)?;
+        let selected = selected_variant(&steam).or_else(|_| detect_variant(&steam).map(str::to_owned))?;
+        let mut variants = Vec::new();
+        let mut update_available = false;
+        for variant in ["standard", "compatibility"] {
+            let mut changed = false;
+            let mut files = Vec::new();
+            for (path, bytes) in embedded_bundle(variant, 2)?.files {
+                let status = if variant != selected {
+                    "available"
+                } else {
+                    match read_optional(&steam.join(&path))? {
+                        Some(installed) if installed == bytes => "current",
+                        Some(_) => "changed",
+                        None => "missing",
+                    }
+                };
+                changed |= matches!(status, "changed" | "missing");
+                files.push(serde_json::json!({"path": path, "bytes": bytes.len(), "status": status}));
+            }
+            update_available |= changed;
+            variants.push(serde_json::json!({
+                "variant": variant,
+                "available": true,
+                "updateAvailable": changed,
+                "status": if variant != selected { "not_installed" } else if changed { "update" } else { "current" },
+                "files": files
+            }));
+        }
+        Ok(serde_json::json!({
+            "selectedVariant": selected,
+            "updateAvailable": update_available,
+            "variants": variants
+        }))
+    }).await.map_err(|error| error.to_string())?
 }
 
 #[cfg(test)]
@@ -497,7 +461,7 @@ mod tests {
         let dir = steam();
         let steam = dir.path();
         assert!(update(steam, Some("compatibility")).success);
-        let times: Vec<_> = COMPATIBILITY
+        let times: Vec<_> = STANDARD
             .iter()
             .map(|(name, _)| {
                 fs::metadata(steam.join(if *name == "dwmapi.dll" {
@@ -512,7 +476,7 @@ mod tests {
             .collect();
         ensure(steam).unwrap();
         assert_bundle(steam, "compatibility");
-        for (index, &(name, _)) in COMPATIBILITY.iter().enumerate() {
+        for (index, &(name, _)) in STANDARD.iter().enumerate() {
             let name = if name == "dwmapi.dll" {
                 "bin/dwmapi.dll"
             } else {
@@ -534,8 +498,8 @@ mod tests {
         assert!(fs::read_dir(steam.join("config/cgs-luatools-backups"))
             .unwrap()
             .flatten()
-            .any(|entry| fs::read(entry.path().join("OpenSteamTool.dll"))
-                .is_ok_and(|bytes| bytes == STANDARD[0].1)));
+            .any(|entry| fs::read(entry.path().join("dwmapi.dll"))
+                .is_ok_and(|bytes| bytes == STANDARD[1].1)));
         assert!(update(steam, Some("standard")).success);
         ensure(steam).unwrap();
         assert_bundle(steam, "standard");
@@ -544,7 +508,7 @@ mod tests {
     fn detects_existing_second_version_without_a_preference_file() {
         let dir = steam();
         let steam = dir.path();
-        for &(name, bytes) in COMPATIBILITY {
+        for &(name, bytes) in LEGACY_COMPATIBILITY {
             fs::write(steam.join(name), bytes).unwrap();
         }
         ensure(steam).unwrap();
@@ -561,7 +525,7 @@ mod tests {
         assert_bundle(steam, "compatibility");
     }
     #[test]
-    fn keeps_pinned_bytes_even_when_embedded_resources_change() {
+    fn updates_pinned_installation_when_embedded_resources_change() {
         let dir = steam();
         let steam = dir.path();
         fs::create_dir_all(steam.join("config")).unwrap();
@@ -584,12 +548,9 @@ mod tests {
         )
         .unwrap();
         ensure(steam).unwrap();
-        assert!(matches_selection(steam, &selected).unwrap());
+        assert!(!matches_selection(steam, &selected).unwrap());
         fs::remove_file(steam.join("bin/dwmapi.dll")).unwrap();
-        let before = fs::read(steam.join("OpenSteamTool.dll")).unwrap();
-        assert!(ensure(steam).unwrap_err().contains("Автозамена запрещена"));
-        assert_eq!(fs::read(steam.join("OpenSteamTool.dll")).unwrap(), before);
-        assert!(update(steam, Some("compatibility")).success);
+        ensure(steam).unwrap();
         assert_bundle(steam, "compatibility");
     }
     #[test]
@@ -601,7 +562,7 @@ mod tests {
         assert!(ensure(steam).is_err());
         assert_eq!(
             fs::read(steam.join("OpenSteamTool.dll")).unwrap(),
-            COMPATIBILITY[0].1
+            STANDARD[0].1
         );
         assert!(update(steam, Some("compatibility")).success);
         assert_bundle(steam, "compatibility");
@@ -701,7 +662,7 @@ mod tests {
         assert!(result.success, "{}", result.message);
         let metadata: serde_json::Value =
             serde_json::from_slice(&fs::read(plugin.join("plugin.json")).unwrap()).unwrap();
-        assert_eq!(metadata["version"], "0.5.2");
+        assert_eq!(metadata["version"], "0.5.4");
         assert!(
             fs::read_to_string(plugin.join("backend/install-loader.ps1"))
                 .unwrap()
