@@ -1,0 +1,9 @@
+{
+  "revision": 1,
+  "sha256": "89e1e634a0cd657a8b2ceb68a6b112581adfe1a6300a757e89a50288f7936454",
+  "files": {
+    "OpenSteamTool.dll": "09a8e2cc3aa9798a1bdc432410c8411a768c1e4330de21a2014bb591071cfe3c",
+    "dwmapi.dll": "e6e36908757a168a530674a7523dbc3db519af355a350135eda67ebc93b08c64",
+    "xinput1_4.dll": "35966a7a59f5e0bd8c36c588c6e1a11aa88bd6cab226b2e3d25603a177143d2e"
+  }
+}
