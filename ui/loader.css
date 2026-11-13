@@ -54,3 +54,37 @@ dialog.loader-dialog {
 .loader-status.success { color: var(--accent); }
 .loader-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 19px; }
 .loader-footer .primary-button { min-width: 175px; }
+
+.loader-update-banner {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 17px 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  border-radius: var(--ui-panel-radius);
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel-solid));
+}
+.loader-update-banner[hidden] { display: none; }
+.loader-update-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: var(--ui-control-radius);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 13%, var(--panel-solid));
+}
+.loader-update-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.loader-update-copy strong { color: var(--text); font-size: 15px; }
+.loader-update-copy p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.loader-update-action { justify-self: end; white-space: nowrap; }
+:root[data-ui-theme="white"] .loader-update-icon { color: var(--light-accent); }
+@media (max-width: 820px) {
+  .loader-update-banner { grid-template-columns: 42px minmax(0, 1fr); }
+  .loader-update-action { grid-column: 2; justify-self: start; }
+}
+
+.loader-files header small[data-status="update"] { color: var(--accent); font-weight: 750; }
+:root[data-ui-theme="white"] :is(.loader-files header small[data-status="update"], .loader-file-state[data-status="changed"]) { color: var(--light-accent); }

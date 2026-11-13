@@ -57,6 +57,7 @@ pub struct LoaderInfo {
     current: bool,
     issue: Option<String>,
     files: BTreeMap<String, &'static str>,
+    update_available: bool,
 }
 
 fn resources(variant: &str) -> Result<&'static [(&'static str, &'static [u8])], String> {
@@ -417,8 +418,7 @@ pub(crate) fn resolve(steam_path: Option<String>) -> Result<PathBuf, String> {
     }
     Ok(path)
 }
-#[tauri::command]
-pub fn luatools_loader_info(steam_path: Option<String>) -> Result<LoaderInfo, String> {
+fn loader_info(steam_path: Option<String>, online: bool) -> Result<LoaderInfo, String> {
     let steam = resolve(steam_path)?;
     let (saved, mut issue) = match read_selection(&steam) {
         Ok(s) => (s, None),
@@ -429,9 +429,20 @@ pub fn luatools_loader_info(steam_path: Option<String>) -> Result<LoaderInfo, St
         .map(|s| s.variant.clone())
         .unwrap_or(detect_variant(&steam)?.into());
     let cached = loader_updates::cached(&steam)?;
+    let revision = cached.as_ref().map_or_else(
+        loader_updates::embedded_revision,
+        |package| package.manifest.revision,
+    );
+    let latest = if online {
+        loader_updates::latest_manifest().ok().filter(|manifest| manifest.revision > revision)
+    } else {
+        None
+    };
     let expected = bundle_selection(&available_bundle(&variant, cached.as_ref())?)?;
     let mut files = BTreeMap::new();
-    for (path, expected_hash) in &expected.hashes {
+    for (path, local_hash) in &expected.hashes {
+        let name = path.rsplit('/').next().unwrap_or(path);
+        let expected_hash = latest.as_ref().and_then(|manifest| manifest.files.get(name)).unwrap_or(local_hash);
         let status = match read_optional(&steam.join(path)) {
             Ok(Some(bytes)) if hash(&bytes) == *expected_hash => "current",
             Ok(Some(_)) => "changed",
@@ -441,7 +452,6 @@ pub fn luatools_loader_info(steam_path: Option<String>) -> Result<LoaderInfo, St
                 continue;
             }
         };
-        let name = path.rsplit('/').next().unwrap_or(path);
         files.insert(name.to_string(), status);
     }
     let current = files.len() == expected.hashes.len() && files.values().all(|state| *state == "current");
@@ -452,7 +462,15 @@ pub fn luatools_loader_info(steam_path: Option<String>) -> Result<LoaderInfo, St
         current,
         issue,
         files,
+        update_available: latest.is_some(),
     })
+}
+
+#[tauri::command]
+pub async fn luatools_loader_info(steam_path: Option<String>) -> Result<LoaderInfo, String> {
+    tauri::async_runtime::spawn_blocking(move || loader_info(steam_path, true))
+        .await
+        .map_err(|error| error.to_string())?
 }
 
 
@@ -601,7 +619,7 @@ mod tests {
     fn status_and_cancel_are_read_only() {
         let dir = steam();
         let steam = dir.path();
-        let info = luatools_loader_info(Some(steam.display().to_string())).unwrap();
+        let info = loader_info(Some(steam.display().to_string()), false).unwrap();
         assert_eq!(info.selected_variant, "standard");
         assert!(!info.pinned);
         assert_eq!(fs::read_dir(steam).unwrap().count(), 1);

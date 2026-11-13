@@ -31,6 +31,7 @@ mod ryuu;
 mod saves;
 mod smaki;
 mod steam;
+mod steam_patch;
 mod steam_library;
 mod game_artwork;
 #[cfg(target_os = "windows")]
@@ -306,6 +307,7 @@ pub fn run() {
             local_cloud::local_cloud_update_component,
             luatools::luatools_update_loader,
             lua_loader::luatools_loader_info,
+            loader_updates::luatools_check_loader_update,
             luatools::luatools_restore_manifests,
             luatools::luatools_detect_steam,
             luatools::luatools_pick_files,
@@ -313,6 +315,9 @@ pub fn run() {
             luatools::luatools_toggle,
             luatools::luatools_remove,
             luatools::luatools_restart_steam,
+            steam_patch::steam_patch_status,
+            steam_patch::steam_patch_apply,
+            steam_patch::steam_patch_restore,
             luatools::luatools_game_detail,
             luatools::luatools_names,
             millennium::millennium_plugin_status,

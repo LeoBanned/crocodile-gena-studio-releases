@@ -110,7 +110,7 @@ pub struct LuaInstallResult {
 }
 
 #[cfg(target_os = "windows")]
-fn hidden_command(program: &str) -> Command {
+pub(crate) fn hidden_command(program: &str) -> Command {
     let mut command = Command::new(program);
     #[cfg(target_os = "windows")]
     command.creation_flags(NO_WINDOW);
@@ -1418,7 +1418,7 @@ fn luatools_restart_steam_blocking(_steam_path: Option<String>) -> OperationResu
 }
 
 #[cfg(target_os = "windows")]
-fn process_is_running(image_name: &str) -> bool {
+pub(crate) fn process_is_running(image_name: &str) -> bool {
     let Ok(output) = hidden_command("tasklist.exe")
         .args(["/FI", &format!("IMAGENAME eq {image_name}"), "/NH"])
         .output()
@@ -1431,7 +1431,7 @@ fn process_is_running(image_name: &str) -> bool {
 }
 
 #[cfg(target_os = "linux")]
-fn process_is_running(image_name: &str) -> bool {
+pub(crate) fn process_is_running(image_name: &str) -> bool {
     Command::new("pgrep")
         .args(["-x", image_name])
         .status()

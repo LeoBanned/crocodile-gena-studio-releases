@@ -28,7 +28,7 @@
       <div class="titlebar-brand" data-tauri-drag-region>
         <div class="mini-mark" data-tauri-drag-region><img src="./app-icon.png" alt="" data-tauri-drag-region /></div>
         <span data-tauri-drag-region>Crocodile Gena Studio</span>
-        <span class="titlebar-version" data-tauri-drag-region>5.6.7</span>
+        <span class="titlebar-version" data-tauri-drag-region>5.6.8</span>
       </div>
       <div class="window-actions">
         <button class="window-button" id="window-minimize" aria-label="Свернуть">
@@ -124,7 +124,7 @@
         <div class="home-hero premium-panel">
           <div class="home-glow"></div>
           <div class="hero-copy">
-            <span class="hero-kicker">CROCODILE GENA STUDIO 5.6.7</span>
+            <span class="hero-kicker">CROCODILE GENA STUDIO 5.6.8</span>
             <h2>Ваша игровая<br/><span>лаборатория.</span></h2>
             <p>Единое пространство для настройки игр, управления сетевыми компонентами и будущих инструментов.</p>
           </div>
@@ -387,6 +387,15 @@
 
       <section class="view" id="view-lua" data-view-panel="lua">
         <div class="saves-layout">
+          <div class="loader-update-banner windows-only" id="loader-update-banner" hidden>
+            <span class="loader-update-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg></span>
+            <div class="loader-update-copy" role="status" aria-live="polite">
+              <strong>Доступно обновление DLL</strong>
+              <p>Вышла новая версия загрузчика OpenSteamTool.</p>
+            </div>
+            <button type="button" class="primary-button loader-update-action" id="loader-update-action" aria-haspopup="dialog" aria-controls="lua-dll-dialog">Обновить DLL</button>
+          </div>
+
           <section class="premium-panel saves-hero">
             <div>
               <span class="hero-kicker">MODULE 04</span>
@@ -419,6 +428,21 @@
             <div class="local-cloud-path"><input id="lc-folder" type="text" readonly placeholder="Выберите папку хранения" aria-label="Папка локального облака" /><button class="ghost-button" id="lc-browse">Выбрать папку</button></div>
             <div class="local-cloud-footer"><span id="lc-status" role="status" aria-live="polite">Проверка…</span><button class="ghost-button" id="lc-refresh">Проверить</button></div>
             <div class="local-cloud-help" id="lc-help" hidden><p id="lc-description">Сохранения игр с Lua и манифестами обрабатываются как облачные, но хранятся на вашем диске. CloudRedirect перенаправляет запросы Steam Cloud в локальную папку — без Google Drive, OneDrive и регистрации. Обычные игры Steam продолжают использовать своё облако.</p><p class="local-cloud-note" id="lc-note">После изменения режима Steam перезапустится автоматически. Сохранения сохраняются после отключения. Настроенный режим работает вместе со Steam, даже когда эта программа закрыта. Совместимость зависит от игры и версии Steam.</p></div>
+          </section>
+
+          <section class="premium-panel local-cloud-panel windows-only" id="steam-patch-panel" aria-labelledby="steam-patch-title">
+            <div class="local-cloud-heading">
+              <div class="steam-patch-heading">
+                <h3 id="steam-patch-title">Фикс «0 байт / Нет соединения»</h3>
+                <span class="millennium-plugin-badge" id="steam-patch-badge">Проверка…</span>
+              </div>
+              <label class="local-cloud-toggle">
+                <span id="steam-patch-toggle-label">Выключено</span>
+                <span class="switch"><input id="steam-patch-enabled" type="checkbox" role="switch" aria-labelledby="steam-patch-title" disabled /><i></i></span>
+              </label>
+            </div>
+            <p class="steam-patch-description">Включите фикс, если Steam показывает 0 байт или «Нет соединения» после добавления манифеста. Steam перезапустится, если он открыт.</p>
+            <div id="steam-patch-status" role="status" aria-live="polite"></div>
           </section>
 
           <section class="premium-panel millennium-panel windows-only">
@@ -837,7 +861,7 @@
 
       </section>
 
-          <section class="premium-panel settings-card"><span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>О программе</h2><div class="about-row"><span>Версия</span><b>5.6.7</b></div><div class="about-row"><span>Назначение</span><b>Игровые инструменты</b></div><div class="about-row"><span>Активные модули</span><b>Online Fix · Сохранения · DLC · CrocLua · Гипервизор · Кряки · Утилиты · Партнёры</b></div></section>
+          <section class="premium-panel settings-card"><span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>О программе</h2><div class="about-row"><span>Версия</span><b>5.6.8</b></div><div class="about-row"><span>Назначение</span><b>Игровые инструменты</b></div><div class="about-row"><span>Активные модули</span><b>Online Fix · Сохранения · DLC · CrocLua · Гипервизор · Кряки · Утилиты · Партнёры</b></div></section>
           </div>
           <div class="settings-column">
           <section class="premium-panel settings-card module-visibility-card">
@@ -861,7 +885,7 @@
           <section class="premium-panel settings-card update-card">
             <span class="coming-label">ПРИЛОЖЕНИЕ</span><h2>Обновления</h2>
             <p>Скачивание и установка новой версии внутри программы. После обновления приложение перезапустится; настройки, путь и ярлыки сохранятся.</p>
-            <div class="about-row"><span>Текущая версия</span><b id="update-current-version">5.6.7</b></div>
+            <div class="about-row"><span>Текущая версия</span><b id="update-current-version">5.6.8</b></div>
             <div class="update-actions">
               <button class="ghost-button" id="check-update-button">Проверить обновления</button>
               <span id="update-status">Проверка ещё не выполнялась</span>
@@ -885,7 +909,7 @@
       <p class="loader-description" id="lua-dll-help">Если после добавления манифеста через программу или плагин игра не появилась в Steam, нажмите «Обновить DLL».</p>
       <div class="loader-path"><strong>Папка Steam</strong><span id="lua-dll-steam-path"></span></div>
       <div class="loader-files">
-        <header><span>Файлы загрузчика</span><small>GitHub</small></header>
+        <header><span>Файлы загрузчика</span><small id="lua-dll-files-status" aria-live="polite">GitHub</small></header>
         <div class="loader-file-list">
           <div><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2h7l4 4v12H5zM12 2v5h4z"/></svg><span class="loader-file-name">OpenSteamTool.dll</span><small class="loader-file-state" data-dll-name="OpenSteamTool.dll"></small></div>
           <div><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2h7l4 4v12H5zM12 2v5h4z"/></svg><span class="loader-file-name" id="lua-dll-proxy">dwmapi.dll</span><small class="loader-file-state" data-dll-name="dwmapi.dll"></small></div>

@@ -236,7 +236,10 @@
     $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
     $("#page-eyebrow").textContent = viewMeta[name][0];
     $("#page-title").textContent = viewMeta[name][1];
-    if (name === "lua") luaRefresh();
+    if (name === "lua") {
+      luaRefresh();
+      checkLuaDllUpdate();
+    }
     window.dispatchEvent(new CustomEvent("cgs:view-changed", { detail: name }));
     $(".main-area").scrollTo({ top: 0, behavior: window.cgsPersonalization?.motionEnabled() === false ? "auto" : "smooth" });
   }
@@ -1234,6 +1237,7 @@
       state.lua.loaded = true;
       if (state.lua.steamPath) localStorage.setItem("luaSteamPath", state.lua.steamPath);
       renderLuaStatus();
+      refreshSteamPatch();
       window.cgsLocalCloud?.refresh();
       luaLoadNames();
       if (options.offerMillennium !== false && millennium?.status === "millennium_missing" && !state.lua.millenniumPrompted) {
@@ -1261,24 +1265,107 @@
     }
   }
 
+  let steamPatchBusy = false;
+  let steamPatchRequest = 0;
+
+  function renderSteamPatch(info) {
+    const toggle = $("#steam-patch-enabled");
+    const active = info?.state === "patched" || info?.state === "partial";
+    toggle.checked = active;
+    toggle.disabled = steamPatchBusy || !(active ? info?.canRestore : info?.canApply);
+    $("#steam-patch-toggle-label").textContent = active ? "Включено" : "Выключено";
+    const badge = $("#steam-patch-badge");
+    badge.classList.toggle("ready", info?.state === "patched");
+    badge.textContent = ({
+      patched: "Фикс активен",
+      partial: "Фикс применён частично",
+      stock: "Фикс выключен",
+    })[info?.state] || "Кэш недоступен";
+  }
+
+  async function refreshSteamPatch() {
+    if (document.body.dataset.platform === "linux" || steamPatchBusy) return;
+    const request = ++steamPatchRequest;
+    renderSteamPatch(null);
+    $("#steam-patch-badge").textContent = "Проверка…";
+    $("#steam-patch-status").textContent = "";
+    try {
+      const info = await call("steam_patch_status", { steamPath: state.lua.steamPath || null });
+      if (request === steamPatchRequest) renderSteamPatch(info);
+    } catch (error) {
+      if (request === steamPatchRequest) {
+        renderSteamPatch(null);
+        $("#steam-patch-status").textContent = errorText(error);
+      }
+    }
+  }
+
+  async function setSteamPatch(apply) {
+    if (steamPatchBusy) return;
+    steamPatchBusy = true;
+    ++steamPatchRequest;
+    const steamPath = state.lua.steamPath || null;
+    const status = $("#steam-patch-status");
+    $("#steam-patch-enabled").disabled = true;
+    status.textContent = "Подождите…";
+    let message;
+    try {
+      const result = await call(apply ? "steam_patch_apply" : "steam_patch_restore", { steamPath });
+      message = apply ? "Фикс применён." : "";
+      if (!result.steamRestarted) {
+        const translate = window.cgsI18n?.t || (value => value);
+        message = [translate(message), translate("При необходимости запустите Steam вручную.")].filter(Boolean).join(" ");
+      }
+    } catch (error) {
+      message = apply ? errorText(error) : "Не удалось выключить фикс. Закройте Steam и повторите.";
+    } finally {
+      steamPatchBusy = false;
+      await refreshSteamPatch();
+      status.textContent = message;
+    }
+  }
+
+  let luaDllCheckGeneration = 0;
+
+  async function checkLuaDllUpdate() {
+    if (document.body.dataset.platform === "linux") return;
+    const generation = ++luaDllCheckGeneration;
+    const banner = $("#loader-update-banner");
+    try {
+      const available = await call("luatools_check_loader_update", { steamPath: state.lua.steamPath || null });
+      if (generation === luaDllCheckGeneration) banner.hidden = !available;
+    } catch (_) {
+      if (generation === luaDllCheckGeneration) banner.hidden = true;
+    }
+  }
+
   let luaLoaderUpdating = false;
+  let luaDllInfoGeneration = 0;
 
   async function refreshLuaDllInfo(steamPath) {
+    const generation = ++luaDllInfoGeneration;
     $("#lua-dll-steam-path").textContent = steamPath || "Steam не найден";
     $("#lua-dll-proxy").textContent = "dwmapi.dll";
+    const summary = $("#lua-dll-files-status");
+    summary.textContent = "Проверяем…";
+    summary.dataset.status = "";
     const rows = $$("[data-dll-name]");
     for (const row of rows) { row.textContent = ""; row.dataset.status = ""; }
     try {
       const info = await call("luatools_loader_info", { steamPath });
+      if (generation !== luaDllInfoGeneration) return;
+      summary.textContent = info.updateAvailable ? "Доступно обновление" : "GitHub";
+      summary.dataset.status = info.updateAvailable ? "update" : "";
       $("#lua-dll-steam-path").textContent = info.steamPath || steamPath || "Steam не найден";
       $("#lua-dll-proxy").textContent = info.selectedVariant === "compatibility" ? "bin/dwmapi.dll" : "dwmapi.dll";
       for (const row of rows) {
         const state = info.files?.[row.dataset.dllName] || "";
         row.dataset.status = state;
-        row.textContent = ({ current: "Совпадает", changed: "Отличается", missing: "Нет файла" })[state] || "";
+        row.textContent = ({ current: "Совпадает", changed: info.updateAvailable ? "Требуется обновление" : "Отличается", missing: "Нет файла" })[state] || "";
       }
       if (info.issue && !$("#lua-dll-status").textContent) $("#lua-dll-status").textContent = info.issue;
     } catch (_) {
+      if (generation === luaDllInfoGeneration) summary.textContent = "GitHub";
       // The update command reports an invalid Steam path when invoked.
     }
   }
@@ -1296,6 +1383,7 @@
       status.textContent = result.message;
       status.classList.add(result.success ? "success" : "error");
       if (consumeResult(result)) {
+        checkLuaDllUpdate();
         await refreshLuaDllInfo(state.lua.steamPath || null);
         await luaRefresh({ offerMillennium: false });
       }
@@ -2355,10 +2443,12 @@
       dllDialog.showModal();
       refreshLuaDllInfo(state.lua.steamPath || null);
     });
+    $("#loader-update-action").addEventListener("click", () => $("#lua-update-dll-button").click());
     $("#lua-dll-install").addEventListener("click", luaUpdateDlls);
     dllDialog.addEventListener("click", (event) => {
       if (event.target === dllDialog) dllDialog.close();
     });
+    $("#steam-patch-enabled").addEventListener("change", (event) => setSteamPatch(event.currentTarget.checked));
     $("#lua-restart-button").addEventListener("click", luaRestartSteam);
     $("#millennium-site-button").addEventListener("click", downloadMillenniumInstaller);
     $("#millennium-install-button").addEventListener("click", installMillenniumPlugin);
@@ -2366,12 +2456,13 @@
     $("#lua-steam-browse").addEventListener("click", async () => {
       try {
         const path = await call("pick_game_directory");
-        if (path) { state.lua.steamPath = path; localStorage.setItem("luaSteamPath", path); await luaRefresh(); }
+        if (path) { state.lua.steamPath = path; localStorage.setItem("luaSteamPath", path); checkLuaDllUpdate(); await luaRefresh(); }
       } catch (error) { toast(errorText(error), "error"); }
     });
     $("#lua-steam-path").addEventListener("change", (event) => {
       state.lua.steamPath = event.currentTarget.value.trim();
       localStorage.setItem("luaSteamPath", state.lua.steamPath);
+      checkLuaDllUpdate();
       luaRefresh();
     });
     const luaDrop = $("#lua-drop-zone");
@@ -2528,7 +2619,7 @@
       if ($("#view-lua")?.classList.contains("active")) refreshMillenniumStatus();
       call("luatools_restore_manifests", { steamPath: state.lua.steamPath || null }).catch(() => {});
     }, 3_000);
-    log("Crocodile Gena Studio 5.6.7 инициализирован", "system");
+    log("Crocodile Gena Studio 5.6.8 инициализирован", "system");
     log(invoke ? "Все компоненты готовы к работе" : "Запустите установленное приложение", invoke ? "success" : "error");
     if (invoke) {
       await tauri.event?.listen("cgs-update-progress", (event) => { if(state.updates.installing) updateProgress(event.payload); });

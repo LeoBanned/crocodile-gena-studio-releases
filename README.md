@@ -10,7 +10,7 @@ Eight workspaces for Steam tools, save backups, game components and launch manag
 Built for Windows. Powered by Rust and Tauri.
 
 <p>
-  <img alt="Version 5.6.7" src="https://img.shields.io/badge/version-5.6.7-63f5c2?style=flat-square&labelColor=10141d" />
+  <img alt="Version 5.6.8" src="https://img.shields.io/badge/version-5.6.8-63f5c2?style=flat-square&labelColor=10141d" />
   <img alt="Windows 10 and 11, x64" src="https://img.shields.io/badge/Windows-10%20%2F%2011%20%C2%B7%20x64-82d9ff?style=flat-square&labelColor=10141d" />
   <img alt="Rust and Tauri 2" src="https://img.shields.io/badge/built%20with-Rust%20%2B%20Tauri%202-a987ff?style=flat-square&labelColor=10141d" />
   <img alt="Project code: GPL-3.0-only" src="https://img.shields.io/badge/project%20code-GPL--3.0--only-63f5c2?style=flat-square&labelColor=10141d" />
@@ -188,6 +188,11 @@ Choose Graphite, Glass, Minimal, Neon, Midnight, Obsidian, Forest, Plum, Warm, A
 Choose **English or Russian on first launch**; your choice is remembered. Change it anytime in Settings.
 
 And yes, **Gena** can keep you company in the sidebar — now with a festive hat. Enable or disable **New Year decorations** in **Settings → Appearance**: falling snow, a glowing garland, pine branches and hanging ornaments follow your selected theme. Motion preferences are respected.
+
+## New in 5.6.8
+
+- CrocLua adds a toggle for the Steam “0 bytes / No connection” fix.
+- CrocLua shows available DLL updates and marks the files that need updating.
 
 ## New in 5.6.7
 

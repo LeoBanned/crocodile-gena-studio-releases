@@ -1,14 +1,14 @@
 use crate::lua_loader::{read_optional, reject_link, STANDARD};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::{collections::BTreeMap, io::{Cursor, Read}, path::Path, time::Duration};
+use std::{collections::BTreeMap, io::{Cursor, Read}, path::Path, sync::Mutex, time::{Duration, Instant}};
 
-const FEED: &str = "https://raw.githubusercontent.com/LeoBanned/crocodile-gena-studio-releases/refs/heads/croclua-dll-feed/";
+const FEED: &str = "https://raw.githubusercontent.com/LeoBanned/crocodile-gena-studio-releases/croclua-dll-feed/";
 pub(crate) const CACHE: &str = "config/cgs-luatools-online";
 const MAX_DLL: u64 = 16 * 1024 * 1024;
 const MAX_ZIP: u64 = 3 * MAX_DLL + 65536;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Manifest {
     pub revision: u32,
@@ -96,13 +96,55 @@ fn unpack(manifest: Manifest, bytes: Vec<u8>) -> Result<Package, String> {
     verify(manifest, files)
 }
 
-pub(crate) fn download(current: u32) -> Result<Option<Package>, String> {
-    let client = reqwest::blocking::Client::builder()
+fn client() -> Result<reqwest::blocking::Client, String> {
+    reqwest::blocking::Client::builder()
         .connect_timeout(Duration::from_secs(5))
         .timeout(Duration::from_secs(25))
         .redirect(reqwest::redirect::Policy::none())
-        .build().map_err(|e| e.to_string())?;
-    let manifest = parse(&fetch(&client, "latest.json", 16384)?)?;
+        .build().map_err(|e| e.to_string())
+}
+
+fn fetch_manifest(client: &reqwest::blocking::Client) -> Result<Manifest, String> {
+    let minute = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() / 60;
+    parse(&fetch(client, &format!("latest.json?check={minute}"), 16384)?)
+}
+
+#[derive(Default)]
+struct RevisionCheck {
+    last: Option<(Instant, Result<Manifest, String>)>,
+}
+
+static REVISION_CHECK: Mutex<RevisionCheck> = Mutex::new(RevisionCheck { last: None });
+
+pub(crate) fn latest_manifest() -> Result<Manifest, String> {
+    let mut cache = REVISION_CHECK.lock().map_err(|error| error.to_string())?;
+    if let Some((checked, result)) = &cache.last {
+        let ttl = if result.is_ok() { 60 } else { 15 };
+        if checked.elapsed() < Duration::from_secs(ttl) {
+            return result.clone();
+        }
+    }
+    let result = client().and_then(|client| fetch_manifest(&client));
+    cache.last = Some((Instant::now(), result.clone()));
+    result
+}
+
+#[tauri::command]
+pub async fn luatools_check_loader_update(steam_path: Option<String>) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let steam = crate::lua_loader::resolve(steam_path)?;
+        let current = cached(&steam).ok().flatten()
+            .map_or_else(embedded_revision, |package| package.manifest.revision);
+        Ok(latest_manifest()?.revision > current)
+    }).await.map_err(|error| error.to_string())?
+}
+
+pub(crate) fn download(current: u32) -> Result<Option<Package>, String> {
+    let client = client()?;
+    let manifest = fetch_manifest(&client)?;
     if manifest.revision <= current {
         return Ok(None);
     }

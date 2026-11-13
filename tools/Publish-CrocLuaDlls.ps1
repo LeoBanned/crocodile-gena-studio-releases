@@ -8,7 +8,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $project = Split-Path $PSScriptRoot -Parent
-$feedUrl = 'https://raw.githubusercontent.com/LeoBanned/crocodile-gena-studio-releases/refs/heads/croclua-dll-feed/latest.json'
+$feedUrl = 'https://raw.githubusercontent.com/LeoBanned/crocodile-gena-studio-releases/croclua-dll-feed/latest.json'
 $names = @('OpenSteamTool.dll', 'dwmapi.dll', 'xinput1_4.dll')
 $source = (Resolve-Path -LiteralPath $DllFolder).ProviderPath
 
