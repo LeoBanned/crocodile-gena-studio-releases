@@ -277,6 +277,16 @@ The application's own code is licensed under **GPL-3.0-only**.
 
 Bundled DLLs, executables and external tools retain their respective licenses. The source release for Crocodile Gena Studio does not make every bundled third-party component open source. Personal service credentials are excluded from the public export.
 
+## Credits
+
+1. **OpenSteamTool — OpenSteam001** — [GitHub](https://github.com/OpenSteam001/OpenSteamTool). DLL loader for CrocLua. The provenance of the specific bundled builds has not been independently verified.
+2. **CloudRedirect — Selectively11 / crghofficial** — [GitHub](https://github.com/crghofficial/cloudredirect). Powers the Local Cloud feature.
+3. **Millennium — SteamClientHomebrew** — [GitHub](https://github.com/SteamClientHomebrew/Millennium). Framework for Steam client plugins and themes.
+4. **SmokeAPI — acidicoala** — [GitHub](https://github.com/acidicoala/SmokeAPI). DLC unlocking component.
+5. **CreamAPI** — [Project thread on CS.RIN.RU](https://cs.rin.ru/forum/viewtopic.php?t=70576). Alternative DLC unlocking component.
+6. **Ryuu’s Manifests** — [Website](https://generator.ryuu.lol/). Manifest retrieval service.
+7. **HubCap** — [Website](https://hubcapmanifest.com/). Manifest retrieval service.
+
 ## Feedback & community
 
 Found a bug? Open an **[issue](https://github.com/LeoBanned/crocodile-gena-studio-releases/issues)** with your application version, Windows version, affected module, reproduction steps and relevant log output.
