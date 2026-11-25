@@ -279,16 +279,16 @@ Bundled DLLs, executables and external tools retain their respective licenses. T
 
 ## Credits
 
-1. **OpenSteamTool — OpenSteam001** — [GitHub](https://github.com/OpenSteam001/OpenSteamTool). DLL loader for CrocLua. The provenance of the specific bundled builds has not been independently verified.
-2. **CloudRedirect — Selectively11 / crghofficial** — [GitHub](https://github.com/crghofficial/cloudredirect). Powers the Local Cloud feature.
-3. **Millennium — SteamClientHomebrew** — [GitHub](https://github.com/SteamClientHomebrew/Millennium). Framework for Steam client plugins and themes.
+1. **OpenSteamTool** — [GitHub](https://github.com/OpenSteam001/OpenSteamTool). DLL loader for CrocLua. The provenance of the specific bundled builds has not been independently verified.
+2. **CloudRedirect** — [GitHub](https://github.com/crghofficial/cloudredirect). Powers the Local Cloud feature.
+3. **Millennium** — [GitHub](https://github.com/SteamClientHomebrew/Millennium). Framework for Steam client plugins and themes.
 4. **SmokeAPI — acidicoala** — [GitHub](https://github.com/acidicoala/SmokeAPI). DLC unlocking component.
 5. **CreamAPI** — [Project thread on CS.RIN.RU](https://cs.rin.ru/forum/viewtopic.php?t=70576). Alternative DLC unlocking component.
-6. **Ryuu’s Manifests** — [Website](https://generator.ryuu.lol/). Manifest retrieval service.
+6. **Ryuu Manifests** — [Website](https://generator.ryuu.lol/). Manifest retrieval service.
 7. **HubCap** — [Website](https://hubcapmanifest.com/). Manifest retrieval service.
 8. **FreeTP** — [Website](https://freetp.org/). Online-Fix.
 9. **Eclipse-HV** — [Website](https://github.com/Sparki1337/eclipse-studio). Hypervisor.
-10. **Epic Online Service Emulator** — [Website](https://cs.rin.ru/forum/viewtopic.php?f=29&t=105551&hilit=Nemirtingas). Hypervisor.
+10. **Nemirtingas** — [Website](https://cs.rin.ru/forum/viewtopic.php?f=29&t=105551&hilit=Nemirtingas). Hypervisor.
 
 ## Feedback & community
 
