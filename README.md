@@ -286,6 +286,7 @@ Bundled DLLs, executables and external tools retain their respective licenses. T
 5. **CreamAPI** — [Project thread on CS.RIN.RU](https://cs.rin.ru/forum/viewtopic.php?t=70576). Alternative DLC unlocking component.
 6. **Ryuu’s Manifests** — [Website](https://generator.ryuu.lol/). Manifest retrieval service.
 7. **HubCap** — [Website](https://hubcapmanifest.com/). Manifest retrieval service.
+8. **FreeTP** — [Website](https://freetp.org/). Online-Fix.
 
 ## Feedback & community
 
