@@ -288,6 +288,7 @@ Bundled DLLs, executables and external tools retain their respective licenses. T
 7. **HubCap** — [Website](https://hubcapmanifest.com/). Manifest retrieval service.
 8. **FreeTP** — [Website](https://freetp.org/). Online-Fix.
 9. **Eclipse-HV** — [Website](https://github.com/Sparki1337/eclipse-studio). Hypervisor.
+10. **Epic Online Service Emulator** — [Website](https://cs.rin.ru/forum/viewtopic.php?f=29&t=105551&hilit=Nemirtingas). Hypervisor.
 
 ## Feedback & community
 
