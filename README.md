@@ -287,6 +287,7 @@ Bundled DLLs, executables and external tools retain their respective licenses. T
 6. **Ryuu’s Manifests** — [Website](https://generator.ryuu.lol/). Manifest retrieval service.
 7. **HubCap** — [Website](https://hubcapmanifest.com/). Manifest retrieval service.
 8. **FreeTP** — [Website](https://freetp.org/). Online-Fix.
+9. **Eclipse-HV** — [Website](https://github.com/Sparki1337/eclipse-studio). Hypervisor.
 
 ## Feedback & community
 
